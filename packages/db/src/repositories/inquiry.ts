@@ -9,6 +9,7 @@ type InquiryInsert = {
   receivedAt: string;
   subject: string;
   body: string;
+  channel?: string;
   headers?: InquiryHeaders;
   assignedToId?: string | null;
   parentInquiryId?: string | null;
@@ -29,6 +30,7 @@ export async function createInquiry(input: InquiryInsert): Promise<CreateInquiry
         receivedAt: new Date(input.receivedAt),
         subject: input.subject,
         body: input.body,
+        channel: input.channel ?? 'email',
         headers: (input.headers ?? {}) as Prisma.InputJsonValue,
         assignedToId: input.assignedToId ?? null,
         parentInquiryId: input.parentInquiryId ?? null,
@@ -62,7 +64,7 @@ export function getInquiry(firmId: string, id: string) {
   return getPrisma().inquiry.findFirst({
     where: { id, firmId },
     include: {
-      client: { select: { name: true, primaryEmail: true } },
+      client: { select: { name: true, primaryEmail: true, lineUserId: true } },
       assignedTo: { select: { id: true, name: true } },
     },
   });

@@ -42,19 +42,6 @@ function hydrate(row: Draft): DraftWithCitations {
   return { ...row, citations: citationsArraySchema.parse(row.citations) };
 }
 
-type SentMetadata = {
-  outboundMessageId: string;
-  sgMessageId: string | null;
-};
-
-export async function recordDraftSent(draftId: string, info: SentMetadata): Promise<void> {
-  await patchDraftMetadata(draftId, {
-    outboundMessageId: info.outboundMessageId,
-    sgMessageId: info.sgMessageId,
-    sentAt: new Date().toISOString(),
-  });
-}
-
 export async function patchDraftMetadata(
   draftId: string,
   patch: Record<string, unknown>,

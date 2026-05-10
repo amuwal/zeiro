@@ -5,8 +5,9 @@ import {
   getDraftByInquiry,
   getFirm,
   getInquiry,
+  type InquiryWithClient,
+  patchDraftMetadata,
   recordAudit,
-  recordDraftSent,
   setInquiryAssignee,
   setInquiryStatus,
 } from '@zeiro/db';
@@ -21,6 +22,7 @@ import { redirect } from 'next/navigation';
 import { env } from '@/lib/env';
 import { requireFirmContext } from '@/lib/firm-context';
 import { inngest } from '@/lib/inngest/client';
+import { dispatchLine } from '@/lib/line/dispatch';
 
 export async function sendDraft(formData: FormData) {
   await sendCore(formData, { useEditedBody: false });
@@ -62,6 +64,11 @@ export async function rejectDraft(formData: FormData) {
   redirect('/inbox');
 }
 
+type DispatchResult = {
+  outboundMessageId: string;
+  providerMetadata: Record<string, unknown>;
+};
+
 async function sendCore(
   formData: FormData,
   opts: { useEditedBody: boolean },
@@ -81,26 +88,17 @@ async function sendCore(
   const bodyToSend = editedBody ?? draft.body;
   const wasEdited = editedBody !== null && editedBody !== draft.body;
 
-  const thread = buildOutboundThread({
-    inquiryMessageId: inquiry.messageId,
-    inquiryReferences: readInquiryReferences(inquiry.headers),
-    draftId: draft.id,
-    outboundDomain: env.OUTBOUND_FROM_DOMAIN,
-  });
+  const dispatch =
+    inquiry.channel === 'line'
+      ? await dispatchLineReply(firmId, inquiry, draft.id, bodyToSend)
+      : await dispatchEmailReply(inquiry, draft, firm.name, bodyToSend, firmId, inquiryId);
 
-  const result = await sendReply({
-    apiKey: env.SENDGRID_API_KEY,
-    from: { name: firm.name, email: `reply@${env.OUTBOUND_FROM_DOMAIN}` },
-    to: inquiry.client.primaryEmail,
-    subject: ensureRePrefix(draft.subject || inquiry.subject),
-    body: bodyToSend,
-    messageId: thread.messageId,
-    inReplyTo: thread.inReplyTo,
-    references: thread.references,
-    customArgs: { idempotencyKey: draft.id, firmId, inquiryId },
+  await patchDraftMetadata(draft.id, {
+    sentAt: new Date().toISOString(),
+    channel: inquiry.channel,
+    outboundMessageId: dispatch.outboundMessageId,
+    ...dispatch.providerMetadata,
   });
-
-  await recordDraftSent(draft.id, result);
   await setInquiryStatus(firmId, inquiryId, 'sent');
   await recordAudit({
     firmId,
@@ -108,8 +106,9 @@ async function sendCore(
     inquiryId,
     action: 'draft.sent',
     metadata: {
-      outboundMessageId: result.outboundMessageId,
-      sgMessageId: result.sgMessageId,
+      channel: inquiry.channel,
+      outboundMessageId: dispatch.outboundMessageId,
+      ...dispatch.providerMetadata,
       edited: wasEdited,
       ...(wasEdited && editedBody !== null
         ? {
@@ -129,6 +128,48 @@ async function sendCore(
 
   revalidatePath('/inbox');
   redirect('/inbox');
+}
+
+async function dispatchEmailReply(
+  inquiry: InquiryWithClient,
+  draft: { id: string; subject: string; body: string },
+  firmName: string,
+  bodyToSend: string,
+  firmId: string,
+  inquiryId: string,
+): Promise<DispatchResult> {
+  const thread = buildOutboundThread({
+    inquiryMessageId: inquiry.messageId,
+    inquiryReferences: readInquiryReferences(inquiry.headers),
+    draftId: draft.id,
+    outboundDomain: env.OUTBOUND_FROM_DOMAIN,
+  });
+  const result = await sendReply({
+    apiKey: env.SENDGRID_API_KEY,
+    from: { name: firmName, email: `reply@${env.OUTBOUND_FROM_DOMAIN}` },
+    to: inquiry.client.primaryEmail,
+    subject: ensureRePrefix(draft.subject || inquiry.subject),
+    body: bodyToSend,
+    messageId: thread.messageId,
+    inReplyTo: thread.inReplyTo,
+    references: thread.references,
+    customArgs: { idempotencyKey: draft.id, firmId, inquiryId },
+  });
+  return {
+    outboundMessageId: result.outboundMessageId,
+    providerMetadata: { sgMessageId: result.sgMessageId },
+  };
+}
+
+async function dispatchLineReply(
+  firmId: string,
+  inquiry: InquiryWithClient,
+  draftId: string,
+  bodyToSend: string,
+): Promise<DispatchResult> {
+  const lineUserId = inquiry.client.lineUserId;
+  if (!lineUserId) throw new Error('client has no LINE userId');
+  return dispatchLine({ firmId, draftId, lineUserId, body: bodyToSend });
 }
 
 function readId(formData: FormData): string {

@@ -5,6 +5,7 @@ export type {
   Client,
   Draft,
   Firm,
+  FirmChannel,
   Inquiry,
   KnowledgeChunk,
   Membership,
@@ -12,6 +13,7 @@ export type {
   User,
 } from '@prisma/client';
 export * from './repositories/firm';
+export * from './repositories/firm-channel';
 export * from './repositories/user';
 export * from './repositories/membership';
 export * from './repositories/inquiry';
