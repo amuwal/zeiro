@@ -29,8 +29,10 @@ export function makeInitials(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return '?';
   const parts = trimmed.split(/\s+|　/).filter(Boolean);
-  if (parts.length >= 2) {
-    return takeChar(parts[0]) + takeChar(parts[parts.length - 1]);
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  if (parts.length >= 2 && first && last) {
+    return takeChar(first) + takeChar(last);
   }
   return takeChar(trimmed, 2);
 }

@@ -1,4 +1,4 @@
-import { incomingMessageSchema, type IncomingMessage } from '@zeiro/core';
+import { type IncomingMessage, incomingMessageSchema } from '@zeiro/core';
 import { type AddressObject, simpleParser } from 'mailparser';
 import { extractAttachments } from './attachments';
 

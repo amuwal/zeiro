@@ -1,5 +1,4 @@
-import type { FirmChannel } from '@prisma/client';
-import { Prisma } from '@prisma/client';
+import type { FirmChannel, Prisma } from '@prisma/client';
 import { getPrisma } from '../server';
 
 export async function getFirmChannel(

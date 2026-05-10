@@ -17,11 +17,13 @@
     "@anthropic-ai/sdk": "^0.95.1",
     "@mastra/core": "^1.8.1",
     "@mastra/langfuse": "^1.2.5",
+    "@mastra/observability": "^1.11.1",
     "@opentelemetry/core": "^2.7.1",
     "@opentelemetry/sdk-trace-base": "^2.7.1",
     "@sentry/node": "^9.0.0",
     "@zeiro/core": "workspace:*",
     "@zeiro/db": "workspace:*",
+    "@zeiro/email": "workspace:*",
     "ai": "^6.0.0",
     "zod": "^4.0.0"
   },

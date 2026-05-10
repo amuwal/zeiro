@@ -1,11 +1,7 @@
 import { AuditEvents } from '@/components/analytics/audit-events';
 import { CategoryDistribution } from '@/components/analytics/category-distribution';
 import { KpiCard, type KpiInput } from '@/components/analytics/kpi-card';
-import {
-  TARGET_ESCALATION_PCT,
-  getCategoryDistribution,
-  getKpiSnapshot,
-} from '@/lib/analytics';
+import { getCategoryDistribution, getKpiSnapshot, TARGET_ESCALATION_PCT } from '@/lib/analytics';
 import { requireFirmContext } from '@/lib/firm-context';
 
 export default async function AnalyticsPage() {

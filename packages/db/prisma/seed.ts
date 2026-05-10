@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { CLIENTS, FIRM, INQUIRIES, KNOWLEDGE, type InquirySpec } from './fixtures';
+import { CLIENTS, FIRM, INQUIRIES, type InquirySpec, KNOWLEDGE } from './fixtures';
 
 const prisma = new PrismaClient();
 

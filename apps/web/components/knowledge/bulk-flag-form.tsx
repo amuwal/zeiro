@@ -19,7 +19,16 @@ export function BulkFlagForm() {
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <label htmlFor="bulk-query" style={{ fontSize: 11, color: 'var(--muted-2)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <label
+          htmlFor="bulk-query"
+          style={{
+            fontSize: 11,
+            color: 'var(--muted-2)',
+            fontFamily: 'var(--font-mono)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+          }}
+        >
           検索キーワード
         </label>
         <input
@@ -32,15 +41,19 @@ export function BulkFlagForm() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <label htmlFor="bulk-reason" style={{ fontSize: 11, color: 'var(--muted-2)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <label
+          htmlFor="bulk-reason"
+          style={{
+            fontSize: 11,
+            color: 'var(--muted-2)',
+            fontFamily: 'var(--font-mono)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+          }}
+        >
           理由 (任意)
         </label>
-        <input
-          id="bulk-reason"
-          name="reason"
-          placeholder="例: 2026年改正"
-          style={inputStyle}
-        />
+        <input id="bulk-reason" name="reason" placeholder="例: 2026年改正" style={inputStyle} />
       </div>
 
       <button type="submit" className="btn btn-secondary" disabled={pending}>

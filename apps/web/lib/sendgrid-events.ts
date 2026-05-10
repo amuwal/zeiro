@@ -12,7 +12,17 @@ const eventSchema = z.object({
   timestamp: z.number(),
   sg_event_id: z.string(),
   sg_message_id: z.string(),
-  event: z.enum(['delivered', 'bounce', 'dropped', 'spamreport', 'blocked', 'deferred', 'processed', 'open', 'click']),
+  event: z.enum([
+    'delivered',
+    'bounce',
+    'dropped',
+    'spamreport',
+    'blocked',
+    'deferred',
+    'processed',
+    'open',
+    'click',
+  ]),
   type: z.string().optional(),
   reason: z.string().optional(),
   status: z.string().optional(),
@@ -22,20 +32,29 @@ const eventSchema = z.object({
 });
 type SendGridEvent = z.infer<typeof eventSchema>;
 
-export function verifySignature(rawBody: string, signature: string, timestamp: string, publicKey: string): boolean {
+export function verifySignature(
+  rawBody: string,
+  signature: string,
+  timestamp: string,
+  publicKey: string,
+): boolean {
   const ew = new EventWebhook();
   const ec = ew.convertPublicKeyToECDSA(publicKey);
   return ew.verifySignature(ec, rawBody, signature, timestamp);
 }
 
-export function readSignatureHeaders(headers: Headers): { signature: string; timestamp: string } | null {
-  const signature = headers.get(EventWebhookHeader.SIGNATURE.toLowerCase());
-  const timestamp = headers.get(EventWebhookHeader.TIMESTAMP.toLowerCase());
+export function readSignatureHeaders(
+  headers: Headers,
+): { signature: string; timestamp: string } | null {
+  const signature = headers.get(EventWebhookHeader.SIGNATURE().toLowerCase());
+  const timestamp = headers.get(EventWebhookHeader.TIMESTAMP().toLowerCase());
   if (!signature || !timestamp) return null;
   return { signature, timestamp };
 }
 
-export async function applyEvents(rawEvents: unknown[]): Promise<{ applied: number; ignored: number }> {
+export async function applyEvents(
+  rawEvents: unknown[],
+): Promise<{ applied: number; ignored: number }> {
   let applied = 0;
   let ignored = 0;
   for (const raw of rawEvents) {
@@ -45,7 +64,8 @@ export async function applyEvents(rawEvents: unknown[]): Promise<{ applied: numb
       continue;
     }
     const handled = await applyOne(parsed.data);
-    handled ? (applied += 1) : (ignored += 1);
+    if (handled) applied += 1;
+    else ignored += 1;
   }
   return { applied, ignored };
 }
@@ -77,7 +97,7 @@ type Ctx = { firmId: string; inquiryId: string };
 
 async function resolveContext(
   event: SendGridEvent,
-  draft: { inquiryId: string },
+  _draft: { inquiryId: string },
 ): Promise<Ctx | null> {
   if (event.firmId && event.inquiryId) {
     return { firmId: event.firmId, inquiryId: event.inquiryId };

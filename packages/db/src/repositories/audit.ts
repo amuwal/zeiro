@@ -1,5 +1,5 @@
-import type { AuditAction } from '@zeiro/core';
 import type { Prisma } from '@prisma/client';
+import type { AuditAction } from '@zeiro/core';
 import { getPrisma } from '../server';
 
 type AuditWrite = {
@@ -22,7 +22,47 @@ export async function recordAudit(event: AuditWrite) {
   });
 }
 
-export async function findLatestSentBody(firmId: string, inquiryId: string): Promise<string | null> {
+export type UnmatchedLineEvent = {
+  lineUserId: string;
+  count: number;
+  firstSeen: Date;
+  lastSeen: Date;
+};
+
+export async function listUnmatchedLineEvents(
+  firmId: string,
+  limit = 50,
+): Promise<UnmatchedLineEvent[]> {
+  const rows = await getPrisma().$queryRaw<
+    { line_user_id: string; count: number; first_seen: Date; last_seen: Date }[]
+  >`
+    SELECT
+      metadata->>'lineUserId' AS line_user_id,
+      COUNT(*)::int AS count,
+      MIN(created_at) AS first_seen,
+      MAX(created_at) AS last_seen
+    FROM audit_events
+    WHERE firm_id = ${firmId}::uuid
+      AND action = 'inquiry.received'
+      AND metadata->>'unmatched' = 'true'
+      AND metadata->>'channel' = 'line'
+      AND metadata->>'lineUserId' IS NOT NULL
+    GROUP BY metadata->>'lineUserId'
+    ORDER BY MAX(created_at) DESC
+    LIMIT ${limit}
+  `;
+  return rows.map((r) => ({
+    lineUserId: r.line_user_id,
+    count: r.count,
+    firstSeen: r.first_seen,
+    lastSeen: r.last_seen,
+  }));
+}
+
+export async function findLatestSentBody(
+  firmId: string,
+  inquiryId: string,
+): Promise<string | null> {
   const event = await getPrisma().auditEvent.findFirst({
     where: { firmId, inquiryId, action: 'draft.sent' },
     orderBy: { createdAt: 'desc' },

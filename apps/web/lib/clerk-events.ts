@@ -1,10 +1,10 @@
 import {
+  findFirmByClerkOrgId,
+  findUserByClerkUserId,
   removeMembership,
   upsertFirmFromClerk,
   upsertMembership,
   upsertUser,
-  findUserByClerkUserId,
-  findFirmByClerkOrgId,
 } from '@zeiro/db';
 import { z } from 'zod';
 
@@ -22,7 +22,11 @@ const orgPayload = z.object({
 });
 
 const membershipPayload = z.object({
-  organization: z.object({ id: z.string(), name: z.string(), slug: z.string().nullable().optional() }),
+  organization: z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string().nullable().optional(),
+  }),
   public_user_data: z.object({
     user_id: z.string(),
     identifier: z.string().email(),
@@ -59,10 +63,12 @@ export async function applyClerkEvent(event: ClerkEvent): Promise<void> {
 
 async function onUserUpserted(data: unknown): Promise<void> {
   const u = userPayload.parse(data);
+  const primaryEmail = u.email_addresses[0]?.email_address;
+  if (!primaryEmail) return;
   await upsertUser({
     clerkUserId: u.id,
-    email: u.email_addresses[0].email_address,
-    name: composeName(u.first_name, u.last_name) || u.email_addresses[0].email_address,
+    email: primaryEmail,
+    name: composeName(u.first_name, u.last_name) || primaryEmail,
   });
 }
 

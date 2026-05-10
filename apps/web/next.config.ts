@@ -6,11 +6,10 @@ const config: NextConfig = {
 };
 
 export default withSentryConfig(config, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+  ...(process.env.SENTRY_ORG ? { org: process.env.SENTRY_ORG } : {}),
+  ...(process.env.SENTRY_PROJECT ? { project: process.env.SENTRY_PROJECT } : {}),
   silent: !process.env.CI,
   disableLogger: true,
   tunnelRoute: '/monitoring',
-  hideSourceMaps: true,
   widenClientFileUpload: true,
 });

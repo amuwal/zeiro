@@ -1,4 +1,3 @@
-import { Pool } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
 import { PrismaClient } from '@prisma/client';
 
@@ -10,7 +9,7 @@ export function getPrisma(): PrismaClient {
   if (!url) throw new Error('DATABASE_URL missing');
 
   cached = isNeon(url)
-    ? new PrismaClient({ adapter: new PrismaNeon(new Pool({ connectionString: url })) })
+    ? new PrismaClient({ adapter: new PrismaNeon({ connectionString: url }) })
     : new PrismaClient();
   return cached;
 }

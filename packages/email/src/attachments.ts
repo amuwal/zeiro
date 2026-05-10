@@ -2,9 +2,7 @@ import type { Attachment } from '@zeiro/core';
 import type { Attachment as ParsedAttachment } from 'mailparser';
 
 export function extractAttachments(parts: ParsedAttachment[]): Attachment[] {
-  return parts
-    .filter((p) => p.contentDisposition !== 'inline' || p.filename)
-    .map(toAttachment);
+  return parts.filter((p) => p.contentDisposition !== 'inline' || p.filename).map(toAttachment);
 }
 
 function toAttachment(part: ParsedAttachment): Attachment {

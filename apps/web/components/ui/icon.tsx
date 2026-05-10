@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { JSX, SVGProps } from 'react';
 
 export type IconName =
   | 'inbox'
@@ -118,7 +118,9 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M4 4h13l-2 5 2 5H4" />
     </>
   ),
-  paperclip: <path d="M21 12.5l-9 9a5.5 5.5 0 11-7.78-7.78l9-9a3.5 3.5 0 014.95 4.95L9.4 17.5a1.5 1.5 0 11-2.12-2.12L15 7.5" />,
+  paperclip: (
+    <path d="M21 12.5l-9 9a5.5 5.5 0 11-7.78-7.78l9-9a3.5 3.5 0 014.95 4.95L9.4 17.5a1.5 1.5 0 11-2.12-2.12L15 7.5" />
+  ),
   clock: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -138,7 +140,7 @@ const PATHS: Record<IconName, JSX.Element> = {
   ),
 };
 
-type Props = SVGProps<SVGSVGElement> & {
+type Props = Omit<SVGProps<SVGSVGElement>, 'stroke' | 'strokeWidth'> & {
   name: IconName;
   size?: number;
   stroke?: number;
@@ -155,6 +157,7 @@ export function Icon({ name, size = 16, stroke = 1.6, ...rest }: Props) {
       strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
       {...rest}
     >
       {PATHS[name]}

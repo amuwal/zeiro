@@ -18,7 +18,7 @@ export function Sparkline({ values, color = 'var(--accent)' }: Props) {
     })
     .join(' ');
   return (
-    <svg className="kpi-spark" viewBox={`0 0 ${w} ${h}`}>
+    <svg className="kpi-spark" viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
       <polyline
         points={points}
         fill="none"

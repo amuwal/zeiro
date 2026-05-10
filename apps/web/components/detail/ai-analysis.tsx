@@ -1,5 +1,5 @@
-import type { InquiryWithClient } from '@zeiro/db';
 import { getCategoryTheme } from '@zeiro/core';
+import type { InquiryWithClient } from '@zeiro/db';
 import { ConfidenceBar } from '@/components/ui/confidence-bar';
 import { readCategory, readConfidence, readReason, readUrgent } from '@/lib/inquiry-derived';
 
@@ -33,10 +33,7 @@ export function AiAnalysis({ inquiry }: { inquiry: InquiryWithClient }) {
             )}
             <span className="sep" />
             <span className="label">緊急度</span>
-            <span
-              className="val"
-              style={{ color: urgent ? 'var(--urgent)' : 'var(--ink-2)' }}
-            >
+            <span className="val" style={{ color: urgent ? 'var(--urgent)' : 'var(--ink-2)' }}>
               {urgent ? '高' : '通常'}
             </span>
           </div>

@@ -16,7 +16,13 @@ export const CLIENTS = [
 ];
 
 type Citation = { source: string; snippet: string };
-type DraftSpec = { subject: string; body: string; citations: Citation[]; confidence: number; model: string };
+type DraftSpec = {
+  subject: string;
+  body: string;
+  citations: Citation[];
+  confidence: number;
+  model: string;
+};
 
 export type InquirySpec = {
   messageId: string;
@@ -48,7 +54,8 @@ export const INQUIRIES: InquirySpec[] = [
       confidence: 0.94,
       urgency: 'low',
       requiresTaxJudgment: false,
-      reason: '「申告期限」「納付期限」「3月決算」の語句と過去同様の問い合わせパターンから「期日確認」と判定。',
+      reason:
+        '「申告期限」「納付期限」「3月決算」の語句と過去同様の問い合わせパターンから「期日確認」と判定。',
     },
     draft: {
       subject: 'Re: 3月決算法人税の申告期限について',
@@ -74,7 +81,8 @@ export const INQUIRIES: InquirySpec[] = [
       confidence: 0.62,
       urgency: 'high',
       requiresTaxJudgment: true,
-      reason: '「税務調査」キーワードを検知。緊急度フラグが立つカテゴリのため、所長への即時エスカレーションを推奨。',
+      reason:
+        '「税務調査」キーワードを検知。緊急度フラグが立つカテゴリのため、所長への即時エスカレーションを推奨。',
     },
   },
   {
@@ -89,7 +97,8 @@ export const INQUIRIES: InquirySpec[] = [
       confidence: 0.91,
       urgency: 'low',
       requiresTaxJudgment: false,
-      reason: '「源泉徴収票」「送付先」「住所変更」のパターンに完全一致。過去回答ログに同種事例が複数。',
+      reason:
+        '「源泉徴収票」「送付先」「住所変更」のパターンに完全一致。過去回答ログに同種事例が複数。',
     },
     draft: {
       subject: 'Re: 源泉徴収票の送付先について',
@@ -113,7 +122,8 @@ export const INQUIRIES: InquirySpec[] = [
       confidence: 0.48,
       urgency: 'low',
       requiresTaxJudgment: true,
-      reason: '「役員報酬」「期中変更」は個別判断（業績悪化に伴う改定該当性）が必要。信頼度0.48で閾値未満。',
+      reason:
+        '「役員報酬」「期中変更」は個別判断（業績悪化に伴う改定該当性）が必要。信頼度0.48で閾値未満。',
     },
   },
   {
@@ -134,12 +144,92 @@ export const INQUIRIES: InquirySpec[] = [
 ];
 
 export const KNOWLEDGE = [
-  { source: '事務所マニュアル §4.2', content: '法人税申告書 提出期限の運用ルール（3月決算は5月末）', meta: { title: '法人税申告書 提出期限の運用ルール', section: '§4.2', updated: '2025-12-04', uses: 142, status: 'fresh' } },
-  { source: 'FAQ集 Q-018', content: '決算月別 申告期限カレンダー（3月決算）', meta: { title: '決算月別 申告期限カレンダー', section: 'Q-018', updated: '2026-01-20', uses: 88, status: 'fresh' } },
-  { source: '顧問先マスタ C-0142', content: '山田商事 顧問契約 特記事項', meta: { title: '山田商事 顧問契約 特記事項', section: 'C-0142', updated: '2025-08-11', uses: 12, status: 'fresh' } },
-  { source: '過去回答ログ 2025-11', content: '源泉徴収票 送付先運用（住所変更時）', meta: { title: '源泉徴収票 送付先運用', section: '2025-11', updated: '2025-11-02', uses: 47, status: 'fresh' } },
-  { source: 'e-Tax 優先運用ガイド §6.1', content: '電子申告における必要書類一覧', meta: { title: '電子提出 優先運用ガイド', section: '§6.1', updated: '2025-09-30', uses: 64, status: 'review' } },
-  { source: '業務マニュアル §11.4', content: '役員報酬 期中改定の例外要件', meta: { title: '役員報酬 期中改定の例外要件', section: '§11.4', updated: '2024-04-12', uses: 31, status: 'outdated' } },
-  { source: '所内規程 §S-01', content: '税務調査 初動対応プロトコル', meta: { title: '税務調査 初動対応プロトコル', section: '§S-01', updated: '2025-06-20', uses: 8, status: 'fresh' } },
-  { source: 'FAQ集 Q-007', content: '年末調整 受付期限と督促ルール', meta: { title: '年末調整 受付期限と督促ルール', section: 'Q-007', updated: '2025-11-25', uses: 96, status: 'fresh' } },
+  {
+    source: '事務所マニュアル §4.2',
+    content: '法人税申告書 提出期限の運用ルール（3月決算は5月末）',
+    meta: {
+      title: '法人税申告書 提出期限の運用ルール',
+      section: '§4.2',
+      updated: '2025-12-04',
+      uses: 142,
+      status: 'fresh',
+    },
+  },
+  {
+    source: 'FAQ集 Q-018',
+    content: '決算月別 申告期限カレンダー（3月決算）',
+    meta: {
+      title: '決算月別 申告期限カレンダー',
+      section: 'Q-018',
+      updated: '2026-01-20',
+      uses: 88,
+      status: 'fresh',
+    },
+  },
+  {
+    source: '顧問先マスタ C-0142',
+    content: '山田商事 顧問契約 特記事項',
+    meta: {
+      title: '山田商事 顧問契約 特記事項',
+      section: 'C-0142',
+      updated: '2025-08-11',
+      uses: 12,
+      status: 'fresh',
+    },
+  },
+  {
+    source: '過去回答ログ 2025-11',
+    content: '源泉徴収票 送付先運用（住所変更時）',
+    meta: {
+      title: '源泉徴収票 送付先運用',
+      section: '2025-11',
+      updated: '2025-11-02',
+      uses: 47,
+      status: 'fresh',
+    },
+  },
+  {
+    source: 'e-Tax 優先運用ガイド §6.1',
+    content: '電子申告における必要書類一覧',
+    meta: {
+      title: '電子提出 優先運用ガイド',
+      section: '§6.1',
+      updated: '2025-09-30',
+      uses: 64,
+      status: 'review',
+    },
+  },
+  {
+    source: '業務マニュアル §11.4',
+    content: '役員報酬 期中改定の例外要件',
+    meta: {
+      title: '役員報酬 期中改定の例外要件',
+      section: '§11.4',
+      updated: '2024-04-12',
+      uses: 31,
+      status: 'outdated',
+    },
+  },
+  {
+    source: '所内規程 §S-01',
+    content: '税務調査 初動対応プロトコル',
+    meta: {
+      title: '税務調査 初動対応プロトコル',
+      section: '§S-01',
+      updated: '2025-06-20',
+      uses: 8,
+      status: 'fresh',
+    },
+  },
+  {
+    source: 'FAQ集 Q-007',
+    content: '年末調整 受付期限と督促ルール',
+    meta: {
+      title: '年末調整 受付期限と督促ルール',
+      section: 'Q-007',
+      updated: '2025-11-25',
+      uses: 96,
+      status: 'fresh',
+    },
+  },
 ];

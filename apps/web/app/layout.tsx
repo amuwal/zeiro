@@ -1,5 +1,5 @@
-import { ClerkProvider } from '@clerk/nextjs';
 import { jaJP } from '@clerk/localizations';
+import { ClerkProvider } from '@clerk/nextjs';
 import type { ReactNode } from 'react';
 import './globals.css';
 

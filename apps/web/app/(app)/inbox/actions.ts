@@ -69,10 +69,7 @@ type DispatchResult = {
   providerMetadata: Record<string, unknown>;
 };
 
-async function sendCore(
-  formData: FormData,
-  opts: { useEditedBody: boolean },
-): Promise<void> {
+async function sendCore(formData: FormData, opts: { useEditedBody: boolean }): Promise<void> {
   const inquiryId = readId(formData);
   const { firmId, userId } = await requireFirmContext();
 

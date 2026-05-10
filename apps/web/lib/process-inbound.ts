@@ -43,7 +43,7 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
     receivedAt: message.receivedAt,
     subject: message.subject,
     body: maskedBody,
-    headers: message.headers,
+    ...(message.headers ? { headers: message.headers } : {}),
     assignedToId: client.assignedTaxAccountantId,
     parentInquiryId,
   });

@@ -87,7 +87,7 @@
   box-shadow: var(--shadow-sm);
 }
 .inbox-item.unread::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 4px;
   top: 18px;

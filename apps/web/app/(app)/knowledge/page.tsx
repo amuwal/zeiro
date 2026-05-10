@@ -22,9 +22,7 @@ export default async function KnowledgePage({
   const review = items.filter((i) => readStatus(i) === 'review').length;
   const outdated = items.filter((i) => readStatus(i) === 'outdated').length;
 
-  const visible = params.status
-    ? items.filter((i) => readStatus(i) === params.status)
-    : items;
+  const visible = params.status ? items.filter((i) => readStatus(i) === params.status) : items;
 
   return (
     <div className="kb-pane anim-stagger">

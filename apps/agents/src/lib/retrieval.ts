@@ -5,11 +5,7 @@ import {
   RETRIEVAL_FUSE_TOP,
   RETRIEVAL_VECTOR_TOP,
 } from '@zeiro/core';
-import {
-  type KnowledgeHit,
-  searchKnowledgeBM25,
-  searchKnowledgeVector,
-} from '@zeiro/db';
+import { type KnowledgeHit, searchKnowledgeBM25, searchKnowledgeVector } from '@zeiro/db';
 import { rerank } from './cohere';
 import { embedQuery } from './embeddings';
 
@@ -60,10 +56,7 @@ export async function hybridSearch(
     .filter((h): h is KnowledgeHit => Boolean(h));
 }
 
-function rrfFuse(
-  rankings: KnowledgeHit[][],
-  k = 60,
-): Array<{ id: string; score: number }> {
+function rrfFuse(rankings: KnowledgeHit[][], k = 60): Array<{ id: string; score: number }> {
   const scores = new Map<string, number>();
   for (const ranking of rankings) {
     ranking.forEach((hit, rank) => {

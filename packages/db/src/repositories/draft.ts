@@ -1,5 +1,5 @@
+import type { Draft, Prisma } from '@prisma/client';
 import { type Citation, citationSchema } from '@zeiro/core';
-import { Prisma, type Draft } from '@prisma/client';
 import { z } from 'zod';
 import { getPrisma } from '../server';
 
@@ -55,7 +55,7 @@ export async function patchDraftMetadata(
     current.metadata && typeof current.metadata === 'object' && !Array.isArray(current.metadata)
       ? (current.metadata as Record<string, unknown>)
       : {};
-  const merged: Prisma.InputJsonValue = { ...existing, ...patch };
+  const merged = { ...existing, ...patch } as Prisma.InputJsonValue;
   await getPrisma().draft.update({ where: { id: draftId }, data: { metadata: merged } });
   return true;
 }

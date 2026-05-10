@@ -1,10 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import {
-  type IngestState,
-  ingestKnowledgeAction,
-} from '@/app/(app)/knowledge/actions';
+import { type IngestState, ingestKnowledgeAction } from '@/app/(app)/knowledge/actions';
 
 const initial: IngestState = { error: null };
 
@@ -51,9 +48,7 @@ export function IngestForm() {
         メール (.eml) として解析
       </label>
 
-      {state.error && (
-        <div style={{ color: 'var(--urgent)', fontSize: 12 }}>{state.error}</div>
-      )}
+      {state.error && <div style={{ color: 'var(--urgent)', fontSize: 12 }}>{state.error}</div>}
 
       <div>
         <button type="submit" className="btn btn-primary" disabled={pending}>

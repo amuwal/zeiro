@@ -1,4 +1,4 @@
-import type { KnowledgeChunk } from '@prisma/client';
+import type { KnowledgeChunk, Prisma } from '@prisma/client';
 import { getPrisma } from '../server';
 
 export type KnowledgeHit = {
@@ -93,17 +93,16 @@ export async function flagKnowledgeChunk(input: FlagInput): Promise<boolean> {
   });
   if (!chunk) return false;
   const existing = readMeta(chunk.metadata);
+  const flagged = {
+    ...existing,
+    requiresReview: true,
+    reviewReason: input.reason,
+    reviewFlaggedAt: new Date().toISOString(),
+    reviewFlaggedBy: input.flaggedBy,
+  } as Prisma.InputJsonValue;
   await getPrisma().knowledgeChunk.update({
     where: { id: chunk.id },
-    data: {
-      metadata: {
-        ...existing,
-        requiresReview: true,
-        reviewReason: input.reason,
-        reviewFlaggedAt: new Date().toISOString(),
-        reviewFlaggedBy: input.flaggedBy,
-      } as Record<string, unknown>,
-    },
+    data: { metadata: flagged },
   });
   return true;
 }
@@ -121,16 +120,15 @@ export async function unflagKnowledgeChunk(input: UnflagInput): Promise<boolean>
   });
   if (!chunk) return false;
   const existing = readMeta(chunk.metadata);
+  const cleared = {
+    ...existing,
+    requiresReview: false,
+    reviewClearedAt: new Date().toISOString(),
+    reviewClearedBy: input.clearedBy,
+  } as Prisma.InputJsonValue;
   await getPrisma().knowledgeChunk.update({
     where: { id: chunk.id },
-    data: {
-      metadata: {
-        ...existing,
-        requiresReview: false,
-        reviewClearedAt: new Date().toISOString(),
-        reviewClearedBy: input.clearedBy,
-      } as Record<string, unknown>,
-    },
+    data: { metadata: cleared },
   });
   return true;
 }

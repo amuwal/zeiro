@@ -10,7 +10,7 @@ export function CitationList({ citations }: { citations: Citation[] }) {
       </div>
       <div className="cite-list">
         {citations.map((c, i) => (
-          <CitationRow key={`${c.source}-${i}`} index={i + 1} citation={c} />
+          <CitationRow key={`${c.source}::${c.snippet.slice(0, 64)}`} index={i + 1} citation={c} />
         ))}
       </div>
     </div>

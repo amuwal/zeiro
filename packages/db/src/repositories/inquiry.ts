@@ -1,5 +1,5 @@
-import type { InquiryHeaders, InquiryStatus } from '@zeiro/core';
 import { Prisma } from '@prisma/client';
+import type { InquiryHeaders, InquiryStatus } from '@zeiro/core';
 import { getPrisma } from '../server';
 
 type InquiryInsert = {
@@ -77,11 +77,7 @@ export async function setInquiryStatus(firmId: string, id: string, status: Inqui
   });
 }
 
-export async function setInquiryAssignee(
-  firmId: string,
-  id: string,
-  assignedToId: string | null,
-) {
+export async function setInquiryAssignee(firmId: string, id: string, assignedToId: string | null) {
   await getPrisma().inquiry.updateMany({
     where: { id, firmId },
     data: { assignedToId },

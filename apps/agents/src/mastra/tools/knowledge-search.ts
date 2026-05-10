@@ -25,12 +25,13 @@ export const knowledgeSearchTool = createTool({
     '事務所のナレッジベース（過去メール・FAQ・マニュアル）をハイブリッド検索（ベクトル+BM25→RRF→Cohere Rerank）',
   inputSchema,
   outputSchema,
-  execute: async ({ context, runtimeContext }) => {
-    const firmId = runtimeContext?.get('firmId');
+  execute: async (input, ctx) => {
+    const firmId = ctx.requestContext?.get('firmId');
     if (typeof firmId !== 'string') {
-      throw new TenantIsolationError('knowledge-search invoked without firmId in runtime context');
+      throw new TenantIsolationError('knowledge-search invoked without firmId in request context');
     }
-    const hits = await hybridSearch(firmId, context.query, { topN: context.topK });
+    const opts = input.topK !== undefined ? { topN: input.topK } : {};
+    const hits = await hybridSearch(firmId, input.query, opts);
     return { hits };
   },
 });

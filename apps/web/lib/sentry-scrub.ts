@@ -1,5 +1,5 @@
-import { redactPII } from '@zeiro/core';
 import type { ErrorEvent, EventHint } from '@sentry/nextjs';
+import { redactPII } from '@zeiro/core';
 
 export function scrubEvent(event: ErrorEvent, _hint: EventHint): ErrorEvent | null {
   if (event.message) event.message = redactPII(event.message);

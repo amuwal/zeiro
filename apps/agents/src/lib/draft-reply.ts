@@ -1,4 +1,4 @@
-import { type DraftResult, type TriageResult } from '@zeiro/core';
+import type { DraftResult, TriageResult } from '@zeiro/core';
 import { ensureRePrefix } from '@zeiro/email';
 import { draftPrompt } from '../mastra/prompts/draft';
 import { callDrafterWithCitations, type DrafterResult } from './anthropic-draft';

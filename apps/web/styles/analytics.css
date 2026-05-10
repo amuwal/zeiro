@@ -73,7 +73,7 @@
   font-weight: 500;
   letter-spacing: -0.025em;
   line-height: 1;
-  font-feature-settings: 'tnum';
+  font-feature-settings: "tnum";
   color: var(--ink);
   display: flex;
   align-items: baseline;

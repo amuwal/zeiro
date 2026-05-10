@@ -9,7 +9,7 @@ const STYLES: Record<Variant, { cls: string; label: string }> = {
 };
 
 export function StatusChip({ status }: { status: string }) {
-  const variant = (STYLES[status as Variant] ?? STYLES.pending);
+  const variant = STYLES[status as Variant] ?? STYLES.pending;
   return (
     <span className={`status-chip ${variant.cls}`}>
       <span className="dot" />

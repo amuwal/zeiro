@@ -21,11 +21,7 @@ export function Tabs({ inboxCount }: { inboxCount: number }) {
       {tabs.map((t) => {
         const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
         return (
-          <Link
-            key={t.href}
-            href={t.href}
-            className={`tab ${active ? 'active' : ''}`}
-          >
+          <Link key={t.href} href={t.href} className={`tab ${active ? 'active' : ''}`}>
             {t.label}
             {t.count !== undefined && <span className="tab-count">{t.count}</span>}
           </Link>

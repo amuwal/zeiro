@@ -1,12 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
-@import '../styles/tokens.css';
-@import '../styles/base.css';
-@import '../styles/buttons.css';
-@import '../styles/shell.css';
-@import '../styles/inbox.css';
-@import '../styles/detail.css';
-@import '../styles/cards.css';
-@import '../styles/knowledge.css';
-@import '../styles/analytics.css';
-@import '../styles/animations.css';
+@import "../styles/tokens.css";
+@import "../styles/base.css";
+@import "../styles/buttons.css";
+@import "../styles/shell.css";
+@import "../styles/inbox.css";
+@import "../styles/detail.css";
+@import "../styles/cards.css";
+@import "../styles/knowledge.css";
+@import "../styles/analytics.css";
+@import "../styles/animations.css";

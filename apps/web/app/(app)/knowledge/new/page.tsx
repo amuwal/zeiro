@@ -9,7 +9,9 @@ export default async function NewKnowledgePage() {
       <div className="kb-head">
         <div>
           <div className="kb-title">ナレッジを追加</div>
-          <div className="kb-sub">テキストまたは .eml をアップロード — 文単位で自動チャンク・埋め込み</div>
+          <div className="kb-sub">
+            テキストまたは .eml をアップロード — 文単位で自動チャンク・埋め込み
+          </div>
         </div>
         <Link href="/knowledge" className="btn btn-secondary">
           一覧へ戻る

@@ -9,7 +9,7 @@ type Params = { firmId: string };
 export async function POST(request: Request, { params }: { params: Promise<Params> }) {
   const { firmId } = await params;
   const channel = await getFirmChannel(firmId, 'line');
-  if (!channel || !channel.enabled) {
+  if (!channel?.enabled) {
     return NextResponse.json({ error: 'channel not configured' }, { status: 404 });
   }
   const config = parseLineConfig(channel.config);

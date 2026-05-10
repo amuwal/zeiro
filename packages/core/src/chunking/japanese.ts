@@ -22,6 +22,7 @@ export function chunkJapanese(input: string, opts: Partial<ChunkOptions> = {}): 
 
   for (let i = 0; i < sentences.length; i++) {
     const next = sentences[i];
+    if (next === undefined) continue;
     const wouldExceed = buffer.join('').length + next.length > maxChars;
 
     if (wouldExceed && buffer.length > 0) {
@@ -43,10 +44,11 @@ export function chunkJapanese(input: string, opts: Partial<ChunkOptions> = {}): 
 function splitSentences(text: string): string[] {
   const out: string[] = [];
   const re = /[^。．！？\n!?]+(?:[。．！？\n!?]+|$)/gu;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
+  let m = re.exec(text);
+  while (m !== null) {
     const piece = m[0];
     if (piece.trim().length > 0) out.push(piece);
+    m = re.exec(text);
   }
   return out;
 }

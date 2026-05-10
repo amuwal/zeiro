@@ -33,7 +33,9 @@ function Stat({
   return (
     <div className="kb-stat">
       <span className="lbl">{label}</span>
-      <span className="num" style={color ? { color } : undefined}>{value}</span>
+      <span className="num" style={color ? { color } : undefined}>
+        {value}
+      </span>
       <span className={`delta ${subClass ?? ''}`}>{sub}</span>
     </div>
   );

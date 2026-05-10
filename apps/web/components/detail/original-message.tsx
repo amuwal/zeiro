@@ -1,7 +1,13 @@
 import type { InquiryWithClient } from '@zeiro/db';
 import { formatFullJST } from '@/lib/format';
 
-export function OriginalMessage({ inquiry, firmInbound }: { inquiry: InquiryWithClient; firmInbound: string }) {
+export function OriginalMessage({
+  inquiry,
+  firmInbound,
+}: {
+  inquiry: InquiryWithClient;
+  firmInbound: string;
+}) {
   return (
     <div className="section">
       <div className="section-head">

@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import {
   flagKnowledgeChunk,
   recordAudit,
@@ -8,7 +9,6 @@ import {
 } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { randomUUID } from 'node:crypto';
 import { requireFirmContext } from '@/lib/firm-context';
 import { ingestKnowledge } from '@/lib/knowledge-ingest';
 

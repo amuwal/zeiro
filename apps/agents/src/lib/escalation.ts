@@ -1,8 +1,4 @@
-import {
-  ESCALATION_CONFIDENCE_THRESHOLD,
-  URGENT_KEYWORDS,
-  type TriageResult,
-} from '@zeiro/core';
+import { ESCALATION_CONFIDENCE_THRESHOLD, type TriageResult, URGENT_KEYWORDS } from '@zeiro/core';
 
 export type EscalationDecision = {
   mustEscalate: boolean;

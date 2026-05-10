@@ -1,9 +1,4 @@
-import {
-  findLatestSentBody,
-  getDraftByInquiry,
-  getInquiry,
-  recordAudit,
-} from '@zeiro/db';
+import { findLatestSentBody, getDraftByInquiry, getInquiry, recordAudit } from '@zeiro/db';
 import { ingestKnowledge } from '../knowledge-ingest';
 import { processDraft } from '../process-draft';
 import { inngest } from './client';

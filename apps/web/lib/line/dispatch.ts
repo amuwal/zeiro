@@ -16,7 +16,7 @@ export type LineDispatchResult = {
 
 export async function dispatchLine(input: Input): Promise<LineDispatchResult> {
   const channel = await getFirmChannel(input.firmId, 'line');
-  if (!channel || !channel.enabled) {
+  if (!channel?.enabled) {
     throw new Error(`firm ${input.firmId} has no enabled LINE channel`);
   }
   const config = parseLineConfig(channel.config);

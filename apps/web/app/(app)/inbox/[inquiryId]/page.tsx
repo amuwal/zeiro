@@ -40,14 +40,10 @@ export default async function InquiryDetailPage({ params }: { params: Promise<Pa
         primaryDurationMin={primaryDurationMin}
         preDraft={
           <>
-            {thread.length > 0 && (
-              <ThreadHistory thread={thread} currentInquiryId={inquiry.id} />
-            )}
+            {thread.length > 0 && <ThreadHistory thread={thread} currentInquiryId={inquiry.id} />}
             <OriginalMessage inquiry={inquiry} firmInbound={firm.inboundAddress} />
             <AiAnalysis inquiry={inquiry} />
-            {isEscalated && (
-              <EscalateBanner inquiryId={inquiry.id} reason={readReason(inquiry)} />
-            )}
+            {isEscalated && <EscalateBanner inquiryId={inquiry.id} reason={readReason(inquiry)} />}
           </>
         }
         postDraft={draft && <CitationList citations={draft.citations} />}

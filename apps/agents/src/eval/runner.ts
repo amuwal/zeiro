@@ -33,8 +33,10 @@ async function runCase(c: GoldenCase, firmId: string): Promise<CaseResult> {
 }
 
 async function runTriage(body: string): Promise<TriageResult> {
-  const { object } = await triageAgent.generate(body, { output: triageResultSchema });
-  return object;
+  const result = await triageAgent.generate(body, {
+    structuredOutput: { schema: triageResultSchema },
+  });
+  return triageResultSchema.parse(result.object);
 }
 
 function scoreCase(c: GoldenCase, result: DraftResult, durationMs: number): CaseResult {
@@ -95,6 +97,6 @@ function summarise(cases: CaseResult[]): EvalReport {
 }
 
 main().catch((e) => {
-  process.stderr.write(`${e instanceof Error ? e.stack ?? e.message : String(e)}\n`);
+  process.stderr.write(`${e instanceof Error ? (e.stack ?? e.message) : String(e)}\n`);
   process.exit(1);
 });

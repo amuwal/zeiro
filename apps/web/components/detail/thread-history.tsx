@@ -28,7 +28,7 @@ export function ThreadHistory({ thread, currentInquiryId }: Props) {
               </div>
               <div className="thread-row-subject">{inq.subject || '(件名なし)'}</div>
               <div className="thread-row-preview">{makePreview(inq.body, 100)}</div>
-              {inq.drafts.length > 0 && (
+              {inq.drafts[0] && (
                 <div className="thread-row-reply">
                   ↳ 返信: {inq.drafts[0].subject || '(下書き)'}
                 </div>

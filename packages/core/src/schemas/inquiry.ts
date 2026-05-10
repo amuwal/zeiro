@@ -26,11 +26,13 @@ export const incomingMessageSchema = z.object({
 });
 export type IncomingMessage = z.infer<typeof incomingMessageSchema>;
 
-export const inquiryStatusEnum = z.enum([
-  'pending',
-  'drafted',
-  'sent',
-  'rejected',
-  'escalated',
-]);
+export const inquiryStatusEnum = z.enum(['pending', 'drafted', 'sent', 'rejected', 'escalated']);
 export type InquiryStatus = z.infer<typeof inquiryStatusEnum>;
+
+export const webFormSubmissionSchema = z.object({
+  name: z.string().trim().min(1, '氏名を入力してください').max(200),
+  email: z.string().trim().toLowerCase().email('有効なメールアドレスを入力してください').max(255),
+  subject: z.string().trim().min(3, '件名は3文字以上で入力してください').max(300),
+  body: z.string().trim().min(10, '本文は10文字以上で入力してください').max(10_000),
+});
+export type WebFormSubmission = z.infer<typeof webFormSubmissionSchema>;

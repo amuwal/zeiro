@@ -32,7 +32,7 @@ export async function sendReply(input: SendInput): Promise<SendResult> {
   const [response] = await sgMail.send({
     to: input.to,
     from: input.from,
-    replyTo: input.replyTo,
+    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     subject: input.subject,
     text: input.body,
     headers,

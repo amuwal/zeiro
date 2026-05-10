@@ -3,23 +3,29 @@ const { useState: useStateInbox, useMemo: useMemoInbox } = React;
 
 function Sidebar({ filter, setFilter, category, setCategory, counts, escalationRate }) {
   const items = [
-    { id: "all", label: "受信トレイ", icon: "inbox", count: counts.all },
-    { id: "unread", label: "未対応", icon: "alert", count: counts.unread },
-    { id: "draft", label: "下書き済", icon: "edit", count: counts.draft },
-    { id: "escalated", label: "要レビュー", icon: "flag", count: counts.escalated },
-    { id: "sent", label: "送信済", icon: "check", count: counts.sent },
+    { id: 'all', label: '受信トレイ', icon: 'inbox', count: counts.all },
+    { id: 'unread', label: '未対応', icon: 'alert', count: counts.unread },
+    { id: 'draft', label: '下書き済', icon: 'edit', count: counts.draft },
+    { id: 'escalated', label: '要レビュー', icon: 'flag', count: counts.escalated },
+    { id: 'sent', label: '送信済', icon: 'check', count: counts.sent },
   ];
   const cats = [
-    { id: "all", label: "すべて" },
-    ...Object.values(CATEGORIES).map(c => ({ id: c.id, label: c.jp, color: c.color })),
+    { id: 'all', label: 'すべて' },
+    ...Object.values(CATEGORIES).map((c) => ({ id: c.id, label: c.jp, color: c.color })),
   ];
   return (
     <aside className="sidebar">
       <div className="side-section">
         <div className="side-label">フォルダ</div>
-        {items.map(it => (
-          <button key={it.id} className={`side-item ${filter === it.id ? "active" : ""}`} onClick={() => setFilter(it.id)}>
-            <span className="glyph"><Icon name={it.icon} size={14} /></span>
+        {items.map((it) => (
+          <button
+            key={it.id}
+            className={`side-item ${filter === it.id ? 'active' : ''}`}
+            onClick={() => setFilter(it.id)}
+          >
+            <span className="glyph">
+              <Icon name={it.icon} size={14} />
+            </span>
             <span>{it.label}</span>
             <span className="count">{it.count}</span>
           </button>
@@ -28,11 +34,19 @@ function Sidebar({ filter, setFilter, category, setCategory, counts, escalationR
 
       <div className="side-section">
         <div className="side-label">カテゴリ</div>
-        {cats.map(c => (
-          <button key={c.id} className={`side-item ${category === c.id ? "active" : ""}`} onClick={() => setCategory(c.id)}>
-            {c.color
-              ? <span className="swatch" style={{ background: c.color }} />
-              : <span className="glyph"><Icon name="filter" size={13} /></span>}
+        {cats.map((c) => (
+          <button
+            key={c.id}
+            className={`side-item ${category === c.id ? 'active' : ''}`}
+            onClick={() => setCategory(c.id)}
+          >
+            {c.color ? (
+              <span className="swatch" style={{ background: c.color }} />
+            ) : (
+              <span className="glyph">
+                <Icon name="filter" size={13} />
+              </span>
+            )}
             <span>{c.label}</span>
           </button>
         ))}
@@ -41,12 +55,16 @@ function Sidebar({ filter, setFilter, category, setCategory, counts, escalationR
       <div className="side-section">
         <div className="side-label">担当</div>
         <button className="side-item active">
-          <span className="glyph"><Icon name="user" size={13} /></span>
+          <span className="glyph">
+            <Icon name="user" size={13} />
+          </span>
           <span>佐藤 健一</span>
           <span className="count">8</span>
         </button>
         <button className="side-item">
-          <span className="glyph"><Icon name="users" size={13} /></span>
+          <span className="glyph">
+            <Icon name="users" size={13} />
+          </span>
           <span>所内全員</span>
           <span className="count">42</span>
         </button>
@@ -66,9 +84,11 @@ function Sidebar({ filter, setFilter, category, setCategory, counts, escalationR
           <span className="target" style={{ left: `32%` }} />
         </div>
         <div className="escalation-meta">
-          <span>{counts.escalated}件 / {counts.all}件</span>
-          <span style={{ color: escalationRate <= 37 ? "oklch(45% 0.10 150)" : "var(--urgent)" }}>
-            {escalationRate <= 37 ? "正常範囲" : "要調整"}
+          <span>
+            {counts.escalated}件 / {counts.all}件
+          </span>
+          <span style={{ color: escalationRate <= 37 ? 'oklch(45% 0.10 150)' : 'var(--urgent)' }}>
+            {escalationRate <= 37 ? '正常範囲' : '要調整'}
           </span>
         </div>
       </div>
@@ -78,11 +98,13 @@ function Sidebar({ filter, setFilter, category, setCategory, counts, escalationR
 
 function ConfidenceDots({ score }) {
   const filled = score >= 0.85 ? 4 : score >= 0.7 ? 3 : score >= 0.5 ? 2 : 1;
-  const cls = score < 0.7 ? "confidence low" : "confidence";
+  const cls = score < 0.7 ? 'confidence low' : 'confidence';
   return (
     <span className={cls}>
       <span className="conf-dots">
-        {[0,1,2,3].map(i => <i key={i} className={i < filled ? "on" : ""} />)}
+        {[0, 1, 2, 3].map((i) => (
+          <i key={i} className={i < filled ? 'on' : ''} />
+        ))}
       </span>
       {Math.round(score * 100)}
     </span>
@@ -91,20 +113,25 @@ function ConfidenceDots({ score }) {
 
 function StatusChip({ status }) {
   const map = {
-    draft:     { cls: "draft",     label: "下書き済" },
-    escalated: { cls: "escalate",  label: "要レビュー" },
-    sent:      { cls: "sent",      label: "送信済" },
-    pending:   { cls: "",          label: "未対応" },
+    draft: { cls: 'draft', label: '下書き済' },
+    escalated: { cls: 'escalate', label: '要レビュー' },
+    sent: { cls: 'sent', label: '送信済' },
+    pending: { cls: '', label: '未対応' },
   };
   const m = map[status] || map.pending;
-  return <span className={`status-chip ${m.cls}`}><span className="dot" />{m.label}</span>;
+  return (
+    <span className={`status-chip ${m.cls}`}>
+      <span className="dot" />
+      {m.label}
+    </span>
+  );
 }
 
 function InboxItem({ inq, selected, onClick }) {
   const cat = CATEGORIES[inq.category];
   return (
     <div
-      className={`inbox-item ${selected ? "selected" : ""} ${inq.unread ? "unread" : ""} ${inq.urgent ? "urgent" : ""}`}
+      className={`inbox-item ${selected ? 'selected' : ''} ${inq.unread ? 'unread' : ''} ${inq.urgent ? 'urgent' : ''}`}
       onClick={onClick}
     >
       <span className="item-cat" style={{ background: cat.color }} />
@@ -131,12 +158,12 @@ function InboxItem({ inq, selected, onClick }) {
 
 function InboxList({ inquiries, selectedId, onSelect, filter, category }) {
   const filtered = useMemoInbox(() => {
-    return inquiries.filter(inq => {
-      if (filter === "unread" && !inq.unread) return false;
-      if (filter === "draft" && inq.status !== "draft") return false;
-      if (filter === "escalated" && inq.status !== "escalated") return false;
-      if (filter === "sent" && inq.status !== "sent") return false;
-      if (category !== "all" && inq.category !== category) return false;
+    return inquiries.filter((inq) => {
+      if (filter === 'unread' && !inq.unread) return false;
+      if (filter === 'draft' && inq.status !== 'draft') return false;
+      if (filter === 'escalated' && inq.status !== 'escalated') return false;
+      if (filter === 'sent' && inq.status !== 'sent') return false;
+      if (category !== 'all' && inq.category !== category) return false;
       return true;
     });
   }, [inquiries, filter, category]);
@@ -147,7 +174,9 @@ function InboxList({ inquiries, selectedId, onSelect, filter, category }) {
         <div>
           <div className="inbox-title">受信トレイ</div>
         </div>
-        <div className="inbox-meta">{filtered.length} / {inquiries.length}</div>
+        <div className="inbox-meta">
+          {filtered.length} / {inquiries.length}
+        </div>
       </div>
       <div className="inbox-search">
         <Icon name="search" size={14} />
@@ -155,11 +184,23 @@ function InboxList({ inquiries, selectedId, onSelect, filter, category }) {
         <kbd>⌘K</kbd>
       </div>
       <div className="inbox-list anim-stagger" key={filter + category}>
-        {filtered.map(inq => (
-          <InboxItem key={inq.id} inq={inq} selected={inq.id === selectedId} onClick={() => onSelect(inq.id)} />
+        {filtered.map((inq) => (
+          <InboxItem
+            key={inq.id}
+            inq={inq}
+            selected={inq.id === selectedId}
+            onClick={() => onSelect(inq.id)}
+          />
         ))}
         {filtered.length === 0 && (
-          <div className="empty"><div><div className="ico"><Icon name="inbox" size={16} /></div>該当する問い合わせはありません</div></div>
+          <div className="empty">
+            <div>
+              <div className="ico">
+                <Icon name="inbox" size={16} />
+              </div>
+              該当する問い合わせはありません
+            </div>
+          </div>
         )}
       </div>
     </div>

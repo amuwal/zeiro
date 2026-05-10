@@ -24,7 +24,9 @@ export function LineChannelForm({ configured, enabled }: Props) {
           name="channelSecret"
           type="password"
           autoComplete="off"
-          placeholder={configured ? '••••• (設定済み — 変更時のみ入力)' : 'LINE Developers から取得'}
+          placeholder={
+            configured ? '••••• (設定済み — 変更時のみ入力)' : 'LINE Developers から取得'
+          }
           style={inputStyle}
         />
       </div>
@@ -38,7 +40,9 @@ export function LineChannelForm({ configured, enabled }: Props) {
           name="channelAccessToken"
           type="password"
           autoComplete="off"
-          placeholder={configured ? '••••• (設定済み — 変更時のみ入力)' : 'LINE Developers から取得'}
+          placeholder={
+            configured ? '••••• (設定済み — 変更時のみ入力)' : 'LINE Developers から取得'
+          }
           style={inputStyle}
         />
       </div>
@@ -48,12 +52,8 @@ export function LineChannelForm({ configured, enabled }: Props) {
         この LINE チャネルを有効化
       </label>
 
-      {state.error && (
-        <div style={{ color: 'var(--urgent)', fontSize: 12 }}>{state.error}</div>
-      )}
-      {state.ok && (
-        <div style={{ color: 'var(--positive)', fontSize: 12 }}>設定を保存しました</div>
-      )}
+      {state.error && <div style={{ color: 'var(--urgent)', fontSize: 12 }}>{state.error}</div>}
+      {state.ok && <div style={{ color: 'var(--positive)', fontSize: 12 }}>設定を保存しました</div>}
 
       <div>
         <button type="submit" className="btn btn-primary" disabled={pending}>

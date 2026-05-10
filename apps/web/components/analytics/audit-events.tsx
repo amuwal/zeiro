@@ -10,7 +10,12 @@ type Event = {
 const EVENTS: Event[] = [
   { icon: 'shield', title: 'テナント分離テスト', sub: '5/8 自動実行 · 通過', status: 'ok' },
   { icon: 'doc', title: '監査ログ整合性チェック', sub: '5/9 03:00 · 全件一致', status: 'ok' },
-  { icon: 'alert', title: 'マイナンバー検出（マスク済）', sub: '本日 3件 · 自動マスキング', status: 'ok' },
+  {
+    icon: 'alert',
+    title: 'マイナンバー検出（マスク済）',
+    sub: '本日 3件 · 自動マスキング',
+    status: 'ok',
+  },
   { icon: 'flag', title: '法改正フラグ更新', sub: '強制レビュー対象に変更', status: 'warn' },
 ];
 

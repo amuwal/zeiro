@@ -1,14 +1,23 @@
-import { getFirmChannel } from '@zeiro/db';
+import { getFirmChannel, listClients, listUnmatchedLineEvents } from '@zeiro/db';
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
 import { LineChannelForm } from '@/components/settings/line-channel-form';
+import { PendingLineLinks } from '@/components/settings/pending-line-links';
+import { WebChannelSection } from '@/components/settings/web-channel-section';
 import { requireFirmContext } from '@/lib/firm-context';
 
 export default async function SettingsPage() {
   const { firmId, role } = await requireFirmContext();
-  const channel = await getFirmChannel(firmId, 'line');
-  const webhookUrl = await buildWebhookUrl(firmId);
   const admin = role.toLowerCase().includes('admin');
+  const [channel, webChannel, baseUrl, pending, clients] = await Promise.all([
+    getFirmChannel(firmId, 'line'),
+    getFirmChannel(firmId, 'web'),
+    buildBaseUrl(),
+    admin ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
+    admin ? listClients(firmId) : Promise.resolve([]),
+  ]);
+  const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
+  const contactUrl = `${baseUrl}/contact/${firmId}`;
 
   return (
     <div className="kb-pane anim-stagger">
@@ -51,7 +60,9 @@ export default async function SettingsPage() {
             <li>Channel の Webhook 設定で下記 URL を貼り付け、Use webhook を ON</li>
             <li>「Verify」をクリックして到達確認 (200 が返れば OK)</li>
             <li>Basic settings タブから Channel Secret をコピー → 下のフォームに貼り付け</li>
-            <li>Messaging API タブで long-lived Channel Access Token を発行 → 下のフォームに貼り付け</li>
+            <li>
+              Messaging API タブで long-lived Channel Access Token を発行 → 下のフォームに貼り付け
+            </li>
             <li>「有効化」をオンにして保存</li>
           </ol>
         </details>
@@ -72,7 +83,9 @@ export default async function SettingsPage() {
             <span style={{ fontSize: 11, color: 'var(--muted-2)', fontFamily: 'var(--font-mono)' }}>
               WEBHOOK URL
             </span>
-            <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, overflowWrap: 'anywhere' }}>
+            <code
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12, overflowWrap: 'anywhere' }}
+            >
               {webhookUrl}
             </code>
           </div>
@@ -89,15 +102,40 @@ export default async function SettingsPage() {
           </div>
         )}
       </section>
+
+      {admin && <WebChannelSection enabled={webChannel?.enabled ?? false} shareUrl={contactUrl} />}
+
+      {admin && (
+        <section
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 14,
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <header>
+            <h2
+              style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, margin: 0 }}
+            >
+              LINE 未紐付けユーザー
+            </h2>
+            <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>
+              事務所宛に LINE で連絡してきたが、まだ顧問先に紐付いていないユーザーです。
+              紐付けると以降の問い合わせが正しい顧問先のスレッドに集約されます。
+            </p>
+          </header>
+          <PendingLineLinks pending={pending} clients={clients} />
+        </section>
+      )}
     </div>
   );
 }
 
-function ChannelStatus({
-  channel,
-}: {
-  channel: { enabled: boolean; createdAt: Date } | null;
-}) {
+function ChannelStatus({ channel }: { channel: { enabled: boolean; createdAt: Date } | null }) {
   if (!channel) {
     return (
       <div style={{ color: 'var(--muted)', fontSize: 12 }}>
@@ -116,9 +154,9 @@ function ChannelStatus({
   );
 }
 
-async function buildWebhookUrl(firmId: string): Promise<string> {
+async function buildBaseUrl(): Promise<string> {
   const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:6001';
   const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
-  return `${proto}://${host}/api/channels/line/${firmId}`;
+  return `${proto}://${host}`;
 }

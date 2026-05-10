@@ -14,11 +14,7 @@ export default async function InboxLayout({ children }: { children: ReactNode })
   ]);
   return (
     <div className="workspace">
-      <InboxSidebar
-        counts={counts}
-        currentUser={{ id: me.id, name: me.name }}
-        myCount={myCount}
-      />
+      <InboxSidebar counts={counts} currentUser={{ id: me.id, name: me.name }} myCount={myCount} />
       <InquiryList items={inquiries} currentUserId={userId} />
       {children}
     </div>

@@ -1,4 +1,4 @@
-import { EMBEDDING_MODEL, chunkJapanese } from '@zeiro/core';
+import { chunkJapanese, EMBEDDING_MODEL } from '@zeiro/core';
 import { insertKnowledgeChunk } from '@zeiro/db';
 import { extractEmailText } from '@zeiro/email';
 import { embedDocuments } from './embeddings';
@@ -24,11 +24,14 @@ export async function ingestKnowledge(input: IngestInput): Promise<IngestResult>
 
   const ingestedAt = new Date().toISOString();
   for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const embedding = embeddings[i];
+    if (!chunk || !embedding) continue;
     await insertKnowledgeChunk({
       firmId: input.firmId,
       source: input.source,
-      content: chunks[i].text,
-      embedding: embeddings[i],
+      content: chunk.text,
+      embedding,
       metadata: {
         documentId: input.documentId,
         documentVersion: '1',

@@ -22,7 +22,7 @@ export function KpiCard(k: KpiInput) {
   return (
     <div className="kpi">
       <div className="kpi-lbl">{k.label}</div>
-      <Sparkline values={k.spark} color={k.sparkColor} />
+      <Sparkline values={k.spark} {...(k.sparkColor ? { color: k.sparkColor } : {})} />
       <div className="kpi-val">
         {formatted}
         <span className="unit">{k.unit}</span>

@@ -1,9 +1,5 @@
 import { maskMyNumber } from '@zeiro/core';
-import {
-  createInquiry,
-  findClientByLineUserId,
-  recordAudit,
-} from '@zeiro/db';
+import { createInquiry, findClientByLineUserId, recordAudit } from '@zeiro/db';
 import { inngest } from '@/lib/inngest/client';
 import type { LineEvent } from './parse';
 

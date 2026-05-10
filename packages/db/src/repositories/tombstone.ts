@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { getPrisma } from '../server';
 
 const TOMBSTONE_TEXT = '[削除済み]';

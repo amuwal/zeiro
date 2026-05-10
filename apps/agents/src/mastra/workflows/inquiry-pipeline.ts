@@ -3,11 +3,7 @@ import { triageResultSchema } from '@zeiro/core';
 import { z } from 'zod';
 import { draftReply } from '../../lib/draft-reply';
 import { triageAgent } from '../agents/triage';
-import {
-  type PipelineInput,
-  pipelineInputSchema,
-  pipelineOutputSchema,
-} from '../schemas';
+import { type PipelineInput, pipelineInputSchema, pipelineOutputSchema } from '../schemas';
 
 const triageOutputSchema = z.object({
   input: pipelineInputSchema,
@@ -19,10 +15,10 @@ const triageStep = createStep({
   inputSchema: pipelineInputSchema,
   outputSchema: triageOutputSchema,
   execute: async ({ inputData }: { inputData: PipelineInput }) => {
-    const { object } = await triageAgent.generate(inputData.body, {
-      output: triageResultSchema,
+    const result = await triageAgent.generate(inputData.body, {
+      structuredOutput: { schema: triageResultSchema },
     });
-    return { input: inputData, triage: object };
+    return { input: inputData, triage: triageResultSchema.parse(result.object) };
   },
 });
 

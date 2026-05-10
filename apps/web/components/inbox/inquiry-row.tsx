@@ -18,12 +18,7 @@ export function InquiryRow({ inquiry, selected }: Props) {
   const confidence = readConfidence(inquiry);
   const category = readCategory(inquiry);
 
-  const classes = [
-    'inbox-item',
-    selected && 'selected',
-    unread && 'unread',
-    urgent && 'urgent',
-  ]
+  const classes = ['inbox-item', selected && 'selected', unread && 'unread', urgent && 'urgent']
     .filter(Boolean)
     .join(' ');
 

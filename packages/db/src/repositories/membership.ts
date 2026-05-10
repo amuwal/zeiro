@@ -1,4 +1,4 @@
-import { Prisma, type Membership } from '@prisma/client';
+import { type Membership, Prisma } from '@prisma/client';
 import { getPrisma } from '../server';
 
 type UpsertInput = {

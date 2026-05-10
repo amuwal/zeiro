@@ -145,7 +145,7 @@
   flex-shrink: 0;
 }
 .section-head::after {
-  content: '';
+  content: "";
   flex: 1 1 12px;
   min-width: 12px;
   height: 1px;
