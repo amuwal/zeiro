@@ -1,4 +1,4 @@
-import { getDraftByInquiry, getFirm, getInquiry } from '@zeiro/db';
+import { getDraftByInquiry, getFirm, getInquiry, walkThread } from '@zeiro/db';
 import { notFound } from 'next/navigation';
 import { AiAnalysis } from '@/components/detail/ai-analysis';
 import { CitationList } from '@/components/detail/citation-list';
@@ -6,6 +6,7 @@ import { DetailHeader } from '@/components/detail/detail-header';
 import { DraftReviewForm } from '@/components/detail/draft-review-form';
 import { EscalateBanner } from '@/components/detail/escalate-banner';
 import { OriginalMessage } from '@/components/detail/original-message';
+import { ThreadHistory } from '@/components/detail/thread-history';
 import { requireFirmContext } from '@/lib/firm-context';
 import { readReason } from '@/lib/inquiry-derived';
 
@@ -15,10 +16,11 @@ export default async function InquiryDetailPage({ params }: { params: Promise<Pa
   const { inquiryId } = await params;
   const { firmId } = await requireFirmContext();
 
-  const [inquiry, draft, firm] = await Promise.all([
+  const [inquiry, draft, firm, thread] = await Promise.all([
     getInquiry(firmId, inquiryId),
     getDraftByInquiry(inquiryId),
     getFirm(firmId),
+    walkThread(firmId, inquiryId),
   ]);
 
   if (!inquiry) notFound();
@@ -38,6 +40,9 @@ export default async function InquiryDetailPage({ params }: { params: Promise<Pa
         primaryDurationMin={primaryDurationMin}
         preDraft={
           <>
+            {thread.length > 0 && (
+              <ThreadHistory thread={thread} currentInquiryId={inquiry.id} />
+            )}
             <OriginalMessage inquiry={inquiry} firmInbound={firm.inboundAddress} />
             <AiAnalysis inquiry={inquiry} />
             {isEscalated && (

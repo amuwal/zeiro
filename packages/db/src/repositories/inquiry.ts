@@ -11,6 +11,7 @@ type InquiryInsert = {
   body: string;
   headers?: InquiryHeaders;
   assignedToId?: string | null;
+  parentInquiryId?: string | null;
 };
 
 export type CreateInquiryResult =
@@ -30,6 +31,7 @@ export async function createInquiry(input: InquiryInsert): Promise<CreateInquiry
         body: input.body,
         headers: (input.headers ?? {}) as Prisma.InputJsonValue,
         assignedToId: input.assignedToId ?? null,
+        parentInquiryId: input.parentInquiryId ?? null,
       },
       select: { id: true },
     });
@@ -117,3 +119,31 @@ export function getMyInquiryCount(firmId: string, userId: string): Promise<numbe
     where: { firmId, assignedToId: userId },
   });
 }
+
+export async function walkThread(firmId: string, anchorInquiryId: string) {
+  const ids = await getPrisma().$queryRaw<{ id: string }[]>`
+    WITH RECURSIVE thread AS (
+      SELECT id, parent_inquiry_id FROM inquiries WHERE id = ${anchorInquiryId}::uuid
+      UNION
+      SELECT i.id, i.parent_inquiry_id FROM inquiries i
+      JOIN thread t ON i.id = t.parent_inquiry_id OR i.parent_inquiry_id = t.id
+    )
+    SELECT id FROM thread
+  `;
+  if (ids.length <= 1) return [];
+
+  return getPrisma().inquiry.findMany({
+    where: { firmId, id: { in: ids.map((r) => r.id) } },
+    include: {
+      client: { select: { name: true, primaryEmail: true } },
+      drafts: {
+        select: { id: true, subject: true, model: true, createdAt: true, metadata: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+    orderBy: { receivedAt: 'asc' },
+  });
+}
+
+export type ThreadInquiry = Awaited<ReturnType<typeof walkThread>>[number];

@@ -76,27 +76,31 @@ model Client {
 }
 
 model Inquiry {
-  id           String   @id @default(uuid()) @db.Uuid
-  firmId       String   @map("firm_id") @db.Uuid
-  clientId     String   @map("client_id") @db.Uuid
-  assignedToId String?  @map("assigned_to_id") @db.Uuid
-  messageId    String   @map("message_id")
-  receivedAt   DateTime @map("received_at") @db.Timestamptz()
-  subject      String
-  body         String
-  status       String   @default("pending")
-  analysis     Json     @default("{}")
-  headers      Json     @default("{}")
+  id              String   @id @default(uuid()) @db.Uuid
+  firmId          String   @map("firm_id") @db.Uuid
+  clientId        String   @map("client_id") @db.Uuid
+  assignedToId    String?  @map("assigned_to_id") @db.Uuid
+  parentInquiryId String?  @map("parent_inquiry_id") @db.Uuid
+  messageId       String   @map("message_id")
+  receivedAt      DateTime @map("received_at") @db.Timestamptz()
+  subject         String
+  body            String
+  status          String   @default("pending")
+  analysis        Json     @default("{}")
+  headers         Json     @default("{}")
 
-  firm       Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  client     Client       @relation(fields: [clientId], references: [id])
-  assignedTo User?        @relation("InquiryAssignment", fields: [assignedToId], references: [id])
-  drafts     Draft[]
-  audits     AuditEvent[]
+  firm           Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client         Client       @relation(fields: [clientId], references: [id])
+  assignedTo     User?        @relation("InquiryAssignment", fields: [assignedToId], references: [id])
+  parentInquiry  Inquiry?     @relation("InquiryThread", fields: [parentInquiryId], references: [id])
+  childInquiries Inquiry[]    @relation("InquiryThread")
+  drafts         Draft[]
+  audits         AuditEvent[]
 
   @@unique([firmId, messageId])
   @@index([firmId, receivedAt(sort: Desc)])
   @@index([firmId, assignedToId])
+  @@index([parentInquiryId])
   @@map("inquiries")
 }
 

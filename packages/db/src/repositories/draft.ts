@@ -75,6 +75,18 @@ export async function patchDraftMetadata(
 
 type DraftRef = { id: string; inquiryId: string; deliveredAt: string | null };
 
+export async function findDraftByOutboundMessageId(
+  outboundMessageId: string,
+): Promise<{ id: string; inquiryId: string } | null> {
+  const rows = await getPrisma().$queryRaw<{ id: string; inquiry_id: string }[]>`
+    SELECT id, inquiry_id FROM drafts
+    WHERE metadata->>'outboundMessageId' = ${outboundMessageId}
+    LIMIT 1
+  `;
+  const row = rows[0];
+  return row ? { id: row.id, inquiryId: row.inquiry_id } : null;
+}
+
 export async function findDraftBySgMessageId(sgMessageId: string): Promise<DraftRef | null> {
   const rows = await getPrisma().$queryRaw<
     { id: string; inquiry_id: string; metadata: Record<string, unknown> | null }[]

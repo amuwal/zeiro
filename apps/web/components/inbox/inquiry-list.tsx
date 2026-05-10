@@ -2,7 +2,7 @@
 
 import type { InquiryRow as InquiryRowData } from '@zeiro/db';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { readCategory } from '@/lib/inquiry-derived';
 import { InquiryRow } from './inquiry-row';
@@ -25,15 +25,36 @@ export function InquiryList({ items, currentUserId }: Props) {
   const assignee = params.get('assignee') ?? 'me';
   const selectedId = pathname.startsWith('/inbox/') ? pathname.split('/')[2] : null;
 
+  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
+        setQuery('');
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const filtered = useMemo(() => {
     const wantedStatus = FILTER_TO_STATUS[filter] ?? null;
+    const needle = query.trim().toLowerCase();
     return items.filter((inq) => {
       if (wantedStatus && inq.status !== wantedStatus) return false;
       if (category !== 'all' && readCategory(inq) !== category) return false;
       if (assignee === 'me' && inq.assignedToId !== currentUserId) return false;
+      if (needle && !matchesQuery(inq, needle)) return false;
       return true;
     });
-  }, [items, filter, category, assignee, currentUserId]);
+  }, [items, filter, category, assignee, currentUserId, query]);
 
   return (
     <div className="inbox-col">
@@ -45,7 +66,12 @@ export function InquiryList({ items, currentUserId }: Props) {
       </div>
       <div className="inbox-search">
         <Icon name="search" size={14} />
-        <input placeholder="顧問先・件名・本文を検索…" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="顧問先・件名・本文を検索…"
+        />
         <kbd>⌘K</kbd>
       </div>
       <div className="inbox-list anim-stagger" key={`${filter}-${category}-${assignee}`}>
@@ -64,5 +90,14 @@ export function InquiryList({ items, currentUserId }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+function matchesQuery(inq: InquiryRowData, needle: string): boolean {
+  return (
+    inq.subject.toLowerCase().includes(needle) ||
+    inq.body.toLowerCase().includes(needle) ||
+    inq.client.name.toLowerCase().includes(needle) ||
+    inq.client.primaryEmail.toLowerCase().includes(needle)
   );
 }

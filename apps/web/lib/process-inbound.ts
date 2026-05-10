@@ -1,7 +1,8 @@
-import { maskMyNumber } from '@zeiro/core';
+import { type InquiryHeaders, maskMyNumber } from '@zeiro/core';
 import {
   createInquiry,
   findClientByEmail,
+  findDraftByOutboundMessageId,
   findFirmByInboundAddress,
   recordAudit,
 } from '@zeiro/db';
@@ -33,6 +34,7 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
   }
 
   const { masked: maskedBody, redactionCount } = maskMyNumber(message.body);
+  const parentInquiryId = await findParentInquiryId(message.headers);
 
   const insert = await createInquiry({
     firmId: firm.id,
@@ -43,6 +45,7 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
     body: maskedBody,
     headers: message.headers,
     assignedToId: client.assignedTaxAccountantId,
+    parentInquiryId,
   });
 
   await recordAudit({
@@ -50,7 +53,11 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
     actorId: SYSTEM_ACTOR,
     inquiryId: insert.id,
     action: 'inquiry.received',
-    metadata: { messageId: message.messageId, piiRedactions: redactionCount },
+    metadata: {
+      messageId: message.messageId,
+      piiRedactions: redactionCount,
+      parentInquiryId,
+    },
   });
 
   if (insert.kind === 'duplicate') return { kind: 'duplicate', inquiryId: insert.id };
@@ -62,4 +69,16 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
   });
 
   return { kind: 'queued', inquiryId: insert.id };
+}
+
+async function findParentInquiryId(headers: InquiryHeaders | undefined): Promise<string | null> {
+  if (!headers) return null;
+  const candidates = [headers.inReplyTo, ...headers.references].filter(
+    (s): s is string => typeof s === 'string' && s.length > 0,
+  );
+  for (const messageId of candidates) {
+    const draft = await findDraftByOutboundMessageId(messageId);
+    if (draft) return draft.inquiryId;
+  }
+  return null;
 }
