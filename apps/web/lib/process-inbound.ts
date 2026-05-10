@@ -7,6 +7,7 @@ import {
   recordAudit,
 } from '@zeiro/db';
 import type { ParsedMessage } from '@zeiro/email';
+import { parseInboundAttachments } from './inbound-attachments';
 import { inngest } from './inngest/client';
 
 const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
@@ -33,7 +34,9 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
     return { kind: 'unmatched_client', firmId: firm.id };
   }
 
-  const { masked: maskedBody, redactionCount } = maskMyNumber(message.body);
+  const attachmentSummary = await parseInboundAttachments(message.attachments);
+  const combinedBody = message.body + attachmentSummary.appendedText;
+  const { masked: maskedBody, redactionCount } = maskMyNumber(combinedBody);
   const parentInquiryId = await findParentInquiryId(message.headers);
 
   const insert = await createInquiry({
@@ -57,6 +60,11 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
       messageId: message.messageId,
       piiRedactions: redactionCount,
       parentInquiryId,
+      attachments: {
+        parsed: attachmentSummary.parsed,
+        skipped: attachmentSummary.skipped,
+        appendedChars: attachmentSummary.appendedText.length,
+      },
     },
   });
 

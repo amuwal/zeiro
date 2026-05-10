@@ -2,51 +2,65 @@ import { extractEmailText } from '@zeiro/email';
 import mammoth from 'mammoth';
 import { extractText } from 'unpdf';
 
+export type ParsedKind = 'text' | 'email' | 'pdf' | 'docx';
+
 export type ParsedDocument = {
   text: string;
-  metadata: { kind: 'text' | 'email' | 'pdf' | 'docx'; filename?: string; pages?: number };
+  metadata: { kind: ParsedKind; filename?: string; pages?: number };
+};
+
+export type ParseInput = {
+  buffer: Buffer;
+  filename: string;
+  mimetype?: string;
 };
 
 const TEXT_EXTENSIONS = new Set(['txt', 'md', 'markdown']);
 const EMAIL_EXTENSIONS = new Set(['eml', 'mbox']);
-const PDF_EXTENSIONS = new Set(['pdf']);
-const DOCX_EXTENSIONS = new Set(['docx']);
 
-export async function parseKnowledgeFile(file: File): Promise<ParsedDocument> {
-  const ext = filenameExtension(file.name);
-  const buffer = Buffer.from(await file.arrayBuffer());
+export async function parseDocument(input: ParseInput): Promise<ParsedDocument> {
+  const ext = filenameExtension(input.filename);
+  const mimetype = input.mimetype ?? '';
 
-  if (PDF_EXTENSIONS.has(ext) || file.type === 'application/pdf') {
-    const result = await extractText(new Uint8Array(buffer), { mergePages: true });
+  if (ext === 'pdf' || mimetype === 'application/pdf') {
+    const result = await extractText(new Uint8Array(input.buffer), { mergePages: true });
     return {
       text: result.text,
-      metadata: { kind: 'pdf', filename: file.name, pages: result.totalPages },
+      metadata: { kind: 'pdf', filename: input.filename, pages: result.totalPages },
     };
   }
 
   if (
-    DOCX_EXTENSIONS.has(ext) ||
-    file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ext === 'docx' ||
+    mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ) {
-    const result = await mammoth.extractRawText({ buffer });
+    const result = await mammoth.extractRawText({ buffer: input.buffer });
     return {
       text: result.value,
-      metadata: { kind: 'docx', filename: file.name },
+      metadata: { kind: 'docx', filename: input.filename },
     };
   }
 
-  if (EMAIL_EXTENSIONS.has(ext) || file.type === 'message/rfc822') {
-    const text = await extractEmailText(buffer.toString('utf-8'));
-    return { text, metadata: { kind: 'email', filename: file.name } };
+  if (EMAIL_EXTENSIONS.has(ext) || mimetype === 'message/rfc822') {
+    const text = await extractEmailText(input.buffer.toString('utf-8'));
+    return { text, metadata: { kind: 'email', filename: input.filename } };
   }
 
-  if (TEXT_EXTENSIONS.has(ext) || file.type.startsWith('text/')) {
-    return { text: buffer.toString('utf-8'), metadata: { kind: 'text', filename: file.name } };
+  if (TEXT_EXTENSIONS.has(ext) || mimetype.startsWith('text/')) {
+    return {
+      text: input.buffer.toString('utf-8'),
+      metadata: { kind: 'text', filename: input.filename },
+    };
   }
 
   throw new ParserError(
-    `対応していないファイル形式です: ${ext || file.type || '(unknown)'}。 .pdf / .docx / .txt / .md / .eml に対応しています。`,
+    `対応していないファイル形式です: ${ext || mimetype || '(unknown)'}。 .pdf / .docx / .txt / .md / .eml に対応しています。`,
   );
+}
+
+export async function parseKnowledgeFile(file: File): Promise<ParsedDocument> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return parseDocument({ buffer, filename: file.name, mimetype: file.type });
 }
 
 export class ParserError extends Error {
