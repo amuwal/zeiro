@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "PORT=6002 mastra dev",
-    "build": "mastra build",
-    "start": "node .mastra/output/index.mjs",
+    "dev": "PORT=6002 tsx watch src/server.ts",
+    "build": "echo 'no build step (running via tsx in dev/prod)'",
+    "start": "PORT=6002 tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "eval": "tsx src/eval/runner.ts"
   },
@@ -15,6 +15,7 @@
     "@ai-sdk/google": "^3.0.0",
     "@ai-sdk/openai": "^3.0.0",
     "@anthropic-ai/sdk": "^0.95.1",
+    "@hono/node-server": "^1.19.14",
     "@mastra/core": "^1.8.1",
     "@mastra/langfuse": "^1.2.5",
     "@mastra/observability": "^1.11.1",
@@ -25,6 +26,8 @@
     "@zeiro/db": "workspace:*",
     "@zeiro/email": "workspace:*",
     "ai": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.18",
     "zod": "^4.0.0"
   },
   "devDependencies": {

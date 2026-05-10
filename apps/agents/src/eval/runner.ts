@@ -1,3 +1,4 @@
+import '../lib/env-loader';
 import '../lib/sentry';
 import type { DraftResult, TriageResult } from '@zeiro/core';
 import { triageResultSchema } from '@zeiro/core';

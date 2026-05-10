@@ -1,28 +1,11 @@
 'use server';
 
-import { type ClientSearchHit, searchClients, tombstoneClient } from '@zeiro/db';
+import { searchClients, tombstoneClient } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireFirmContext } from '@/lib/firm-context';
 import { isAdminRole } from '@/lib/team';
-
-export type TombstoneSearchState =
-  | { status: 'idle' }
-  | { status: 'results'; query: string; results: ClientSearchHit[] }
-  | { status: 'error'; message: string };
-
-export type TombstoneExecuteState =
-  | { status: 'idle' }
-  | {
-      status: 'success';
-      clientId: string;
-      tombstonedInquiries: number;
-      tombstonedDrafts: number;
-    }
-  | { status: 'error'; message: string };
-
-export const initialSearchState: TombstoneSearchState = { status: 'idle' };
-export const initialExecuteState: TombstoneExecuteState = { status: 'idle' };
+import type { TombstoneExecuteState, TombstoneSearchState } from './tombstone-state';
 
 const searchSchema = z.object({
   query: z.string().trim().min(1, '検索キーワードを入力してください').max(255),

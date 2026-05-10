@@ -1,7 +1,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import { initialTeamState, inviteMember } from '@/app/(app)/settings/team-actions';
+import { inviteMember } from '@/app/(app)/settings/team-actions';
+import { initialTeamState } from '@/app/(app)/settings/team-state';
 
 export function InviteMemberForm() {
   const [state, action, pending] = useActionState(inviteMember, initialTeamState);

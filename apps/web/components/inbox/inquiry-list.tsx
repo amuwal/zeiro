@@ -76,7 +76,12 @@ export function InquiryList({ items, currentUserId }: Props) {
       </div>
       <div className="inbox-list anim-stagger" key={`${filter}-${category}-${assignee}`}>
         {filtered.map((inq) => (
-          <InquiryRow key={inq.id} inquiry={inq} selected={inq.id === selectedId} />
+          <InquiryRow
+            key={inq.id}
+            inquiry={inq}
+            selected={inq.id === selectedId}
+            query={params.toString()}
+          />
         ))}
         {filtered.length === 0 && (
           <div className="empty">

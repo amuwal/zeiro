@@ -18,20 +18,21 @@ const langfuseExporters =
 
 const observabilityConfig =
   langfuseExporters.length > 0
-    ? {
-        observability: new Observability({
-          configs: {
-            langfuse: {
-              serviceName: 'zeiro-agents',
-              exporters: langfuseExporters,
-            },
+    ? new Observability({
+        configs: {
+          langfuse: {
+            serviceName: 'zeiro-agents',
+            exporters: langfuseExporters,
           },
-        }),
-      }
-    : {};
+        },
+      })
+    : null;
 
 export const mastra = new Mastra({
   agents: { triageAgent },
   workflows: { inquiryPipeline },
-  ...observabilityConfig,
+  ...(observabilityConfig ? { observability: observabilityConfig } : {}),
+  bundler: {
+    externals: true,
+  },
 });

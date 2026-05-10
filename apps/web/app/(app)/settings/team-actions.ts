@@ -5,6 +5,7 @@ import { recordAudit } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { ensureNotLastAdmin, extractClerkError, requireAdminFirm } from '@/lib/team-guard';
+import type { TeamActionState } from './team-state';
 
 const clerkRoleEnum = z.enum(['org:admin', 'org:member']);
 
@@ -21,13 +22,6 @@ const memberOpSchema = z.object({
 const invitationOpSchema = z.object({
   invitationId: z.string().trim().min(1),
 });
-
-export type TeamActionState =
-  | { status: 'idle' }
-  | { status: 'success'; message: string }
-  | { status: 'error'; message: string };
-
-export const initialTeamState: TeamActionState = { status: 'idle' };
 
 export async function inviteMember(
   _prev: TeamActionState,

@@ -14,7 +14,7 @@ import { TeamManagementSection } from '@/components/settings/team-management-sec
 import { TombstoneSection } from '@/components/settings/tombstone-section';
 import { WebChannelSection } from '@/components/settings/web-channel-section';
 import { requireFirmContext } from '@/lib/firm-context';
-import { listPendingInvitations } from '@/lib/team';
+import { listPendingInvitations } from '@/lib/team-server';
 
 export default async function SettingsPage() {
   const { firmId, role } = await requireFirmContext();

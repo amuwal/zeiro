@@ -1,21 +1,31 @@
-import { PrismaClient } from '@prisma/client';
+import { getPrisma } from '../src/server';
 import { CLIENTS, FIRM, INQUIRIES, type InquirySpec, KNOWLEDGE } from './fixtures';
 
-const prisma = new PrismaClient();
+const prisma = getPrisma();
 
 async function main() {
   const clerkOrgId = process.env.SEED_LINK_TO_CLERK_ORG?.trim() || null;
+  const clerkUserId = process.env.SEED_LINK_TO_CLERK_USER?.trim() || null;
+  const seedUserEmail = process.env.SEED_USER_EMAIL?.trim() || null;
+  const seedUserName = process.env.SEED_USER_NAME?.trim() || 'Dev User';
+  const seedUserRole = process.env.SEED_USER_ROLE?.trim() || 'org:admin';
 
-  const firm = await prisma.firm.upsert({
-    where: { inboundAddress: FIRM.inboundAddress },
-    update: { name: FIRM.name, clerkOrgId },
-    create: {
-      name: FIRM.name,
-      inboundAddress: FIRM.inboundAddress,
-      region: FIRM.region,
-      clerkOrgId,
-    },
-  });
+  const firm = await resolveFirm(clerkOrgId);
+
+  if (clerkUserId && seedUserEmail) {
+    const user = await prisma.user.upsert({
+      where: { clerkUserId },
+      update: { email: seedUserEmail, name: seedUserName },
+      create: { clerkUserId, email: seedUserEmail, name: seedUserName },
+    });
+    await prisma.membership.upsert({
+      where: { userId_firmId: { userId: user.id, firmId: firm.id } },
+      update: { role: seedUserRole },
+      create: { userId: user.id, firmId: firm.id, role: seedUserRole },
+    });
+    // biome-ignore lint/suspicious/noConsole: seed script output
+    console.log(`linked Clerk user ${clerkUserId} as ${seedUserRole} of firm`);
+  }
 
   const clientByEmail = new Map<string, string>();
   for (const c of CLIENTS) {
@@ -49,6 +59,35 @@ async function main() {
     // biome-ignore lint/suspicious/noConsole: seed script output
     console.log('to attach this seed firm to your Clerk org.');
   }
+  if (!clerkUserId) {
+    // biome-ignore lint/suspicious/noConsole: seed script output
+    console.log(
+      'no Clerk user linked. Set SEED_LINK_TO_CLERK_USER + SEED_USER_EMAIL to provision a membership without webhooks.',
+    );
+  }
+}
+
+async function resolveFirm(clerkOrgId: string | null) {
+  if (clerkOrgId) {
+    const existing = await prisma.firm.findUnique({ where: { clerkOrgId } });
+    if (existing) {
+      // biome-ignore lint/suspicious/noConsole: seed script output
+      console.log(
+        `attaching demo data to existing firm "${existing.name}" (${existing.inboundAddress})`,
+      );
+      return existing;
+    }
+  }
+  return prisma.firm.upsert({
+    where: { inboundAddress: FIRM.inboundAddress },
+    update: { name: FIRM.name, clerkOrgId },
+    create: {
+      name: FIRM.name,
+      inboundAddress: FIRM.inboundAddress,
+      region: FIRM.region,
+      clerkOrgId,
+    },
+  });
 }
 
 async function upsertInquiry(firmId: string, clientByEmail: Map<string, string>, inq: InquirySpec) {

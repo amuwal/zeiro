@@ -3,6 +3,9 @@ import { env } from '@/lib/env';
 import { applyEvents, readSignatureHeaders, verifySignature } from '@/lib/sendgrid-events';
 
 export async function POST(request: Request) {
+  if (!env.SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY) {
+    return NextResponse.json({ error: 'sendgrid not configured' }, { status: 503 });
+  }
   const rawBody = await request.text();
   const headers = readSignatureHeaders(request.headers);
   if (!headers) return NextResponse.json({ error: 'missing signature' }, { status: 401 });

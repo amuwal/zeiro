@@ -1,11 +1,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import {
-  initialWebFormState,
-  submitContactInquiry,
-  type WebFormState,
-} from '@/app/contact/[firmId]/actions';
+import { submitContactInquiry } from '@/app/contact/[firmId]/actions';
+import { initialWebFormState, type WebFormState } from '@/app/contact/[firmId]/state';
 
 export function WebContactForm({ firmId }: { firmId: string }) {
   const action = submitContactInquiry.bind(null, firmId);

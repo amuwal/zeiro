@@ -4,6 +4,7 @@ import { AiAnalysis } from '@/components/detail/ai-analysis';
 import { CitationList } from '@/components/detail/citation-list';
 import { DetailHeader } from '@/components/detail/detail-header';
 import { DraftReviewForm } from '@/components/detail/draft-review-form';
+import { DraftingPoller } from '@/components/detail/drafting-poller';
 import { EscalateBanner } from '@/components/detail/escalate-banner';
 import { OriginalMessage } from '@/components/detail/original-message';
 import { ThreadHistory } from '@/components/detail/thread-history';
@@ -26,12 +27,14 @@ export default async function InquiryDetailPage({ params }: { params: Promise<Pa
   if (!inquiry) notFound();
 
   const isEscalated = inquiry.status === 'escalated';
+  const isPending = inquiry.status === 'pending';
   const primaryDurationMin = draft
     ? (draft.createdAt.getTime() - inquiry.receivedAt.getTime()) / 60_000
     : null;
 
   return (
     <section className="detail-col" key={inquiry.id}>
+      {isPending && <DraftingPoller />}
       <DetailHeader inquiry={inquiry} />
       <DraftReviewForm
         inquiry={inquiry}

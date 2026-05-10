@@ -4,8 +4,36 @@ import { ConfidenceBar } from '@/components/ui/confidence-bar';
 import { readCategory, readConfidence, readReason, readUrgent } from '@/lib/inquiry-derived';
 
 export function AiAnalysis({ inquiry }: { inquiry: InquiryWithClient }) {
-  const category = readCategory(inquiry);
   const confidence = readConfidence(inquiry);
+  const isPending = inquiry.status === 'pending' && confidence === null;
+
+  if (isPending) {
+    return (
+      <div className="section">
+        <div className="section-head">
+          <span>AI ANALYSIS</span>
+        </div>
+        <div className="ai-banner ai-banner-pending">
+          <div className="ai-icon">AI</div>
+          <div className="ai-content">
+            <div className="ai-pending-text">
+              AI が分析中…
+              <span className="ai-pending-dots">
+                <span />
+                <span />
+                <span />
+              </span>
+            </div>
+            <div className="ai-pending-sub">
+              トリアージとナレッジ検索を実行しています。完了後に自動で更新されます。
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const category = readCategory(inquiry);
   const urgent = readUrgent(inquiry);
   const reason = readReason(inquiry);
   const theme = getCategoryTheme(category);

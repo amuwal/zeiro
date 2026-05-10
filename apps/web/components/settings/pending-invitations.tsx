@@ -1,7 +1,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import { initialTeamState, revokeInvitation } from '@/app/(app)/settings/team-actions';
+import { revokeInvitation } from '@/app/(app)/settings/team-actions';
+import { initialTeamState } from '@/app/(app)/settings/team-state';
 import type { PendingInvitation } from '@/lib/team';
 import { roleLabel } from '@/lib/team';
 

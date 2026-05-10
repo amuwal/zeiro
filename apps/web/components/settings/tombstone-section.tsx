@@ -1,10 +1,8 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import {
-  initialSearchState,
-  searchClientsForTombstone,
-} from '@/app/(app)/settings/tombstone-actions';
+import { searchClientsForTombstone } from '@/app/(app)/settings/tombstone-actions';
+import { initialSearchState } from '@/app/(app)/settings/tombstone-state';
 import { TombstoneConfirmForm } from './tombstone-confirm-form';
 
 export function TombstoneSection() {

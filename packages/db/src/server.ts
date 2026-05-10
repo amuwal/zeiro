@@ -1,4 +1,5 @@
 import { PrismaNeon } from '@prisma/adapter-neon';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
 let cached: PrismaClient | undefined;
@@ -8,9 +9,10 @@ export function getPrisma(): PrismaClient {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL missing');
 
-  cached = isNeon(url)
-    ? new PrismaClient({ adapter: new PrismaNeon({ connectionString: url }) })
-    : new PrismaClient();
+  const adapter = isNeon(url)
+    ? new PrismaNeon({ connectionString: url })
+    : new PrismaPg({ connectionString: url });
+  cached = new PrismaClient({ adapter });
   return cached;
 }
 

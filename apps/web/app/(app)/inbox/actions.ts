@@ -141,6 +141,9 @@ async function dispatchEmailReply(
     draftId: draft.id,
     outboundDomain: env.OUTBOUND_FROM_DOMAIN,
   });
+  if (!env.SENDGRID_API_KEY) {
+    throw new Error('SENDGRID_API_KEY not configured — cannot send outbound email');
+  }
   const result = await sendReply({
     apiKey: env.SENDGRID_API_KEY,
     from: { name: firmName, email: `reply@${env.OUTBOUND_FROM_DOMAIN}` },

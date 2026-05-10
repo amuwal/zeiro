@@ -1,9 +1,10 @@
-import { DRAFT_MODEL, type DraftResult } from '@zeiro/core';
+import { DRAFT_MODEL, type DraftResult, type TriageResult } from '@zeiro/core';
 import {
   createDraft,
   findClientByEmail,
   getInquiry,
   recordAudit,
+  setInquiryAnalysis,
   setInquiryStatus,
 } from '@zeiro/db';
 import { runInquiryPipeline } from './agent-client';
@@ -34,6 +35,8 @@ async function persistResult(
   inquiryId: string,
   result: DraftResult,
 ): Promise<void> {
+  await setInquiryAnalysis(firmId, inquiryId, analysisFromResult(result));
+
   if (result.kind === 'draft') {
     await createDraft({
       inquiryId,
@@ -57,7 +60,7 @@ async function persistResult(
   const metadata =
     result.kind === 'escalate'
       ? { reason: result.reason, triage: result.triage }
-      : { reason: result.reason };
+      : { reason: result.reason, triage: result.triage };
   await setInquiryStatus(firmId, inquiryId, 'escalated');
   await recordAudit({
     firmId,
@@ -66,4 +69,18 @@ async function persistResult(
     action: 'draft.escalated',
     metadata,
   });
+}
+
+function analysisFromResult(result: DraftResult): Record<string, unknown> {
+  const triage: TriageResult = result.triage;
+  const base: Record<string, unknown> = {
+    category: triage.category,
+    confidence: triage.confidence,
+    urgency: triage.urgency,
+    requiresTaxJudgment: triage.requiresTaxJudgment,
+  };
+  if (result.kind === 'escalate' || result.kind === 'no_draft') {
+    base.reason = result.reason;
+  }
+  return base;
 }

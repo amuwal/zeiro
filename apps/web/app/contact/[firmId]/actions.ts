@@ -2,17 +2,7 @@
 
 import { headers } from 'next/headers';
 import { processWebInquiry } from '@/lib/web-form/process';
-
-export type WebFormState =
-  | { status: 'idle' }
-  | { status: 'success'; clientCreated: boolean }
-  | {
-      status: 'error';
-      message: string;
-      fieldErrors?: Record<string, string[]>;
-    };
-
-export const initialWebFormState: WebFormState = { status: 'idle' };
+import type { WebFormState } from './state';
 
 export async function submitContactInquiry(
   firmId: string,

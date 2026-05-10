@@ -84,6 +84,17 @@ export async function setInquiryAssignee(firmId: string, id: string, assignedToI
   });
 }
 
+export async function setInquiryAnalysis(
+  firmId: string,
+  id: string,
+  analysis: Record<string, unknown>,
+) {
+  await getPrisma().inquiry.updateMany({
+    where: { id, firmId },
+    data: { analysis: analysis as Prisma.InputJsonValue },
+  });
+}
+
 export type InquiryWithClient = NonNullable<Awaited<ReturnType<typeof getInquiry>>>;
 
 export type InboxCounts = {

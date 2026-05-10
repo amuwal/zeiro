@@ -21,6 +21,7 @@ export type Citation = z.infer<typeof citationSchema>;
 export const draftResultSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('draft'),
+    triage: triageResultSchema,
     subject: z.string(),
     body: z.string(),
     citations: z.array(citationSchema),
@@ -28,12 +29,13 @@ export const draftResultSchema = z.discriminatedUnion('kind', [
   }),
   z.object({
     kind: z.literal('no_draft'),
+    triage: triageResultSchema,
     reason: z.string(),
   }),
   z.object({
     kind: z.literal('escalate'),
-    reason: z.string(),
     triage: triageResultSchema,
+    reason: z.string(),
   }),
 ]);
 export type DraftResult = z.infer<typeof draftResultSchema>;

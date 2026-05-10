@@ -2,12 +2,8 @@
 
 import type { FirmUser } from '@zeiro/db';
 import { useActionState } from 'react';
-import {
-  changeMemberRole,
-  initialTeamState,
-  removeMember,
-  type TeamActionState,
-} from '@/app/(app)/settings/team-actions';
+import { changeMemberRole, removeMember } from '@/app/(app)/settings/team-actions';
+import { initialTeamState, type TeamActionState } from '@/app/(app)/settings/team-state';
 import { type ClerkRole, isAdminRole, normaliseRole } from '@/lib/team';
 
 type Props = {

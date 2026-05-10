@@ -15,12 +15,12 @@ type Input = {
 export async function draftReply(input: Input, triage: TriageResult): Promise<DraftResult> {
   const decision = shouldEscalate(triage, input.body);
   if (decision.mustEscalate) {
-    return { kind: 'escalate', reason: decision.reason, triage };
+    return { kind: 'escalate', triage, reason: decision.reason };
   }
 
   const hits = await hybridSearch(input.firmId, input.body);
   if (hits.length === 0) {
-    return { kind: 'no_draft', reason: '関連するナレッジが見つかりませんでした' };
+    return { kind: 'no_draft', triage, reason: '関連するナレッジが見つかりませんでした' };
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -34,11 +34,12 @@ export async function draftReply(input: Input, triage: TriageResult): Promise<Dr
   });
 
   if (!verifyCitationCoverage(result)) {
-    return { kind: 'no_draft', reason: '引用の根拠が不足しています' };
+    return { kind: 'no_draft', triage, reason: '引用の根拠が不足しています' };
   }
 
   return {
     kind: 'draft',
+    triage,
     subject: ensureRePrefix(input.subject),
     body: result.text,
     citations: result.citations.map((c) => ({ source: c.source, snippet: c.citedText })),

@@ -10,9 +10,10 @@ import { readCategory, readConfidence, readUrgent } from '@/lib/inquiry-derived'
 type Props = {
   inquiry: InquiryRowData;
   selected: boolean;
+  query?: string;
 };
 
-export function InquiryRow({ inquiry, selected }: Props) {
+export function InquiryRow({ inquiry, selected, query }: Props) {
   const unread = inquiry.status === 'pending';
   const urgent = readUrgent(inquiry);
   const confidence = readConfidence(inquiry);
@@ -21,9 +22,10 @@ export function InquiryRow({ inquiry, selected }: Props) {
   const classes = ['inbox-item', selected && 'selected', unread && 'unread', urgent && 'urgent']
     .filter(Boolean)
     .join(' ');
+  const href = query ? `/inbox/${inquiry.id}?${query}` : `/inbox/${inquiry.id}`;
 
   return (
-    <Link href={`/inbox/${inquiry.id}`} className={classes}>
+    <Link href={href} className={classes}>
       <CategoryStripe category={category} />
       <div className="item-body">
         <div className="item-row1">

@@ -2,7 +2,8 @@
 
 import type { ClientSearchHit } from '@zeiro/db';
 import { useActionState } from 'react';
-import { initialExecuteState, tombstoneClientAction } from '@/app/(app)/settings/tombstone-actions';
+import { tombstoneClientAction } from '@/app/(app)/settings/tombstone-actions';
+import { initialExecuteState } from '@/app/(app)/settings/tombstone-state';
 
 type Props = {
   client: ClientSearchHit;
