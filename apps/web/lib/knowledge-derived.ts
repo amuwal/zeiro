@@ -8,6 +8,8 @@ type Meta = {
   updated?: string;
   uses?: number;
   status?: KbStatus;
+  requiresReview?: boolean;
+  reviewReason?: string;
 };
 
 function read(item: KnowledgeListItem): Meta {
@@ -32,6 +34,15 @@ export function readUses(item: KnowledgeListItem): number {
   return typeof u === 'number' ? u : 0;
 }
 
+export function readRequiresReview(item: KnowledgeListItem): boolean {
+  return read(item).requiresReview === true;
+}
+
+export function readReviewReason(item: KnowledgeListItem): string | null {
+  return read(item).reviewReason ?? null;
+}
+
 export function readStatus(item: KnowledgeListItem): KbStatus {
+  if (readRequiresReview(item)) return 'review';
   return read(item).status ?? 'fresh';
 }

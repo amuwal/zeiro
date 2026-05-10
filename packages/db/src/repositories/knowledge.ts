@@ -78,3 +78,65 @@ export async function insertKnowledgeChunk(input: ChunkInsert): Promise<void> {
     )
   `;
 }
+
+type FlagInput = {
+  firmId: string;
+  chunkId: string;
+  reason: string;
+  flaggedBy: string;
+};
+
+export async function flagKnowledgeChunk(input: FlagInput): Promise<boolean> {
+  const chunk = await getPrisma().knowledgeChunk.findFirst({
+    where: { id: input.chunkId, firmId: input.firmId },
+    select: { id: true, metadata: true },
+  });
+  if (!chunk) return false;
+  const existing = readMeta(chunk.metadata);
+  await getPrisma().knowledgeChunk.update({
+    where: { id: chunk.id },
+    data: {
+      metadata: {
+        ...existing,
+        requiresReview: true,
+        reviewReason: input.reason,
+        reviewFlaggedAt: new Date().toISOString(),
+        reviewFlaggedBy: input.flaggedBy,
+      } as Record<string, unknown>,
+    },
+  });
+  return true;
+}
+
+type UnflagInput = {
+  firmId: string;
+  chunkId: string;
+  clearedBy: string;
+};
+
+export async function unflagKnowledgeChunk(input: UnflagInput): Promise<boolean> {
+  const chunk = await getPrisma().knowledgeChunk.findFirst({
+    where: { id: input.chunkId, firmId: input.firmId },
+    select: { id: true, metadata: true },
+  });
+  if (!chunk) return false;
+  const existing = readMeta(chunk.metadata);
+  await getPrisma().knowledgeChunk.update({
+    where: { id: chunk.id },
+    data: {
+      metadata: {
+        ...existing,
+        requiresReview: false,
+        reviewClearedAt: new Date().toISOString(),
+        reviewClearedBy: input.clearedBy,
+      } as Record<string, unknown>,
+    },
+  });
+  return true;
+}
+
+function readMeta(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}

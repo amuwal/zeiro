@@ -1,6 +1,11 @@
 'use server';
 
-import { recordAudit } from '@zeiro/db';
+import {
+  flagKnowledgeChunk,
+  recordAudit,
+  searchKnowledgeBM25,
+  unflagKnowledgeChunk,
+} from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { randomUUID } from 'node:crypto';
@@ -52,4 +57,82 @@ export async function ingestKnowledgeAction(
 
   revalidatePath('/knowledge');
   redirect(`/knowledge?ingested=${result.chunks}`);
+}
+
+export async function flagChunk(formData: FormData) {
+  const { firmId, userId } = await requireFirmContext();
+  const chunkId = readField(formData, 'chunkId');
+  const reason = readField(formData, 'reason') ?? '法改正の可能性';
+  if (!chunkId) throw new Error('chunkId required');
+
+  const ok = await flagKnowledgeChunk({ firmId, chunkId, reason, flaggedBy: userId });
+  if (ok) {
+    await recordAudit({
+      firmId,
+      actorId: userId,
+      inquiryId: null,
+      action: 'knowledge.updated',
+      metadata: { op: 'flag', chunkId, reason },
+    });
+  }
+  revalidatePath('/knowledge');
+}
+
+export async function unflagChunk(formData: FormData) {
+  const { firmId, userId } = await requireFirmContext();
+  const chunkId = readField(formData, 'chunkId');
+  if (!chunkId) throw new Error('chunkId required');
+
+  const ok = await unflagKnowledgeChunk({ firmId, chunkId, clearedBy: userId });
+  if (ok) {
+    await recordAudit({
+      firmId,
+      actorId: userId,
+      inquiryId: null,
+      action: 'knowledge.updated',
+      metadata: { op: 'unflag', chunkId },
+    });
+  }
+  revalidatePath('/knowledge');
+}
+
+export type BulkFlagState = { error: string | null; flagged: number };
+
+export async function bulkFlagBySearch(
+  _prev: BulkFlagState,
+  formData: FormData,
+): Promise<BulkFlagState> {
+  const { firmId, userId, role } = await requireFirmContext();
+  if (!role.toLowerCase().includes('admin')) {
+    return { error: '権限がありません (所長のみ法改正フラグを操作可能)', flagged: 0 };
+  }
+
+  const query = readField(formData, 'query');
+  const reason = readField(formData, 'reason') ?? '法改正の可能性';
+  if (!query) return { error: '検索キーワードを入力してください', flagged: 0 };
+
+  const matches = await searchKnowledgeBM25(firmId, query, 200);
+  let flagged = 0;
+  for (const hit of matches) {
+    const ok = await flagKnowledgeChunk({ firmId, chunkId: hit.id, reason, flaggedBy: userId });
+    if (ok) flagged += 1;
+  }
+
+  await recordAudit({
+    firmId,
+    actorId: userId,
+    inquiryId: null,
+    action: 'knowledge.updated',
+    metadata: { op: 'bulk_flag', query, reason, flagged },
+  });
+
+  revalidatePath('/knowledge');
+  return { error: null, flagged };
+}
+
+function readField(formData: FormData, name: string): string | undefined {
+  const v = formData.get(name);
+  if (typeof v !== 'string') return undefined;
+  const trimmed = v.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
