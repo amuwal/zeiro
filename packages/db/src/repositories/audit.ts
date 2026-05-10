@@ -21,3 +21,16 @@ export async function recordAudit(event: AuditWrite) {
     },
   });
 }
+
+export async function findLatestSentBody(firmId: string, inquiryId: string): Promise<string | null> {
+  const event = await getPrisma().auditEvent.findFirst({
+    where: { firmId, inquiryId, action: 'draft.sent' },
+    orderBy: { createdAt: 'desc' },
+    select: { metadata: true },
+  });
+  if (!event) return null;
+  const meta = event.metadata;
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return null;
+  const body = (meta as Record<string, unknown>).sentBody;
+  return typeof body === 'string' ? body : null;
+}

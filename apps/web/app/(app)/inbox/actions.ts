@@ -20,6 +20,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { env } from '@/lib/env';
 import { requireFirmContext } from '@/lib/firm-context';
+import { inngest } from '@/lib/inngest/client';
 
 export async function sendDraft(formData: FormData) {
   await sendCore(formData, { useEditedBody: false });
@@ -119,6 +120,13 @@ async function sendCore(
         : {}),
     },
   });
+
+  await inngest.send({
+    name: 'knowledge.auto_add',
+    data: { firmId, inquiryId, draftId: draft.id },
+    id: `auto-add-${draft.id}`,
+  });
+
   revalidatePath('/inbox');
   redirect('/inbox');
 }
