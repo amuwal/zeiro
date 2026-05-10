@@ -13,6 +13,7 @@ export function Tabs({ inboxCount, admin }: { inboxCount: number; admin: boolean
   const pathname = usePathname();
   const tabs: Tab[] = [
     { href: '/inbox', label: '受信トレイ', count: inboxCount },
+    { href: '/clients', label: '顧問先' },
     { href: '/knowledge', label: 'ナレッジ' },
     { href: '/analytics', label: 'パフォーマンス' },
     ...(admin ? [{ href: '/audit', label: '監査ログ' } as Tab] : []),

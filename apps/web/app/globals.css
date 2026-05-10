@@ -1,7 +1,49 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
+@import "tailwindcss";
+
 @import "../styles/tokens.css";
 @import "../styles/base.css";
+
+/*
+ * Tailwind v4 theme bridge — exposes the design tokens as utility classes.
+ * Examples:
+ *   bg-surface text-ink-2 border-line rounded-md shadow-md font-mono ease-out
+ * This way new components can use Tailwind utilities without duplicating
+ * hex values, and existing CSS files (which read var(--bg) etc.) keep working.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-urgent: var(--urgent);
+  --color-positive: var(--positive);
+
+  --font-sans: var(--font-sans);
+  --font-jp: var(--font-jp);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow);
+  --shadow-lg: var(--shadow-lg);
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+}
 @import "../styles/buttons.css";
 @import "../styles/shell.css";
 @import "../styles/inbox.css";
@@ -11,4 +53,5 @@
 @import "../styles/analytics.css";
 @import "../styles/audit.css";
 @import "../styles/settings.css";
+@import "../styles/clients.css";
 @import "../styles/animations.css";

@@ -1,6 +1,6 @@
 'use client';
 
-import type { InquiryRow as InquiryRowData } from '@zeiro/db';
+import type { InquiryThreadRow as InquiryRowData } from '@zeiro/db';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
@@ -13,6 +13,7 @@ const FILTER_TO_STATUS: Record<string, string | null> = {
   drafted: 'drafted',
   escalated: 'escalated',
   sent: 'sent',
+  unmatched: 'unmatched',
 };
 
 type Props = { items: InquiryRowData[]; currentUserId: string };
@@ -49,8 +50,10 @@ export function InquiryList({ items, currentUserId }: Props) {
     const needle = query.trim().toLowerCase();
     return items.filter((inq) => {
       if (wantedStatus && inq.status !== wantedStatus) return false;
+      if (!wantedStatus && inq.status === 'unmatched') return false;
       if (category !== 'all' && readCategory(inq) !== category) return false;
-      if (assignee === 'me' && inq.assignedToId !== currentUserId) return false;
+      if (assignee === 'me' && filter !== 'unmatched' && inq.assignedToId !== currentUserId)
+        return false;
       if (needle && !matchesQuery(inq, needle)) return false;
       return true;
     });
@@ -102,7 +105,8 @@ function matchesQuery(inq: InquiryRowData, needle: string): boolean {
   return (
     inq.subject.toLowerCase().includes(needle) ||
     inq.body.toLowerCase().includes(needle) ||
-    inq.client.name.toLowerCase().includes(needle) ||
-    inq.client.primaryEmail.toLowerCase().includes(needle)
+    (inq.client?.name.toLowerCase().includes(needle) ?? false) ||
+    (inq.client?.primaryEmail.toLowerCase().includes(needle) ?? false) ||
+    (inq.unmatchedSender?.toLowerCase().includes(needle) ?? false)
   );
 }

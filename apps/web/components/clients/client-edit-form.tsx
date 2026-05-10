@@ -1,0 +1,97 @@
+'use client';
+
+import type { ClientDetail } from '@zeiro/db';
+import { useActionState, useEffect, useState } from 'react';
+import { updateClientAction } from '@/app/(app)/clients/actions';
+import { initialClientFormState } from '@/app/(app)/clients/state';
+import { CONTRACT_OPTIONS } from './contract-labels';
+
+type Props = {
+  client: ClientDetail;
+  users: { id: string; name: string }[];
+};
+
+export function ClientEditForm({ client, users }: Props) {
+  const [state, action, pending] = useActionState(updateClientAction, initialClientFormState);
+  const fieldErrors = state.status === 'error' ? (state.fieldErrors ?? {}) : {};
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (state.status === 'success') setSavedAt(Date.now());
+  }, [state]);
+  const justSaved = savedAt !== null && Date.now() - savedAt < 4000;
+
+  return (
+    <form action={action} className="cl-section">
+      <input type="hidden" name="clientId" value={client.id} />
+      <div className="cl-section-title">基本情報</div>
+
+      <div className="cl-form">
+        <div className="cl-field">
+          <label htmlFor={`cl-name-${client.id}`}>名前 / 法人名</label>
+          <input id={`cl-name-${client.id}`} name="name" required defaultValue={client.name} />
+          {fieldErrors.name && <div className="cl-field-error">{fieldErrors.name}</div>}
+        </div>
+
+        <div className="cl-field">
+          <label htmlFor={`cl-email-${client.id}`}>メールアドレス</label>
+          <input id={`cl-email-${client.id}`} value={client.primaryEmail} disabled />
+          <div className="cl-field-hint">
+            メールアドレスは変更できません。新しいアドレスは別の顧問先として登録してください。
+          </div>
+        </div>
+
+        <div className="cl-field">
+          <label htmlFor={`cl-contract-${client.id}`}>契約形態</label>
+          <select
+            id={`cl-contract-${client.id}`}
+            name="contractType"
+            defaultValue={client.contractType}
+          >
+            {CONTRACT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="cl-field">
+          <label htmlFor={`cl-assignee-${client.id}`}>担当者</label>
+          <select
+            id={`cl-assignee-${client.id}`}
+            name="assignedTaxAccountantId"
+            defaultValue={client.assignedToId ?? ''}
+          >
+            <option value="">未設定</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="cl-field full">
+          <label htmlFor={`cl-notes-${client.id}`}>メモ</label>
+          <textarea
+            id={`cl-notes-${client.id}`}
+            name="notes"
+            rows={3}
+            defaultValue={client.notes ?? ''}
+          />
+        </div>
+      </div>
+
+      <div className="cl-form-row">
+        {state.status === 'error' && <div className="cl-form-message error">{state.message}</div>}
+        {justSaved && state.status === 'success' && (
+          <div className="cl-form-message success">保存しました</div>
+        )}
+        <button type="submit" className="btn btn-primary" disabled={pending}>
+          {pending ? '保存中…' : '変更を保存'}
+        </button>
+      </div>
+    </form>
+  );
+}

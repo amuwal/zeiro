@@ -26,6 +26,7 @@ export function InboxSidebar({ counts, currentUser, myCount }: Props) {
     { id: 'pending', label: '未対応', icon: 'alert', count: counts.pending },
     { id: 'drafted', label: '下書き済', icon: 'edit', count: counts.drafted },
     { id: 'escalated', label: '要レビュー', icon: 'flag', count: counts.escalated },
+    { id: 'unmatched', label: '未登録 (新規)', icon: 'user', count: counts.unmatched },
     { id: 'sent', label: '送信済', icon: 'check', count: counts.sent },
   ];
 

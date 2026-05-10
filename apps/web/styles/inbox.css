@@ -170,6 +170,19 @@
   gap: 8px;
   margin-top: 6px;
 }
+.thread-count {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
 
 .cat-pill {
   display: inline-flex;

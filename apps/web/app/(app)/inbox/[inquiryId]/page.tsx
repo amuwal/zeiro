@@ -1,36 +1,101 @@
 import { getDraftByInquiry, getFirm, getInquiry, walkThread } from '@zeiro/db';
 import { notFound } from 'next/navigation';
 import { AiAnalysis } from '@/components/detail/ai-analysis';
+import { AiReviewCard } from '@/components/detail/ai-review-card';
 import { CitationList } from '@/components/detail/citation-list';
+import { ConversationTimeline } from '@/components/detail/conversation-timeline';
 import { DetailHeader } from '@/components/detail/detail-header';
 import { DraftReviewForm } from '@/components/detail/draft-review-form';
 import { DraftingPoller } from '@/components/detail/drafting-poller';
-import { EscalateBanner } from '@/components/detail/escalate-banner';
+import { EscalatedStateView } from '@/components/detail/escalated-state-view';
 import { OriginalMessage } from '@/components/detail/original-message';
-import { ThreadHistory } from '@/components/detail/thread-history';
+import { SentStateView } from '@/components/detail/sent-state-view';
+import { UnmatchedBanner } from '@/components/detail/unmatched-banner';
 import { requireFirmContext } from '@/lib/firm-context';
-import { readReason } from '@/lib/inquiry-derived';
+import { readAiReview, readFailureType, readReason, readSenderName } from '@/lib/inquiry-derived';
 
 type Params = { inquiryId: string };
+type SearchParams = { promoted?: string };
 
-export default async function InquiryDetailPage({ params }: { params: Promise<Params> }) {
+export default async function InquiryDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>;
+  searchParams: Promise<SearchParams>;
+}) {
   const { inquiryId } = await params;
   const { firmId } = await requireFirmContext();
 
-  const [inquiry, draft, firm, thread] = await Promise.all([
+  const [inquiry, draft, firm, thread, query] = await Promise.all([
     getInquiry(firmId, inquiryId),
     getDraftByInquiry(inquiryId),
     getFirm(firmId),
     walkThread(firmId, inquiryId),
+    searchParams,
   ]);
 
   if (!inquiry) notFound();
 
   const isEscalated = inquiry.status === 'escalated';
   const isPending = inquiry.status === 'pending';
+  const isUnmatched = inquiry.status === 'unmatched';
+  const isSent = inquiry.status === 'sent';
+  const promotedCount = parsePromotedCount(query.promoted);
   const primaryDurationMin = draft
     ? (draft.createdAt.getTime() - inquiry.receivedAt.getTime()) / 60_000
     : null;
+
+  if (isUnmatched) {
+    return (
+      <section className="detail-col" key={inquiry.id}>
+        <DetailHeader inquiry={inquiry} />
+        <div className="detail-body detail-anim">
+          <UnmatchedBanner
+            inquiryId={inquiry.id}
+            fromAddress={inquiry.unmatchedSender ?? ''}
+            fromName={readSenderName(inquiry)}
+            subject={inquiry.subject}
+          />
+          <OriginalMessage inquiry={inquiry} firmInbound={firm.inboundAddress} />
+        </div>
+      </section>
+    );
+  }
+
+  if (isSent) {
+    return (
+      <section className="detail-col" key={inquiry.id}>
+        <DetailHeader inquiry={inquiry} />
+        <SentStateView
+          inquiryId={inquiry.id}
+          thread={thread}
+          firmName={firm.name}
+          lastSentAt={lastSentAtFromThread(thread)}
+        />
+      </section>
+    );
+  }
+
+  const aiReview = readAiReview(inquiry);
+
+  // Escalated: no draft to send. Reviewer composes manually, with AI's review
+  // (or a fallback escalation banner for legacy / pipeline-failure rows) in view.
+  if (isEscalated) {
+    return (
+      <section className="detail-col" key={inquiry.id}>
+        <DetailHeader inquiry={inquiry} />
+        <EscalatedStateView
+          inquiryId={inquiry.id}
+          thread={thread}
+          firmName={firm.name}
+          aiReview={aiReview}
+          fallbackReason={readReason(inquiry)}
+          fallbackFailureType={readFailureType(inquiry)}
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="detail-col" key={inquiry.id}>
@@ -39,18 +104,53 @@ export default async function InquiryDetailPage({ params }: { params: Promise<Pa
       <DraftReviewForm
         inquiry={inquiry}
         draft={draft}
-        isEscalated={isEscalated}
+        isEscalated={false}
         primaryDurationMin={primaryDurationMin}
         preDraft={
           <>
-            {thread.length > 0 && <ThreadHistory thread={thread} currentInquiryId={inquiry.id} />}
-            <OriginalMessage inquiry={inquiry} firmInbound={firm.inboundAddress} />
+            {promotedCount !== null && <PromotedFlash count={promotedCount} />}
+            <ConversationTimeline
+              thread={thread}
+              firmName={firm.name}
+              currentInquiryId={inquiry.id}
+            />
             <AiAnalysis inquiry={inquiry} />
-            {isEscalated && <EscalateBanner inquiryId={inquiry.id} reason={readReason(inquiry)} />}
+            {aiReview && <AiReviewCard review={aiReview} />}
           </>
         }
         postDraft={draft && <CitationList citations={draft.citations} />}
       />
     </section>
+  );
+}
+
+function parsePromotedCount(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function lastSentAtFromThread(thread: { drafts: { metadata: unknown }[] }[]): Date | null {
+  let latest: Date | null = null;
+  for (const inq of thread) {
+    for (const d of inq.drafts) {
+      const m = d.metadata;
+      if (!m || typeof m !== 'object' || Array.isArray(m)) continue;
+      const at = (m as { sentAt?: unknown }).sentAt;
+      if (typeof at !== 'string') continue;
+      const t = new Date(at);
+      if (Number.isNaN(t.getTime())) continue;
+      if (!latest || t > latest) latest = t;
+    }
+  }
+  return latest;
+}
+
+function PromotedFlash({ count }: { count: number }) {
+  return (
+    <div className="bg-accent-soft text-accent-ink rounded-md px-3.5 py-2.5 text-[12.5px]">
+      送信元を顧問先として登録しました。同じアドレスからの未登録メール {count} 件を紐付け、AI
+      が下書きを生成しています。
+    </div>
   );
 }

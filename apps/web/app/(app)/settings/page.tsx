@@ -2,12 +2,14 @@ import { auth } from '@clerk/nextjs/server';
 import {
   getFirm,
   getFirmChannel,
+  getInboxCounts,
   listClients,
   listFirmUsers,
   listUnmatchedLineEvents,
 } from '@zeiro/db';
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
+import { EmailInboundSection } from '@/components/settings/email-inbound-section';
 import { LineChannelForm } from '@/components/settings/line-channel-form';
 import { PendingLineLinks } from '@/components/settings/pending-line-links';
 import { TeamManagementSection } from '@/components/settings/team-management-section';
@@ -19,7 +21,7 @@ import { listPendingInvitations } from '@/lib/team-server';
 export default async function SettingsPage() {
   const { firmId, role } = await requireFirmContext();
   const admin = role.toLowerCase().includes('admin');
-  const [channel, webChannel, baseUrl, pending, clients, members, firm, session] =
+  const [channel, webChannel, baseUrl, pending, clients, members, firm, session, inboxCounts] =
     await Promise.all([
       getFirmChannel(firmId, 'line'),
       getFirmChannel(firmId, 'web'),
@@ -29,6 +31,7 @@ export default async function SettingsPage() {
       admin ? listFirmUsers(firmId) : Promise.resolve([]),
       getFirm(firmId),
       auth(),
+      getInboxCounts(firmId),
     ]);
   const invitations =
     admin && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
@@ -44,6 +47,11 @@ export default async function SettingsPage() {
           <div className="kb-sub">事務所の連携・チャネル設定 (所長のみ編集可)</div>
         </div>
       </div>
+
+      <EmailInboundSection
+        inboundAddress={firm.inboundAddress}
+        unmatchedCount={inboxCounts.unmatched}
+      />
 
       <section
         style={{

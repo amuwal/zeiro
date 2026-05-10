@@ -41,6 +41,25 @@ Hard cap: **200 lines per TS/TSX source file**. Split by responsibility — one 
 
 CSS files are exempt — they describe coherent design slices (e.g. `inbox.css` covers everything inbox-pane visual). Aim for ≤ 400 lines per CSS file; split by tab/screen, not by individual class.
 
+### Styling: Tailwind v4 first
+
+For all **new** components (and any component you're already touching for other reasons), use Tailwind v4 utilities. Reach for raw CSS only when Tailwind genuinely can't express what you need.
+
+The design tokens defined in `apps/web/styles/tokens.css` are bridged into Tailwind's theme via `@theme inline` in `apps/web/app/globals.css`. The available token-backed utilities:
+
+- **Colors**: `bg-bg`, `bg-bg-2`, `bg-surface`, `bg-surface-2`, `text-ink`, `text-ink-2`, `text-muted`, `text-muted-2`, `border-line`, `border-line-strong`, `text-accent`, `bg-accent-soft`, `text-accent-ink`, `text-urgent`, `text-positive`
+- **Fonts**: `font-sans`, `font-jp`, `font-mono`
+- **Radius**: `rounded-sm` (6px), `rounded-md` (10px), `rounded-lg` (14px)
+- **Shadows**: `shadow-sm`, `shadow-md`, `shadow-lg`
+- **Easing**: `ease-out`, `ease-in-out`
+
+Rules:
+- **Never hardcode colors** (`bg-blue-500`, `text-zinc-900`, `#fff`). Always go through the bridged tokens. If you need a colour the tokens don't offer, add it to `tokens.css` + the `@theme inline` block in `globals.css` first.
+- **Don't bulk-rewrite** existing `.kb-pane`, `.cl-section`, `.inbox-list` etc. Those already work; only touch them if the surrounding work needs it.
+- **Raw CSS is still fine** for: keyframe animations, complex descendant selectors, `:has()`/sibling selectors that Tailwind can't compose readably, third-party widget overrides, and the existing token files themselves.
+- **Don't import `@apply`** to share utility bundles. If a class is repeated 3+ times, extract a small React component instead.
+- **OKLCH ad-hoc colors** that already appear inline in some files (e.g. `oklch(96% 0.04 25)`) — when you touch the file, prefer expressing them as arbitrary Tailwind values (`bg-[oklch(96%_0.04_25)]`) only if a token doesn't fit; otherwise add a token.
+
 ### Comments
 Default: write none. Names should explain themselves.
 Add a comment only when the *why* is non-obvious — hidden constraint, workaround, surprising behaviour. Never restate what the code does. No `// TODO: implement` filler. No "AI-generated" headers.

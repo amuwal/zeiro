@@ -1,6 +1,6 @@
 .app {
   display: grid;
-  grid-template-rows: 52px 1fr;
+  grid-template-rows: 52px minmax(0, 1fr);
   height: 100vh;
   background: var(--bg);
 }

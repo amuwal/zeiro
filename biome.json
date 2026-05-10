@@ -10,7 +10,8 @@
       "!**/.turbo",
       "!design_files",
       "!**/.clerk",
-      "!**/next-env.d.ts"
+      "!**/next-env.d.ts",
+      "!apps/web/app/globals.css"
     ]
   },
   "formatter": {
