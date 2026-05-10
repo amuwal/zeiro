@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: zeiro-postgres
+    restart: unless-stopped
+    ports:
+      - "6432:5432"
+    environment:
+      POSTGRES_USER: zeiro
+      POSTGRES_PASSWORD: zeiro
+      POSTGRES_DB: zeiro_dev
+      TZ: Asia/Tokyo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zeiro -d zeiro_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:

@@ -1,0 +1,24 @@
+{
+  "name": "zeiro",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:web": "pnpm --filter @zeiro/web dev",
+    "dev:agents": "pnpm --filter @zeiro/agents dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "typescript": "^5.7.0"
+  }
+}

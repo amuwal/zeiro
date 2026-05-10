@@ -1,0 +1,148 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [citext, pgcrypto, vector]
+}
+
+model Firm {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
+  inboundAddress String   @unique @map("inbound_address") @db.Citext
+  clerkOrgId     String?  @unique @map("clerk_org_id")
+  region         String
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  clients     Client[]
+  inquiries   Inquiry[]
+  audits      AuditEvent[]
+  knowledge   KnowledgeChunk[]
+  memberships Membership[]
+
+  @@map("firms")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  clerkUserId String   @unique @map("clerk_user_id")
+  email       String   @db.Citext
+  name        String
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  memberships       Membership[]
+  assignedClients   Client[]     @relation("ClientAssignment")
+  assignedInquiries Inquiry[]    @relation("InquiryAssignment")
+
+  @@map("users")
+}
+
+model Membership {
+  userId    String   @map("user_id") @db.Uuid
+  firmId    String   @map("firm_id") @db.Uuid
+  role      String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@id([userId, firmId])
+  @@index([firmId])
+  @@map("memberships")
+}
+
+model Client {
+  id                      String  @id @default(uuid()) @db.Uuid
+  firmId                  String  @map("firm_id") @db.Uuid
+  name                    String
+  primaryEmail            String  @map("primary_email") @db.Citext
+  contractType            String  @map("contract_type")
+  assignedTaxAccountantId String? @map("assigned_tax_accountant_id") @db.Uuid
+  notes                   String?
+  metadata                Json    @default("{}")
+
+  firm         Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  inquiries    Inquiry[]
+  assignedUser User?     @relation("ClientAssignment", fields: [assignedTaxAccountantId], references: [id])
+
+  @@unique([firmId, primaryEmail])
+  @@map("clients")
+}
+
+model Inquiry {
+  id           String   @id @default(uuid()) @db.Uuid
+  firmId       String   @map("firm_id") @db.Uuid
+  clientId     String   @map("client_id") @db.Uuid
+  assignedToId String?  @map("assigned_to_id") @db.Uuid
+  messageId    String   @map("message_id")
+  receivedAt   DateTime @map("received_at") @db.Timestamptz()
+  subject      String
+  body         String
+  status       String   @default("pending")
+  analysis     Json     @default("{}")
+  headers      Json     @default("{}")
+
+  firm       Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client     Client       @relation(fields: [clientId], references: [id])
+  assignedTo User?        @relation("InquiryAssignment", fields: [assignedToId], references: [id])
+  drafts     Draft[]
+  audits     AuditEvent[]
+
+  @@unique([firmId, messageId])
+  @@index([firmId, receivedAt(sort: Desc)])
+  @@index([firmId, assignedToId])
+  @@map("inquiries")
+}
+
+model Draft {
+  id         String   @id @default(uuid()) @db.Uuid
+  inquiryId  String   @map("inquiry_id") @db.Uuid
+  subject    String
+  body       String
+  citations  Json     @default("[]")
+  confidence Float
+  model      String
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  @@index([inquiryId, createdAt(sort: Desc)])
+  @@map("drafts")
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  firmId    String   @map("firm_id") @db.Uuid
+  actorId   String   @map("actor_id") @db.Uuid
+  inquiryId String?  @map("inquiry_id") @db.Uuid
+  action    String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  firm    Firm     @relation(fields: [firmId], references: [id])
+  inquiry Inquiry? @relation(fields: [inquiryId], references: [id])
+
+  @@index([firmId, createdAt(sort: Desc)])
+  @@map("audit_events")
+}
+
+model KnowledgeChunk {
+  id        String                      @id @default(uuid()) @db.Uuid
+  firmId    String                      @map("firm_id") @db.Uuid
+  source    String
+  content   String
+  embedding Unsupported("vector(1536)")
+  metadata  Json                        @default("{}")
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@map("knowledge_chunks")
+}

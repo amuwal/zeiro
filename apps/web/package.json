@@ -1,0 +1,36 @@
+{
+  "name": "@zeiro/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 6001",
+    "build": "next build",
+    "start": "next start --port 6001",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.5.0",
+    "@clerk/localizations": "^3.20.0",
+    "@clerk/nextjs": "^6.18.0",
+    "@clerk/themes": "^2.4.0",
+    "@sendgrid/eventwebhook": "^8.1.0",
+    "@sentry/nextjs": "^9.0.0",
+    "ai": "^5.5.0",
+    "inngest": "^3.40.0",
+    "@zeiro/core": "workspace:*",
+    "@zeiro/db": "workspace:*",
+    "@zeiro/email": "workspace:*",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "svix": "^1.40.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.7.0"
+  }
+}

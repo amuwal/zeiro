@@ -1,0 +1,1 @@
+ALTER TABLE "inquiries" ADD COLUMN "headers" JSONB NOT NULL DEFAULT '{}';

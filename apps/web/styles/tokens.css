@@ -1,0 +1,44 @@
+:root {
+  --bg: #f2eee6;
+  --bg-2: #ede8de;
+  --surface: #fbf9f4;
+  --surface-2: #f7f4ed;
+  --ink: #14110d;
+  --ink-2: #3a352d;
+  --muted: #7a7268;
+  --muted-2: #9a9286;
+  --line: #e2dccf;
+  --line-strong: #cfc8b8;
+
+  --accent: oklch(38% 0.045 150);
+  --accent-soft: oklch(92% 0.025 150);
+  --accent-ink: oklch(28% 0.05 150);
+
+  --cat-deadline: oklch(58% 0.1 70);
+  --cat-deadline-soft: oklch(94% 0.04 70);
+  --cat-docs: oklch(48% 0.06 195);
+  --cat-docs-soft: oklch(94% 0.025 195);
+  --cat-tax: oklch(52% 0.1 25);
+  --cat-tax-soft: oklch(94% 0.035 25);
+  --cat-contract: oklch(45% 0.08 295);
+  --cat-contract-soft: oklch(94% 0.03 295);
+  --cat-other: oklch(55% 0.01 80);
+  --cat-other-soft: oklch(93% 0.005 80);
+
+  --urgent: oklch(54% 0.18 25);
+  --positive: oklch(45% 0.1 150);
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 0 rgba(20, 17, 13, 0.04);
+  --shadow: 0 1px 2px rgba(20, 17, 13, 0.04), 0 8px 24px -16px rgba(20, 17, 13, 0.12);
+  --shadow-lg: 0 2px 4px rgba(20, 17, 13, 0.04), 0 24px 48px -24px rgba(20, 17, 13, 0.18);
+
+  --font-sans: 'Inter Tight', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+  --font-jp: 'Noto Sans JP', 'Inter Tight', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
