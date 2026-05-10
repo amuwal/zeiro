@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools';
-import { TenantIsolationError } from '@zeiro/core';
+import { TenantIsolationError } from '@zeiro/core/errors';
 import { z } from 'zod';
 import { hybridSearch } from '../../lib/retrieval';
 

@@ -14,6 +14,10 @@ export const auditActionEnum = z.enum([
   'client.tombstoned',
   'client.identity_linked',
   'channel.configured',
+  'member.invited',
+  'member.role_changed',
+  'member.removed',
+  'invitation.revoked',
 ]);
 export type AuditAction = z.infer<typeof auditActionEnum>;
 

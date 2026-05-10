@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/ui/icon';
 import { Tabs } from './tabs';
 
-export function Topbar({ inboxCount }: { inboxCount: number }) {
+export function Topbar({ inboxCount, admin }: { inboxCount: number; admin: boolean }) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -10,7 +10,7 @@ export function Topbar({ inboxCount }: { inboxCount: number }) {
         zeiro
         <span className="brand-tag">tax-office agent</span>
       </div>
-      <Tabs inboxCount={inboxCount} />
+      <Tabs inboxCount={inboxCount} admin={admin} />
       <div className="user-cluster">
         <button type="button" className="icon-btn" aria-label="検索">
           <Icon name="search" size={15} />

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "mastra dev --port 6002",
+    "dev": "PORT=6002 mastra dev",
     "build": "mastra build",
     "start": "node .mastra/output/index.mjs",
     "typecheck": "tsc --noEmit",

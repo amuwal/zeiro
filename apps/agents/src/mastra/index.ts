@@ -16,15 +16,22 @@ const langfuseExporters =
       ]
     : [];
 
+const observabilityConfig =
+  langfuseExporters.length > 0
+    ? {
+        observability: new Observability({
+          configs: {
+            langfuse: {
+              serviceName: 'zeiro-agents',
+              exporters: langfuseExporters,
+            },
+          },
+        }),
+      }
+    : {};
+
 export const mastra = new Mastra({
   agents: { triageAgent },
   workflows: { inquiryPipeline },
-  observability: new Observability({
-    configs: {
-      langfuse: {
-        serviceName: 'zeiro-agents',
-        exporters: langfuseExporters,
-      },
-    },
-  }),
+  ...observabilityConfig,
 });

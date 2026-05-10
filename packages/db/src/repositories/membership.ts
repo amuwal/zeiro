@@ -47,3 +47,36 @@ export async function findAdminUserId(firmId: string): Promise<string | null> {
   });
   return m?.userId ?? null;
 }
+
+export type FirmUser = {
+  id: string;
+  clerkUserId: string;
+  name: string;
+  email: string;
+  role: string;
+  joinedAt: Date;
+};
+
+export async function listFirmUsers(firmId: string): Promise<FirmUser[]> {
+  const rows = await getPrisma().membership.findMany({
+    where: { firmId },
+    include: {
+      user: { select: { id: true, clerkUserId: true, name: true, email: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+  return rows.map((r) => ({
+    id: r.user.id,
+    clerkUserId: r.user.clerkUserId,
+    name: r.user.name,
+    email: r.user.email,
+    role: r.role,
+    joinedAt: r.createdAt,
+  }));
+}
+
+export async function countAdmins(firmId: string): Promise<number> {
+  return getPrisma().membership.count({
+    where: { firmId, role: { contains: 'admin' } },
+  });
+}

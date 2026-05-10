@@ -9,12 +9,13 @@ type Tab = {
   count?: number;
 };
 
-export function Tabs({ inboxCount }: { inboxCount: number }) {
+export function Tabs({ inboxCount, admin }: { inboxCount: number; admin: boolean }) {
   const pathname = usePathname();
   const tabs: Tab[] = [
     { href: '/inbox', label: '受信トレイ', count: inboxCount },
     { href: '/knowledge', label: 'ナレッジ' },
     { href: '/analytics', label: 'パフォーマンス' },
+    ...(admin ? [{ href: '/audit', label: '監査ログ' } as Tab] : []),
   ];
   return (
     <nav className="tabs">

@@ -59,6 +59,90 @@ export async function listUnmatchedLineEvents(
   }));
 }
 
+export type AuditCursor = { createdAt: Date; id: string };
+
+export type AuditFilter = {
+  action?: AuditAction;
+  actorId?: string;
+  inquiryId?: string;
+  after?: Date;
+  before?: Date;
+};
+
+export type AuditRow = {
+  id: string;
+  firmId: string;
+  actorId: string;
+  inquiryId: string | null;
+  action: string;
+  metadata: unknown;
+  createdAt: Date;
+};
+
+const DEFAULT_AUDIT_LIMIT = 50;
+
+export async function listAuditEvents(
+  firmId: string,
+  filter: AuditFilter,
+  cursor?: AuditCursor,
+  limit: number = DEFAULT_AUDIT_LIMIT,
+): Promise<{ rows: AuditRow[]; nextCursor: AuditCursor | null }> {
+  const where: Prisma.AuditEventWhereInput = {
+    firmId,
+    ...(filter.action ? { action: filter.action } : {}),
+    ...(filter.actorId ? { actorId: filter.actorId } : {}),
+    ...(filter.inquiryId ? { inquiryId: filter.inquiryId } : {}),
+    ...(filter.after || filter.before
+      ? {
+          createdAt: {
+            ...(filter.after ? { gte: filter.after } : {}),
+            ...(filter.before ? { lt: filter.before } : {}),
+          },
+        }
+      : {}),
+    ...(cursor
+      ? {
+          OR: [
+            { createdAt: { lt: cursor.createdAt } },
+            { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+          ],
+        }
+      : {}),
+  };
+
+  const rows = await getPrisma().auditEvent.findMany({
+    where,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+  });
+
+  const hasMore = rows.length > limit;
+  const trimmed = hasMore ? rows.slice(0, limit) : rows;
+  const last = trimmed[trimmed.length - 1];
+  const nextCursor = hasMore && last ? { createdAt: last.createdAt, id: last.id } : null;
+  return { rows: trimmed, nextCursor };
+}
+
+export async function listRecentComplianceEvents(
+  firmId: string,
+  limit: number = 6,
+): Promise<AuditRow[]> {
+  const actions: AuditAction[] = [
+    'knowledge.updated',
+    'channel.configured',
+    'client.identity_linked',
+    'client.tombstoned',
+    'draft.bounced',
+    'draft.spam_reported',
+    'draft.escalated',
+  ];
+  return getPrisma().auditEvent.findMany({
+    where: { firmId, action: { in: actions } },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+}
+
 export async function findLatestSentBody(
   firmId: string,
   inquiryId: string,

@@ -1,7 +1,9 @@
 import { getCategoryTheme } from '@zeiro/core';
 import type { CategoryDistribution as Row } from '@/lib/analytics';
 
-export function CategoryDistribution({ rows }: { rows: Row[] }) {
+type Props = { rows: Row[]; windowLabel: string };
+
+export function CategoryDistribution({ rows, windowLabel }: Props) {
   const total = rows.reduce((a, b) => a + b.count, 0);
   const max = rows.reduce((m, r) => Math.max(m, r.count), 1);
   return (
@@ -9,7 +11,9 @@ export function CategoryDistribution({ rows }: { rows: Row[] }) {
       <div className="chart-head">
         <div>
           <div className="chart-title">カテゴリ別 問い合わせ分布</div>
-          <div className="chart-sub">過去30日 · 計 {total}件</div>
+          <div className="chart-sub">
+            {windowLabel} · 計 {total}件
+          </div>
         </div>
       </div>
       <div className="cat-bar">

@@ -11,6 +11,7 @@ export type {
   User,
 } from '@prisma/client';
 export { Prisma } from '@prisma/client';
+export * from './repositories/analytics';
 export * from './repositories/audit';
 export * from './repositories/client';
 export * from './repositories/draft';

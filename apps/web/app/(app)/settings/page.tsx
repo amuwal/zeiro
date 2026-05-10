@@ -1,23 +1,40 @@
-import { getFirmChannel, listClients, listUnmatchedLineEvents } from '@zeiro/db';
+import { auth } from '@clerk/nextjs/server';
+import {
+  getFirm,
+  getFirmChannel,
+  listClients,
+  listFirmUsers,
+  listUnmatchedLineEvents,
+} from '@zeiro/db';
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
 import { LineChannelForm } from '@/components/settings/line-channel-form';
 import { PendingLineLinks } from '@/components/settings/pending-line-links';
+import { TeamManagementSection } from '@/components/settings/team-management-section';
+import { TombstoneSection } from '@/components/settings/tombstone-section';
 import { WebChannelSection } from '@/components/settings/web-channel-section';
 import { requireFirmContext } from '@/lib/firm-context';
+import { listPendingInvitations } from '@/lib/team';
 
 export default async function SettingsPage() {
   const { firmId, role } = await requireFirmContext();
   const admin = role.toLowerCase().includes('admin');
-  const [channel, webChannel, baseUrl, pending, clients] = await Promise.all([
-    getFirmChannel(firmId, 'line'),
-    getFirmChannel(firmId, 'web'),
-    buildBaseUrl(),
-    admin ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
-    admin ? listClients(firmId) : Promise.resolve([]),
-  ]);
+  const [channel, webChannel, baseUrl, pending, clients, members, firm, session] =
+    await Promise.all([
+      getFirmChannel(firmId, 'line'),
+      getFirmChannel(firmId, 'web'),
+      buildBaseUrl(),
+      admin ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
+      admin ? listClients(firmId) : Promise.resolve([]),
+      admin ? listFirmUsers(firmId) : Promise.resolve([]),
+      getFirm(firmId),
+      auth(),
+    ]);
+  const invitations =
+    admin && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
   const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
   const contactUrl = `${baseUrl}/contact/${firmId}`;
+  const currentClerkUserId = session.userId ?? '';
 
   return (
     <div className="kb-pane anim-stagger">
@@ -102,6 +119,16 @@ export default async function SettingsPage() {
           </div>
         )}
       </section>
+
+      {admin && (
+        <TeamManagementSection
+          members={members}
+          invitations={invitations}
+          currentClerkUserId={currentClerkUserId}
+        />
+      )}
+
+      {admin && <TombstoneSection />}
 
       {admin && <WebChannelSection enabled={webChannel?.enabled ?? false} shareUrl={contactUrl} />}
 

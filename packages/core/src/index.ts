@@ -2,7 +2,12 @@ export * from './chunking/japanese';
 export * from './constants/categories';
 export * from './constants/category-theme';
 export * from './constants/thresholds';
-export * from './errors';
+export {
+  InvalidLLMOutputError,
+  KnowledgeUnavailableError,
+  TenantIsolationError,
+  ZeiroError,
+} from './errors';
 export * from './pii/mask';
 export * from './schemas/audit';
 export * from './schemas/classification';

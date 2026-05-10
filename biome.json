@@ -8,7 +8,9 @@
       "!**/dist",
       "!**/.mastra",
       "!**/.turbo",
-      "!design_files"
+      "!design_files",
+      "!**/.clerk",
+      "!**/next-env.d.ts"
     ]
   },
   "formatter": {

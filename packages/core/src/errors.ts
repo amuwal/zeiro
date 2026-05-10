@@ -1,9 +1,9 @@
 export class ZeiroError extends Error {
-  constructor(
-    message: string,
-    readonly code: string,
-  ) {
+  readonly code: string;
+
+  constructor(message: string, code: string) {
     super(message);
+    this.code = code;
     this.name = 'ZeiroError';
   }
 }
