@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireFirmContext } from '@/lib/firm-context';
 import { ingestKnowledge } from '@/lib/knowledge-ingest';
+import { ParserError, parseKnowledgeFile } from '@/lib/knowledge-parser';
 
 export type IngestState = { error: string | null };
 
@@ -27,11 +28,23 @@ export async function ingestKnowledgeAction(
 
   const file = formData.get('file');
   const body = formData.get('body');
-  const isEmail = formData.get('isEmail') === 'on';
 
   let content: string;
+  let parsedKind: 'text' | 'email' | 'pdf' | 'docx' = 'text';
+  let pageCount: number | undefined;
   if (file instanceof File && file.size > 0) {
-    content = await file.text();
+    try {
+      const parsed = await parseKnowledgeFile(file);
+      content = parsed.text;
+      parsedKind = parsed.metadata.kind;
+      pageCount = parsed.metadata.pages;
+    } catch (e) {
+      if (e instanceof ParserError) return { error: e.message };
+      throw e;
+    }
+    if (!content.trim()) {
+      return { error: 'ファイルからテキストを抽出できませんでした (画像のみのPDFはOCR非対応)' };
+    }
   } else if (typeof body === 'string' && body.trim().length > 0) {
     content = body;
   } else {
@@ -44,7 +57,6 @@ export async function ingestKnowledgeAction(
     source: source.trim(),
     documentId,
     body: content,
-    isEmail,
   });
 
   await recordAudit({
@@ -52,7 +64,14 @@ export async function ingestKnowledgeAction(
     actorId: userId,
     inquiryId: null,
     action: 'knowledge.updated',
-    metadata: { documentId, source: source.trim(), chunks: result.chunks, op: 'ingest' },
+    metadata: {
+      documentId,
+      source: source.trim(),
+      chunks: result.chunks,
+      op: 'ingest',
+      parsedKind,
+      ...(pageCount !== undefined ? { pageCount } : {}),
+    },
   });
 
   revalidatePath('/knowledge');

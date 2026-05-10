@@ -1,6 +1,5 @@
 import { chunkJapanese, EMBEDDING_MODEL } from '@zeiro/core';
 import { insertKnowledgeChunk } from '@zeiro/db';
-import { extractEmailText } from '@zeiro/email';
 import { embedDocuments } from './embeddings';
 
 export type IngestInput = {
@@ -8,7 +7,6 @@ export type IngestInput = {
   source: string;
   documentId: string;
   body: string;
-  isEmail?: boolean;
 };
 
 export type IngestResult = {
@@ -16,8 +14,7 @@ export type IngestResult = {
 };
 
 export async function ingestKnowledge(input: IngestInput): Promise<IngestResult> {
-  const text = input.isEmail ? await extractEmailText(input.body) : input.body;
-  const chunks = chunkJapanese(text);
+  const chunks = chunkJapanese(input.body);
   if (chunks.length === 0) return { chunks: 0 };
 
   const embeddings = await embedDocuments(chunks.map((c) => c.text));

@@ -25,9 +25,12 @@ export function IngestForm() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <label htmlFor="file" style={{ fontSize: 12, fontWeight: 500 }}>
-          ファイル (任意 — .txt / .eml / .md)
+          ファイル (任意 — .pdf / .docx / .txt / .md / .eml)
         </label>
-        <input id="file" name="file" type="file" accept=".txt,.eml,.md" />
+        <input id="file" name="file" type="file" accept=".pdf,.docx,.txt,.md,.eml" />
+        <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>
+          PDFは画像のみ (スキャン) には未対応 · .docはxxx.docxに変換してください
+        </span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -42,11 +45,6 @@ export function IngestForm() {
           style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
         />
       </div>
-
-      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
-        <input type="checkbox" name="isEmail" />
-        メール (.eml) として解析
-      </label>
 
       {state.error && <div style={{ color: 'var(--urgent)', fontSize: 12 }}>{state.error}</div>}
 

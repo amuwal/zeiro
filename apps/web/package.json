@@ -21,10 +21,12 @@
     "@zeiro/email": "workspace:*",
     "ai": "^6.0.0",
     "inngest": "^3.40.0",
+    "mammoth": "^1.12.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "svix": "^1.40.0",
+    "unpdf": "^1.6.2",
     "zod": "^4.0.0"
   },
   "devDependencies": {
