@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Icon } from '@/components/ui/icon';
 import { Tabs } from './tabs';
 
@@ -18,9 +19,9 @@ export function Topbar({ inboxCount }: { inboxCount: number }) {
           <Icon name="bell" size={15} />
           <span className="dot" />
         </button>
-        <button type="button" className="icon-btn" aria-label="設定">
+        <Link href="/settings" className="icon-btn" aria-label="設定">
           <Icon name="settings" size={15} />
-        </button>
+        </Link>
         <div className="topbar-divider" />
         <div className="avatar">SK</div>
       </div>

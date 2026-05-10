@@ -11,16 +11,16 @@
     "eval": "tsx src/eval/runner.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.5.0",
-    "@ai-sdk/google": "^2.5.0",
-    "@ai-sdk/openai": "^2.5.0",
-    "@anthropic-ai/sdk": "^0.40.0",
+    "@ai-sdk/anthropic": "^3.0.0",
+    "@ai-sdk/google": "^3.0.0",
+    "@ai-sdk/openai": "^3.0.0",
+    "@anthropic-ai/sdk": "^0.95.1",
     "@mastra/core": "^1.8.1",
-    "@mastra/langfuse": "^1.8.1",
+    "@mastra/langfuse": "^1.2.5",
     "@sentry/node": "^9.0.0",
     "@zeiro/core": "workspace:*",
     "@zeiro/db": "workspace:*",
-    "ai": "^5.5.0",
+    "ai": "^6.0.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

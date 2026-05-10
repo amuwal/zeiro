@@ -20,5 +20,17 @@
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "typescript": "^5.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@clerk/shared",
+      "@prisma/client",
+      "@prisma/engines",
+      "@sentry/cli",
+      "esbuild",
+      "prisma",
+      "protobufjs",
+      "sharp"
+    ]
   }
 }

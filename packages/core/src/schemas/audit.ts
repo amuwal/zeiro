@@ -12,6 +12,7 @@ export const auditActionEnum = z.enum([
   'draft.escalated',
   'knowledge.updated',
   'client.tombstoned',
+  'channel.configured',
 ]);
 export type AuditAction = z.infer<typeof auditActionEnum>;
 
