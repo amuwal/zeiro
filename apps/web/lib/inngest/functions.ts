@@ -1,4 +1,11 @@
-import { findLatestSentBody, getDraftByInquiry, getInquiry, recordAudit } from '@zeiro/db';
+import {
+  findLatestSentBody,
+  getDraftByInquiry,
+  getInquiry,
+  recordAudit,
+  setInquiryAnalysis,
+  setInquiryStatus,
+} from '@zeiro/db';
 import { ingestKnowledge } from '../knowledge-ingest';
 import { processDraft } from '../process-draft';
 import { inngest } from './client';
@@ -11,6 +18,30 @@ export const draftInquiryFn = inngest.createFunction(
     id: 'draft-inquiry',
     concurrency: { key: 'event.data.firmId', limit: 5 },
     retries: 3,
+    onFailure: async ({ event, error }) => {
+      // Inngest fires this after all retries are exhausted. Mark the inquiry as
+      // escalated so the poller stops, the reviewer sees a clear error state, and
+      // the audit trail records the technical failure (vs. an AI-decided escalation).
+      const original = event.data.event.data as { firmId: string; inquiryId: string };
+      const { firmId, inquiryId } = original;
+      const reason = `AI 処理に失敗しました: ${error.message}`;
+      await setInquiryAnalysis(firmId, inquiryId, {
+        category: 'その他',
+        confidence: 0,
+        urgency: 'medium',
+        requiresTaxJudgment: false,
+        reason,
+        failureType: error.name,
+      });
+      await setInquiryStatus(firmId, inquiryId, 'escalated');
+      await recordAudit({
+        firmId,
+        actorId: SYSTEM_ACTOR,
+        inquiryId,
+        action: 'draft.failed',
+        metadata: { reason, errorName: error.name },
+      });
+    },
   },
   { event: 'inquiry.queued' },
   async ({ event, step }) => {
@@ -35,6 +66,7 @@ export const autoAddKnowledgeFn = inngest.createFunction(
         findLatestSentBody(firmId, inquiryId),
       ]);
       if (!inquiry || !draft) return { skipped: 'missing' };
+      if (!inquiry.client) return { skipped: 'unmatched' };
 
       const body = sentBody ?? draft.body;
       if (body.trim().length < MIN_INGEST_LENGTH) return { skipped: 'too_short' };

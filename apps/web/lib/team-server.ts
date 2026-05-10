@@ -1,5 +1,5 @@
 import { clerkClient } from '@clerk/nextjs/server';
-import { type PendingInvitation, normaliseRole } from './team';
+import { normaliseRole, type PendingInvitation } from './team';
 
 export async function listPendingInvitations(organizationId: string): Promise<PendingInvitation[]> {
   const cc = await clerkClient();

@@ -60,8 +60,6 @@ export async function patchDraftMetadata(
   return true;
 }
 
-type DraftRef = { id: string; inquiryId: string; deliveredAt: string | null };
-
 export async function findDraftByOutboundMessageId(
   outboundMessageId: string,
 ): Promise<{ id: string; inquiryId: string } | null> {
@@ -72,21 +70,4 @@ export async function findDraftByOutboundMessageId(
   `;
   const row = rows[0];
   return row ? { id: row.id, inquiryId: row.inquiry_id } : null;
-}
-
-export async function findDraftBySgMessageId(sgMessageId: string): Promise<DraftRef | null> {
-  const rows = await getPrisma().$queryRaw<
-    { id: string; inquiry_id: string; metadata: Record<string, unknown> | null }[]
-  >`
-    SELECT id, inquiry_id, metadata FROM drafts
-    WHERE metadata->>'sgMessageId' = ${sgMessageId}
-    LIMIT 1
-  `;
-  const row = rows[0];
-  if (!row) return null;
-  const deliveredAt =
-    row.metadata && typeof row.metadata === 'object' && 'deliveredAt' in row.metadata
-      ? String(row.metadata.deliveredAt)
-      : null;
-  return { id: row.id, inquiryId: row.inquiry_id, deliveredAt };
 }

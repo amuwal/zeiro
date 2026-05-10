@@ -11,5 +11,6 @@ export {
 export * from './pii/mask';
 export * from './schemas/audit';
 export * from './schemas/classification';
+export * from './schemas/client';
 export * from './schemas/inquiry';
 export * from './schemas/tenant';

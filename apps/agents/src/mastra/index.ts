@@ -2,6 +2,7 @@ import '../lib/sentry';
 import { Mastra } from '@mastra/core';
 import { LangfuseExporter } from '@mastra/langfuse';
 import { Observability } from '@mastra/observability';
+import { reflectorAgent } from './agents/reflector';
 import { triageAgent } from './agents/triage';
 import { inquiryPipeline } from './workflows/inquiry-pipeline';
 
@@ -29,7 +30,7 @@ const observabilityConfig =
     : null;
 
 export const mastra = new Mastra({
-  agents: { triageAgent },
+  agents: { triageAgent, reflectorAgent },
   workflows: { inquiryPipeline },
   ...(observabilityConfig ? { observability: observabilityConfig } : {}),
   bundler: {

@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { getPrisma } from '../server';
 
 export function findClientByEmail(firmId: string, email: string) {
@@ -23,33 +22,6 @@ export function listClients(firmId: string) {
     select: { id: true, name: true, lineUserId: true },
     orderBy: { name: 'asc' },
   });
-}
-
-export type LinkLineResult = { ok: true } | { ok: false; reason: 'not_found' | 'already_linked' };
-
-export async function linkClientLineUserId(
-  firmId: string,
-  clientId: string,
-  lineUserId: string,
-): Promise<LinkLineResult> {
-  const client = await getPrisma().client.findFirst({
-    where: { id: clientId, firmId },
-    select: { id: true },
-  });
-  if (!client) return { ok: false, reason: 'not_found' };
-
-  try {
-    await getPrisma().client.update({
-      where: { id: client.id },
-      data: { lineUserId },
-    });
-    return { ok: true };
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      return { ok: false, reason: 'already_linked' };
-    }
-    throw e;
-  }
 }
 
 export type ClientSearchHit = {
@@ -110,25 +82,77 @@ export async function getClientFootprint(
   return rows[0] ?? null;
 }
 
-export async function findOrCreateClientByEmail(firmId: string, email: string, name: string) {
-  const primaryEmail = email.toLowerCase();
-  const existing = await getPrisma().client.findUnique({
-    where: { firmId_primaryEmail: { firmId, primaryEmail } },
-  });
-  if (existing) return { client: existing, created: false };
+export type ClientListRow = {
+  id: string;
+  name: string;
+  primaryEmail: string;
+  lineUserId: string | null;
+  contractType: string;
+  assignedToId: string | null;
+  assignedToName: string | null;
+  source: string | null;
+  archivedAt: string | null;
+  notes: string | null;
+  inquiryCount: number;
+  lastContactAt: string | null;
+};
 
-  try {
-    const created = await getPrisma().client.create({
-      data: { firmId, name, primaryEmail, contractType: 'unverified' },
-    });
-    return { client: created, created: true };
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      const racedRow = await getPrisma().client.findUniqueOrThrow({
-        where: { firmId_primaryEmail: { firmId, primaryEmail } },
-      });
-      return { client: racedRow, created: false };
-    }
-    throw e;
-  }
+export async function listClientsRich(firmId: string): Promise<ClientListRow[]> {
+  return getPrisma().$queryRaw<ClientListRow[]>`
+    SELECT
+      c.id,
+      c.name,
+      c.primary_email AS "primaryEmail",
+      c.line_user_id AS "lineUserId",
+      c.contract_type AS "contractType",
+      c.assigned_tax_accountant_id AS "assignedToId",
+      u.name AS "assignedToName",
+      c.metadata->>'source' AS "source",
+      c.metadata->>'archivedAt' AS "archivedAt",
+      c.notes AS "notes",
+      (SELECT COUNT(*)::int FROM inquiries i WHERE i.client_id = c.id) AS "inquiryCount",
+      (
+        SELECT to_char(MAX(i.received_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+        FROM inquiries i WHERE i.client_id = c.id
+      ) AS "lastContactAt"
+    FROM clients c
+    LEFT JOIN users u ON u.id = c.assigned_tax_accountant_id
+    WHERE c.firm_id = ${firmId}::uuid
+    ORDER BY c.name ASC
+  `;
+}
+
+export type ClientDetail = ClientListRow & {
+  createdAt: string | null;
+  createdBy: string | null;
+  archivedBy: string | null;
+};
+
+export async function getClientDetail(firmId: string, id: string): Promise<ClientDetail | null> {
+  const rows = await getPrisma().$queryRaw<ClientDetail[]>`
+    SELECT
+      c.id,
+      c.name,
+      c.primary_email AS "primaryEmail",
+      c.line_user_id AS "lineUserId",
+      c.contract_type AS "contractType",
+      c.assigned_tax_accountant_id AS "assignedToId",
+      u.name AS "assignedToName",
+      c.metadata->>'source' AS "source",
+      c.metadata->>'archivedAt' AS "archivedAt",
+      c.metadata->>'archivedBy' AS "archivedBy",
+      c.metadata->>'createdAt' AS "createdAt",
+      c.metadata->>'createdBy' AS "createdBy",
+      c.notes AS "notes",
+      (SELECT COUNT(*)::int FROM inquiries i WHERE i.client_id = c.id) AS "inquiryCount",
+      (
+        SELECT to_char(MAX(i.received_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+        FROM inquiries i WHERE i.client_id = c.id
+      ) AS "lastContactAt"
+    FROM clients c
+    LEFT JOIN users u ON u.id = c.assigned_tax_accountant_id
+    WHERE c.firm_id = ${firmId}::uuid AND c.id = ${id}::uuid
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
 }

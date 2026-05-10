@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
 export type SendInput = {
   apiKey: string;
@@ -10,16 +10,16 @@ export type SendInput = {
   messageId: string;
   inReplyTo: string;
   references: string[];
-  customArgs?: Record<string, string>;
+  tags?: Record<string, string>;
 };
 
 export type SendResult = {
   outboundMessageId: string;
-  sgMessageId: string | null;
+  providerMessageId: string | null;
 };
 
 export async function sendReply(input: SendInput): Promise<SendResult> {
-  sgMail.setApiKey(input.apiKey);
+  const resend = new Resend(input.apiKey);
 
   const headers: Record<string, string> = {
     'Message-ID': bracket(input.messageId),
@@ -29,23 +29,34 @@ export async function sendReply(input: SendInput): Promise<SendResult> {
     headers.References = input.references.map(bracket).join(' ');
   }
 
-  const [response] = await sgMail.send({
-    to: input.to,
-    from: input.from,
-    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+  const result = await resend.emails.send({
+    from: formatAddress(input.from),
+    to: [input.to],
+    ...(input.replyTo ? { replyTo: formatAddress(input.replyTo) } : {}),
     subject: input.subject,
     text: input.body,
     headers,
-    customArgs: input.customArgs ?? {},
+    ...(input.tags ? { tags: toResendTags(input.tags) } : {}),
   });
 
-  const sgMessageId = response.headers['x-message-id'];
+  if (result.error) {
+    throw new Error(`resend send failed: ${result.error.name}: ${result.error.message}`);
+  }
+
   return {
     outboundMessageId: input.messageId,
-    sgMessageId: typeof sgMessageId === 'string' ? sgMessageId : null,
+    providerMessageId: result.data?.id ?? null,
   };
+}
+
+function formatAddress(addr: { name: string; email: string }): string {
+  return addr.name ? `${addr.name} <${addr.email}>` : addr.email;
 }
 
 function bracket(id: string): string {
   return id.startsWith('<') ? id : `<${id}>`;
+}
+
+function toResendTags(tags: Record<string, string>): { name: string; value: string }[] {
+  return Object.entries(tags).map(([name, value]) => ({ name, value }));
 }

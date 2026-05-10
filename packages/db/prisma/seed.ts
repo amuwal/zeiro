@@ -37,6 +37,7 @@ async function main() {
         name: c.name,
         primaryEmail: c.email,
         contractType: c.contractType,
+        metadata: { source: 'seeded', createdAt: new Date().toISOString() },
       },
     });
     clientByEmail.set(c.email, row.id);

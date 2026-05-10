@@ -4,7 +4,7 @@ import { getPrisma } from '../server';
 
 type InquiryInsert = {
   firmId: string;
-  clientId: string;
+  clientId: string | null;
   messageId: string;
   receivedAt: string;
   subject: string;
@@ -13,6 +13,8 @@ type InquiryInsert = {
   headers?: InquiryHeaders;
   assignedToId?: string | null;
   parentInquiryId?: string | null;
+  status?: string;
+  unmatchedSender?: string | null;
 };
 
 export type CreateInquiryResult =
@@ -34,6 +36,8 @@ export async function createInquiry(input: InquiryInsert): Promise<CreateInquiry
         headers: (input.headers ?? {}) as Prisma.InputJsonValue,
         assignedToId: input.assignedToId ?? null,
         parentInquiryId: input.parentInquiryId ?? null,
+        ...(input.status ? { status: input.status } : {}),
+        ...(input.unmatchedSender !== undefined ? { unmatchedSender: input.unmatchedSender } : {}),
       },
       select: { id: true },
     });
@@ -59,6 +63,37 @@ export function listInquiries(firmId: string, status?: InquiryStatus) {
 }
 
 export type InquiryRow = Awaited<ReturnType<typeof listInquiries>>[number];
+export type InquiryThreadRow = InquiryRow & { threadCount: number };
+
+// Inbox shows ONE row per conversation thread (the leaf inquiry — the latest message).
+// Each thread is a chain of inquiries linked via `parent_inquiry_id`; a leaf has no
+// other inquiry pointing at it. Status is reported by the leaf, so the inbox tells
+// the reviewer "what to do next" rather than re-surfacing already-handled prior messages.
+export async function listInquiryThreads(
+  firmId: string,
+  status?: InquiryStatus,
+): Promise<InquiryThreadRow[]> {
+  const all = await listInquiries(firmId);
+  const childOf = new Map<string, true>();
+  for (const inq of all) {
+    if (inq.parentInquiryId) childOf.set(inq.parentInquiryId, true);
+  }
+  const byId = new Map(all.map((i) => [i.id, i]));
+  const leaves = all.filter((i) => !childOf.has(i.id));
+  return leaves
+    .filter((i) => !status || i.status === status)
+    .map((leaf) => {
+      let count = 1;
+      let parentId = leaf.parentInquiryId;
+      while (parentId) {
+        const parent = byId.get(parentId);
+        if (!parent) break;
+        count += 1;
+        parentId = parent.parentInquiryId;
+      }
+      return { ...leaf, threadCount: count };
+    });
+}
 
 export function getInquiry(firmId: string, id: string) {
   return getPrisma().inquiry.findFirst({
@@ -103,22 +138,36 @@ export type InboxCounts = {
   drafted: number;
   escalated: number;
   sent: number;
+  unmatched: number;
 };
 
 export async function getInboxCounts(firmId: string): Promise<InboxCounts> {
-  const grouped = await getPrisma().inquiry.groupBy({
-    by: ['status'],
-    where: { firmId },
-    _count: { _all: true },
-  });
-  const counts: InboxCounts = { all: 0, pending: 0, drafted: 0, escalated: 0, sent: 0 };
-  for (const row of grouped) {
-    const n = row._count._all;
-    counts.all += n;
-    if (row.status === 'pending') counts.pending = n;
-    else if (row.status === 'drafted') counts.drafted = n;
-    else if (row.status === 'escalated') counts.escalated = n;
-    else if (row.status === 'sent') counts.sent = n;
+  // Count by thread (leaf inquiry) so the sidebar matches what's actually shown
+  // in the inbox list. A long conversation that's "sent" appears once, not N times.
+  const rows = await getPrisma().$queryRaw<{ status: string; count: number }[]>`
+    SELECT i.status, COUNT(*)::int AS count
+    FROM inquiries i
+    WHERE i.firm_id = ${firmId}::uuid
+      AND NOT EXISTS (
+        SELECT 1 FROM inquiries c WHERE c.parent_inquiry_id = i.id
+      )
+    GROUP BY i.status
+  `;
+  const counts: InboxCounts = {
+    all: 0,
+    pending: 0,
+    drafted: 0,
+    escalated: 0,
+    sent: 0,
+    unmatched: 0,
+  };
+  for (const row of rows) {
+    counts.all += row.count;
+    if (row.status === 'pending') counts.pending = row.count;
+    else if (row.status === 'drafted') counts.drafted = row.count;
+    else if (row.status === 'escalated') counts.escalated = row.count;
+    else if (row.status === 'sent') counts.sent = row.count;
+    else if (row.status === 'unmatched') counts.unmatched = row.count;
   }
   return counts;
 }
@@ -139,16 +188,22 @@ export async function walkThread(firmId: string, anchorInquiryId: string) {
     )
     SELECT id FROM thread
   `;
-  if (ids.length <= 1) return [];
+  if (ids.length === 0) return [];
 
   return getPrisma().inquiry.findMany({
     where: { firmId, id: { in: ids.map((r) => r.id) } },
     include: {
       client: { select: { name: true, primaryEmail: true } },
       drafts: {
-        select: { id: true, subject: true, model: true, createdAt: true, metadata: true },
-        orderBy: { createdAt: 'desc' },
-        take: 1,
+        select: {
+          id: true,
+          subject: true,
+          body: true,
+          model: true,
+          createdAt: true,
+          metadata: true,
+        },
+        orderBy: { createdAt: 'asc' },
       },
     },
     orderBy: { receivedAt: 'asc' },
@@ -156,3 +211,65 @@ export async function walkThread(firmId: string, anchorInquiryId: string) {
 }
 
 export type ThreadInquiry = Awaited<ReturnType<typeof walkThread>>[number];
+
+export type ClientInquirySummary = {
+  id: string;
+  receivedAt: Date;
+  subject: string;
+  status: string;
+  channel: string;
+};
+
+export async function promoteUnmatchedInquiry(
+  firmId: string,
+  inquiryId: string,
+  clientId: string,
+  assignedToId: string | null,
+): Promise<void> {
+  await getPrisma().inquiry.updateMany({
+    where: { id: inquiryId, firmId, status: 'unmatched' },
+    data: {
+      clientId,
+      assignedToId,
+      unmatchedSender: null,
+      status: 'pending',
+    },
+  });
+}
+
+export async function promoteAllUnmatchedFromSender(
+  firmId: string,
+  senderEmail: string,
+  clientId: string,
+  assignedToId: string | null,
+): Promise<string[]> {
+  const email = senderEmail.toLowerCase();
+  const rows = await getPrisma().inquiry.findMany({
+    where: { firmId, status: 'unmatched', unmatchedSender: email },
+    select: { id: true },
+  });
+  if (rows.length === 0) return [];
+  await getPrisma().inquiry.updateMany({
+    where: { firmId, status: 'unmatched', unmatchedSender: email },
+    data: {
+      clientId,
+      assignedToId,
+      unmatchedSender: null,
+      status: 'pending',
+    },
+  });
+  return rows.map((r) => r.id);
+}
+
+export function listInquiriesByClient(
+  firmId: string,
+  clientId: string,
+  limit = 50,
+): Promise<ClientInquirySummary[]> {
+  return getPrisma().inquiry.findMany({
+    where: { firmId, clientId },
+    select: { id: true, receivedAt: true, subject: true, status: true, channel: true },
+    orderBy: { receivedAt: 'desc' },
+    take: limit,
+  });
+}

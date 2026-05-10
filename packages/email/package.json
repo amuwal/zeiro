@@ -12,9 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sendgrid/mail": "^8.1.0",
     "@zeiro/core": "workspace:*",
     "mailparser": "^3.7.0",
+    "resend": "^6.12.3",
     "zod": "^4.0.0"
   },
   "devDependencies": {

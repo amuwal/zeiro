@@ -5,14 +5,14 @@ export const FIRM = {
 };
 
 export const CLIENTS = [
-  { name: '株式会社山田商事', email: 'yamada@yamada-shoji.co.jp', contractType: 'standard' },
-  { name: '合同会社みらいテック', email: 'suzuki@mirai-tech.jp', contractType: 'standard' },
-  { name: '田中製作所株式会社', email: 'misaki.tanaka@tanaka-mfg.co.jp', contractType: 'premium' },
-  { name: '株式会社グリーンリーフ', email: 'sasaki@greenleaf.co.jp', contractType: 'standard' },
-  { name: '鈴木建設株式会社', email: 'kenji.s@suzuki-kensetsu.co.jp', contractType: 'standard' },
-  { name: '株式会社ノーブルデザイン', email: 'nakamura@noble-design.jp', contractType: 'standard' },
-  { name: '佐藤クリニック', email: 'sato@sato-clinic.jp', contractType: 'premium' },
-  { name: '株式会社ジオメトリクス', email: 'takahashi@geometrics.io', contractType: 'standard' },
+  { name: '株式会社山田商事', email: 'yamada@yamada-shoji.co.jp', contractType: 'monthly' },
+  { name: '合同会社みらいテック', email: 'suzuki@mirai-tech.jp', contractType: 'monthly' },
+  { name: '田中製作所株式会社', email: 'misaki.tanaka@tanaka-mfg.co.jp', contractType: 'monthly' },
+  { name: '株式会社グリーンリーフ', email: 'sasaki@greenleaf.co.jp', contractType: 'spot' },
+  { name: '鈴木建設株式会社', email: 'kenji.s@suzuki-kensetsu.co.jp', contractType: 'monthly' },
+  { name: '株式会社ノーブルデザイン', email: 'nakamura@noble-design.jp', contractType: 'spot' },
+  { name: '佐藤クリニック', email: 'sato@sato-clinic.jp', contractType: 'monthly' },
+  { name: '株式会社ジオメトリクス', email: 'takahashi@geometrics.io', contractType: 'prospect' },
 ];
 
 type Citation = { source: string; snippet: string };

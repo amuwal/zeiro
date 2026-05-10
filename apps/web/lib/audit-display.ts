@@ -9,6 +9,7 @@ export type AuditDisplay = {
 export const AUDIT_ACTION_DISPLAY: Record<string, AuditDisplay> = {
   'inquiry.received': { icon: 'inbox', jp: '問い合わせ受信', tone: 'info' },
   'inquiry.assigned': { icon: 'user', jp: '担当者割当', tone: 'info' },
+  'inquiry.discarded': { icon: 'x', jp: '未登録メール削除', tone: 'warn' },
   'draft.generated': { icon: 'edit', jp: '下書き生成', tone: 'info' },
   'draft.sent': { icon: 'send', jp: '下書き送信', tone: 'ok' },
   'draft.delivered': { icon: 'check', jp: '配信完了', tone: 'ok' },
@@ -16,9 +17,16 @@ export const AUDIT_ACTION_DISPLAY: Record<string, AuditDisplay> = {
   'draft.spam_reported': { icon: 'alert', jp: 'スパム報告', tone: 'urgent' },
   'draft.rejected': { icon: 'x', jp: '下書き却下', tone: 'warn' },
   'draft.escalated': { icon: 'flag', jp: 'エスカレーション', tone: 'warn' },
+  'draft.failed': { icon: 'alert', jp: 'AI 処理エラー', tone: 'urgent' },
   'knowledge.updated': { icon: 'doc', jp: 'ナレッジ更新', tone: 'info' },
+  'client.created': { icon: 'user', jp: '顧問先 登録', tone: 'ok' },
+  'client.updated': { icon: 'edit', jp: '顧問先 更新', tone: 'info' },
+  'client.archived': { icon: 'archive', jp: '顧問先 アーカイブ', tone: 'warn' },
+  'client.unarchived': { icon: 'archive', jp: '顧問先 復元', tone: 'info' },
+  'client.deleted': { icon: 'x', jp: '顧問先 削除', tone: 'urgent' },
   'client.tombstoned': { icon: 'archive', jp: '削除要求対応', tone: 'warn' },
   'client.identity_linked': { icon: 'users', jp: '顧問先 LINE 紐付け', tone: 'ok' },
+  'client.promoted_from_email': { icon: 'user', jp: 'メールから顧問先登録', tone: 'ok' },
   'channel.configured': { icon: 'settings', jp: 'チャネル設定', tone: 'info' },
 };
 

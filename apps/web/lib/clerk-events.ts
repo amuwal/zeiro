@@ -7,6 +7,7 @@ import {
   upsertUser,
 } from '@zeiro/db';
 import { z } from 'zod';
+import { env } from './env';
 
 const userPayload = z.object({
   id: z.string(),
@@ -115,5 +116,6 @@ function composeName(first?: string | null, last?: string | null): string {
 }
 
 function defaultInboundAddress(slug: string): string {
-  return `inquiry-${slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')}@reply.zeiro.jp`;
+  const local = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  return `inquiry-${local}@${env.OUTBOUND_FROM_DOMAIN}`;
 }

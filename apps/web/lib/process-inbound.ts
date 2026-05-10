@@ -14,7 +14,7 @@ const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 export type ProcessOutcome =
   | { kind: 'unmatched_firm' }
-  | { kind: 'unmatched_client'; firmId: string }
+  | { kind: 'unmatched_persisted'; firmId: string; inquiryId: string }
   | { kind: 'duplicate'; inquiryId: string }
   | { kind: 'queued'; inquiryId: string };
 
@@ -22,22 +22,40 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
   const firm = await findFirmByInboundAddress(message.toAddress);
   if (!firm) return { kind: 'unmatched_firm' };
 
-  const client = await findClientByEmail(firm.id, message.fromAddress);
-  if (!client) {
-    await recordAudit({
-      firmId: firm.id,
-      actorId: SYSTEM_ACTOR,
-      inquiryId: null,
-      action: 'inquiry.received',
-      metadata: { unmatched: true, fromAddress: message.fromAddress, messageId: message.messageId },
-    });
-    return { kind: 'unmatched_client', firmId: firm.id };
-  }
-
   const attachmentSummary = await parseInboundAttachments(message.attachments);
   const combinedBody = message.body + attachmentSummary.appendedText;
   const { masked: maskedBody, redactionCount } = maskMyNumber(combinedBody);
   const parentInquiryId = await findParentInquiryId(message.headers);
+
+  const client = await findClientByEmail(firm.id, message.fromAddress);
+
+  if (!client) {
+    const unmatched = await createInquiry({
+      firmId: firm.id,
+      clientId: null,
+      messageId: message.messageId,
+      receivedAt: message.receivedAt,
+      subject: message.subject,
+      body: maskedBody,
+      ...(message.headers ? { headers: message.headers } : {}),
+      status: 'unmatched',
+      unmatchedSender: message.fromAddress,
+      parentInquiryId,
+    });
+    await recordAudit({
+      firmId: firm.id,
+      actorId: SYSTEM_ACTOR,
+      inquiryId: unmatched.id,
+      action: 'inquiry.received',
+      metadata: {
+        unmatched: true,
+        fromAddress: message.fromAddress,
+        messageId: message.messageId,
+        piiRedactions: redactionCount,
+      },
+    });
+    return { kind: 'unmatched_persisted', firmId: firm.id, inquiryId: unmatched.id };
+  }
 
   const insert = await createInquiry({
     firmId: firm.id,

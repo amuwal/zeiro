@@ -1,10 +1,7 @@
-export const ESCALATION_CONFIDENCE_THRESHOLD = 0.75;
 export const TARGET_ESCALATION_RATE = 0.32;
 export const ESCALATION_RATE_TOLERANCE = 0.05;
 export const DRAFT_GENERATION_TIMEOUT_MS = 90_000;
 export const MAX_INBOUND_DELAY_MS = 5 * 60_000;
-
-export const URGENT_KEYWORDS = ['至急', 'クレーム', '税務調査', '差押え', '差し押さえ'] as const;
 
 export const TRIAGE_MODEL = 'gemini-2.5-flash';
 export const DRAFT_MODEL = 'claude-sonnet-4-6';

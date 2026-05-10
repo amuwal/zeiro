@@ -2,11 +2,18 @@ import { type DraftResult, draftResultSchema } from '@zeiro/core';
 import { z } from 'zod';
 import { env } from './env';
 
+export type ThreadMessage = {
+  role: 'customer' | 'firm';
+  at: string;
+  body: string;
+};
+
 export type PipelineRequest = {
   firmId: string;
   clientNotes: string | null;
   subject: string;
   body: string;
+  threadHistory?: ThreadMessage[];
 };
 
 const responseSchema = z.object({

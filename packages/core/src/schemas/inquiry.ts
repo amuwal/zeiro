@@ -11,6 +11,7 @@ export type Attachment = z.infer<typeof attachmentSchema>;
 export const inquiryHeadersSchema = z.object({
   inReplyTo: z.string().nullable(),
   references: z.array(z.string()),
+  fromName: z.string().nullable().optional(),
 });
 export type InquiryHeaders = z.infer<typeof inquiryHeadersSchema>;
 
@@ -18,6 +19,7 @@ export const incomingMessageSchema = z.object({
   messageId: z.string().min(1),
   receivedAt: z.string().datetime(),
   fromAddress: z.string().email(),
+  fromName: z.string().nullable().optional(),
   toAddress: z.string().email(),
   subject: z.string(),
   body: z.string(),
@@ -26,7 +28,14 @@ export const incomingMessageSchema = z.object({
 });
 export type IncomingMessage = z.infer<typeof incomingMessageSchema>;
 
-export const inquiryStatusEnum = z.enum(['pending', 'drafted', 'sent', 'rejected', 'escalated']);
+export const inquiryStatusEnum = z.enum([
+  'pending',
+  'drafted',
+  'sent',
+  'rejected',
+  'escalated',
+  'unmatched',
+]);
 export type InquiryStatus = z.infer<typeof inquiryStatusEnum>;
 
 export const webFormSubmissionSchema = z.object({

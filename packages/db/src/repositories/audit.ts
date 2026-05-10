@@ -132,6 +132,7 @@ export async function listRecentComplianceEvents(
     'channel.configured',
     'client.identity_linked',
     'client.tombstoned',
+    'client.deleted',
     'draft.bounced',
     'draft.spam_reported',
     'draft.escalated',

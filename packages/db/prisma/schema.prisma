@@ -94,7 +94,7 @@ model Client {
 model Inquiry {
   id              String   @id @default(uuid()) @db.Uuid
   firmId          String   @map("firm_id") @db.Uuid
-  clientId        String   @map("client_id") @db.Uuid
+  clientId        String?  @map("client_id") @db.Uuid
   assignedToId    String?  @map("assigned_to_id") @db.Uuid
   parentInquiryId String?  @map("parent_inquiry_id") @db.Uuid
   messageId       String   @map("message_id")
@@ -103,11 +103,12 @@ model Inquiry {
   body            String
   status          String   @default("pending")
   channel         String   @default("email")
+  unmatchedSender String?  @map("unmatched_sender")
   analysis        Json     @default("{}")
   headers         Json     @default("{}")
 
   firm           Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  client         Client       @relation(fields: [clientId], references: [id])
+  client         Client?      @relation(fields: [clientId], references: [id])
   assignedTo     User?        @relation("InquiryAssignment", fields: [assignedToId], references: [id])
   parentInquiry  Inquiry?     @relation("InquiryThread", fields: [parentInquiryId], references: [id])
   childInquiries Inquiry[]    @relation("InquiryThread")
