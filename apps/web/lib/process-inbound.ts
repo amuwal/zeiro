@@ -3,7 +3,9 @@ import {
   createInquiry,
   findClientByEmail,
   findDraftByOutboundMessageId,
+  findDraftBySentMessageId,
   findFirmByInboundAddress,
+  findInquiryByMessageId,
   recordAudit,
 } from '@zeiro/db';
 import type { ParsedMessage } from '@zeiro/email';
@@ -25,7 +27,7 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
   const attachmentSummary = await parseInboundAttachments(message.attachments);
   const combinedBody = message.body + attachmentSummary.appendedText;
   const { masked: maskedBody, redactionCount } = maskMyNumber(combinedBody);
-  const parentInquiryId = await findParentInquiryId(message.headers);
+  const parentInquiryId = await findParentInquiryId(firm.id, message.headers);
 
   const client = await findClientByEmail(firm.id, message.fromAddress);
 
@@ -97,14 +99,33 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
   return { kind: 'queued', inquiryId: insert.id };
 }
 
-async function findParentInquiryId(headers: InquiryHeaders | undefined): Promise<string | null> {
+// Walk the In-Reply-To + References chain and try every match path that could
+// resolve the parent. Three lookup passes per candidate Message-ID:
+//   1. drafts.metadata.outboundMessageId — our custom `<draftId@reply.zeiro.io>`.
+//      Matches when Resend respected our header (verified domain path).
+//   2. drafts.metadata.sentMessageId — the SES-assigned Message-ID captured from
+//      the email.sent webhook. Matches when Resend rewrote our Message-ID into
+//      SES's `01...@ap-northeast-1.amazonses.com` form (unverified domain path).
+//   3. inquiries.message_id — a prior customer message in the same firm.
+//      Matches when Gmail anchored the reply on the customer's own prior email
+//      instead of on our reply (very common — Gmail picks whichever is closest).
+//
+// Any one match means "this email belongs to that conversation."
+async function findParentInquiryId(
+  firmId: string,
+  headers: InquiryHeaders | undefined,
+): Promise<string | null> {
   if (!headers) return null;
   const candidates = [headers.inReplyTo, ...headers.references].filter(
     (s): s is string => typeof s === 'string' && s.length > 0,
   );
   for (const messageId of candidates) {
-    const draft = await findDraftByOutboundMessageId(messageId);
-    if (draft) return draft.inquiryId;
+    const draftByOutbound = await findDraftByOutboundMessageId(messageId);
+    if (draftByOutbound) return draftByOutbound.inquiryId;
+    const draftBySent = await findDraftBySentMessageId(messageId);
+    if (draftBySent) return draftBySent.inquiryId;
+    const priorInquiry = await findInquiryByMessageId(firmId, messageId);
+    if (priorInquiry) return priorInquiry.id;
   }
   return null;
 }

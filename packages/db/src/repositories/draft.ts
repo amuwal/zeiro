@@ -71,3 +71,20 @@ export async function findDraftByOutboundMessageId(
   const row = rows[0];
   return row ? { id: row.id, inquiryId: row.inquiry_id } : null;
 }
+
+// Resend sends via AWS SES which rewrites our custom Message-ID with its own
+// (e.g. `01<seq>-<uuid>-000000@ap-northeast-1.amazonses.com`) before transmission.
+// We capture the SES-assigned Message-ID from the email.sent/delivered webhook and
+// store it on draft.metadata.sentMessageId so the customer's eventual In-Reply-To
+// (which references the SES Message-ID, not ours) can still resolve back to a draft.
+export async function findDraftBySentMessageId(
+  sentMessageId: string,
+): Promise<{ id: string; inquiryId: string } | null> {
+  const rows = await getPrisma().$queryRaw<{ id: string; inquiry_id: string }[]>`
+    SELECT id, inquiry_id FROM drafts
+    WHERE metadata->>'sentMessageId' = ${sentMessageId}
+    LIMIT 1
+  `;
+  const row = rows[0];
+  return row ? { id: row.id, inquiryId: row.inquiry_id } : null;
+}

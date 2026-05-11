@@ -1,9 +1,4 @@
-import {
-  findDraftByOutboundMessageId,
-  patchDraftMetadata,
-  recordAudit,
-  setInquiryStatus,
-} from '@zeiro/db';
+import { patchDraftMetadata, recordAudit, setInquiryStatus } from '@zeiro/db';
 import { z } from 'zod';
 
 const tagSchema = z.array(z.object({ name: z.string(), value: z.string() }));
@@ -42,7 +37,16 @@ const eventSchema = z.object({
 });
 type ResendEvent = z.infer<typeof eventSchema>;
 
-const RELEVANT = new Set(['email.delivered', 'email.bounced', 'email.complained', 'email.failed']);
+// email.sent fires first (when Resend hands off to SES) and carries the
+// SES-assigned Message-ID in headers. Capturing it there lets us thread customer
+// replies that reference SES's Message-ID instead of our custom one.
+const RELEVANT = new Set([
+  'email.sent',
+  'email.delivered',
+  'email.bounced',
+  'email.complained',
+  'email.failed',
+]);
 
 const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
@@ -67,24 +71,32 @@ export async function applyEvents(
 async function applyOne(event: ResendEvent): Promise<boolean> {
   if (!RELEVANT.has(event.type)) return false;
 
-  const outboundMessageId = readMessageIdHeader(event.data.headers);
-  if (!outboundMessageId) return false;
-
-  const draft = await findDraftByOutboundMessageId(outboundMessageId);
-  if (!draft) return false;
-
+  // Look up draft via tags — we set `idempotencyKey = draft.id` at send time,
+  // which is more reliable than matching by Message-ID (SES rewrites ours).
   const firmId = readTag(event.data.tags, 'firmId');
-  const inquiryId = readTag(event.data.tags, 'inquiryId') ?? draft.inquiryId;
-  if (!firmId) return false;
+  const draftId = readTag(event.data.tags, 'idempotencyKey');
+  const inquiryId = readTag(event.data.tags, 'inquiryId');
+  if (!firmId || !draftId || !inquiryId) return false;
+
+  // The Message-ID in event.data.headers is the SES-assigned one — capture it on
+  // the draft so future customer replies (whose In-Reply-To references this ID)
+  // can be threaded back. We do this on every relevant event so even if
+  // email.sent is missed we'll catch it on email.delivered.
+  const sentMessageId = readMessageIdHeader(event.data.headers);
+  if (sentMessageId) {
+    await patchDraftMetadata(draftId, { sentMessageId });
+  }
 
   switch (event.type) {
+    case 'email.sent':
+      return handleSent(draftId, event);
     case 'email.delivered':
-      return handleDelivered(draft.id, event);
+      return handleDelivered(draftId, event);
     case 'email.bounced':
     case 'email.failed':
-      return handleFailure(firmId, draft.id, inquiryId, event, 'draft.bounced');
+      return handleFailure(firmId, draftId, inquiryId, event, 'draft.bounced');
     case 'email.complained':
-      return handleFailure(firmId, draft.id, inquiryId, event, 'draft.spam_reported');
+      return handleFailure(firmId, draftId, inquiryId, event, 'draft.spam_reported');
     default:
       return false;
   }
@@ -102,6 +114,14 @@ function readMessageIdHeader(
 function readTag(tags: { name: string; value: string }[] | undefined, name: string): string | null {
   if (!tags) return null;
   return tags.find((t) => t.name === name)?.value ?? null;
+}
+
+async function handleSent(draftId: string, event: ResendEvent): Promise<boolean> {
+  await patchDraftMetadata(draftId, {
+    sentAcknowledgedAt: event.created_at ?? new Date().toISOString(),
+    providerEventId: event.data.email_id,
+  });
+  return true;
 }
 
 async function handleDelivered(draftId: string, event: ResendEvent): Promise<boolean> {
