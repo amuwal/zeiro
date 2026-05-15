@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/icon';
 import { Tabs } from './tabs';
+import { UserMenu } from './user-menu';
 
 export function Topbar({ inboxCount, admin }: { inboxCount: number; admin: boolean }) {
   return (
@@ -23,7 +24,7 @@ export function Topbar({ inboxCount, admin }: { inboxCount: number; admin: boole
           <Icon name="settings" size={15} />
         </Link>
         <div className="topbar-divider" />
-        <div className="avatar">SK</div>
+        <UserMenu />
       </div>
     </header>
   );
