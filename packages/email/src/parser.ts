@@ -57,10 +57,12 @@ export function parseResendInbound(payload: unknown): ParsedMessage {
       ? (payload as { data: unknown }).data
       : payload;
   const data = resendInboundSchema.parse(inner);
-  const headerMap = data.headers ?? {};
-  const inReplyToRaw =
-    data.inReplyTo ?? headerMap['In-Reply-To'] ?? headerMap['in-reply-to'] ?? null;
-  const referencesRaw = data.references ?? headerMap.References ?? headerMap.references ?? null;
+  // RFC 5322 header field names are case-insensitive. Providers vary on which casing
+  // they send back ("In-Reply-To" vs "in-reply-to" vs "In-reply-to"). Normalise once
+  // to lowercase keys so downstream lookups are predictable.
+  const headerMap = normaliseHeaders(data.headers);
+  const inReplyToRaw = data.inReplyTo ?? headerMap['in-reply-to'] ?? null;
+  const referencesRaw = data.references ?? headerMap.references ?? null;
   const fromParts = extractFirstAddress(data.from);
   return incomingMessageSchema.parse({
     messageId: stripAngles(data.message_id ?? data.messageId ?? null) ?? generateMessageId(),
@@ -104,6 +106,17 @@ function parseAddressString(raw: string): { email: string; name: string | null }
     return { email: emailPart.trim().toLowerCase(), name: cleanName(namePart) };
   }
   return { email: raw.trim().toLowerCase(), name: null };
+}
+
+function normaliseHeaders(
+  input: Record<string, string> | null | undefined,
+): Record<string, string> {
+  if (!input) return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (typeof value === 'string') out[key.toLowerCase()] = value;
+  }
+  return out;
 }
 
 function cleanName(raw: string | null): string | null {

@@ -1,7 +1,9 @@
 import { patchDraftMetadata, recordAudit, setInquiryStatus } from '@zeiro/db';
 import { z } from 'zod';
 
-const tagSchema = z.array(z.object({ name: z.string(), value: z.string() }));
+// Resend's webhook delivers tags as a flat record (`{firmId: "...", inquiryId: "..."}`)
+// even though their SDK types claim an array of {name, value}. Accept the real shape.
+const tagSchema = z.record(z.string(), z.string());
 
 const headerSchema = z.array(z.object({ name: z.string(), value: z.string() }));
 
@@ -78,10 +80,12 @@ async function applyOne(event: ResendEvent): Promise<boolean> {
   const inquiryId = readTag(event.data.tags, 'inquiryId');
   if (!firmId || !draftId || !inquiryId) return false;
 
-  // The Message-ID in event.data.headers is the SES-assigned one — capture it on
-  // the draft so future customer replies (whose In-Reply-To references this ID)
-  // can be threaded back. We do this on every relevant event so even if
-  // email.sent is missed we'll catch it on email.delivered.
+  // Best-effort capture of the SES-assigned Message-ID for thread matching.
+  // Resend's webhook today only echoes the headers we set (In-Reply-To, References,
+  // Reply-To) — it does NOT include the actual Message-ID SES assigned. This branch
+  // therefore stays dormant until either (a) Resend exposes it, or (b) we move to a
+  // verified domain where they respect our custom Message-ID. Threading still works
+  // via the References chain in process-inbound's findParentInquiryId.
   const sentMessageId = readMessageIdHeader(event.data.headers);
   if (sentMessageId) {
     await patchDraftMetadata(draftId, { sentMessageId });
@@ -111,9 +115,8 @@ function readMessageIdHeader(
   return h.value.replace(/^<|>$/g, '').trim();
 }
 
-function readTag(tags: { name: string; value: string }[] | undefined, name: string): string | null {
-  if (!tags) return null;
-  return tags.find((t) => t.name === name)?.value ?? null;
+function readTag(tags: Record<string, string> | undefined, name: string): string | null {
+  return tags?.[name] ?? null;
 }
 
 async function handleSent(draftId: string, event: ResendEvent): Promise<boolean> {

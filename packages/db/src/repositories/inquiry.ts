@@ -105,6 +105,20 @@ export function getInquiry(firmId: string, id: string) {
   });
 }
 
+// Threading lookup: when a customer reply has In-Reply-To pointing at one of the
+// customer's own previous emails (not at our outbound draft), we need to find that
+// prior inquiry to link the thread. Without this the chain orphans whenever Gmail
+// picks the customer's prior message as the reply anchor.
+export async function findInquiryByMessageId(
+  firmId: string,
+  messageId: string,
+): Promise<{ id: string } | null> {
+  return getPrisma().inquiry.findFirst({
+    where: { firmId, messageId },
+    select: { id: true },
+  });
+}
+
 export async function setInquiryStatus(firmId: string, id: string, status: InquiryStatus) {
   await getPrisma().inquiry.updateMany({
     where: { id, firmId },
