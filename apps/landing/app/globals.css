@@ -1,0 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap");
+
+@import "tailwindcss";
+
+@import "../styles/tokens.css";
+@import "../styles/topbar.css";
+@import "../styles/hero.css";
+@import "../styles/hero-demo.css";
+@import "../styles/marquee.css";
+@import "../styles/sections.css";
+@import "../styles/channels.css";
+@import "../styles/knowledge.css";
+@import "../styles/citations.css";
+@import "../styles/confidence.css";
+@import "../styles/memory.css";
+@import "../styles/numbers.css";
+@import "../styles/cta.css";

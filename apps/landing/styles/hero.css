@@ -1,0 +1,174 @@
+.hero {
+  position: relative;
+  padding: 130px 0 0;
+  overflow: hidden;
+  z-index: 1;
+}
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 56px;
+}
+@media (min-width: 1024px) {
+  .hero-inner {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: center;
+    gap: 64px;
+  }
+}
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  animation: fade-up 700ms var(--ease) 80ms both;
+}
+.hero-eyebrow .badge {
+  background: var(--ink-0); color: var(--bg-0);
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 9.5px; letter-spacing: 0.10em;
+  font-weight: 600;
+}
+.hero-eyebrow .pulse {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ink-0);
+  position: relative;
+  margin-left: -2px;
+}
+.hero-eyebrow .pulse::after {
+  content: "";
+  position: absolute; inset: -2px;
+  border-radius: 50%;
+  border: 1px solid var(--ink-0);
+  animation: pulse-ring 1.8s var(--ease-out) infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.hero h1 {
+  font-family: var(--font-jp);
+  font-weight: 600;
+  font-size: clamp(48px, 7.2vw, 104px);
+  line-height: 0.96;
+  letter-spacing: -0.038em;
+  margin: 0;
+  color: var(--ink-0);
+  text-wrap: balance;
+  font-feature-settings: "palt";
+}
+.hero h1 .line {
+  display: block;
+  overflow: hidden;
+}
+.hero h1 .line > span {
+  display: inline-block;
+  transform: translateY(110%);
+  animation: rise 900ms var(--ease) forwards;
+}
+.hero h1 .line:nth-child(1) > span { animation-delay: 120ms; }
+.hero h1 .line:nth-child(2) > span { animation-delay: 220ms; }
+.hero h1 .line:nth-child(3) > span { animation-delay: 320ms; }
+@keyframes rise {
+  to { transform: translateY(0); }
+}
+.hero h1 em {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-2);
+  letter-spacing: -0.02em;
+}
+.hero h1 .ink-light { color: var(--ink-3); }
+.hero h1 .strike {
+  position: relative;
+  display: inline-block;
+}
+.hero h1 .strike::after {
+  content: "";
+  position: absolute;
+  left: -2%; right: -2%;
+  top: 52%; height: 4px;
+  background: var(--ink-0);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: strike 700ms var(--ease) 1100ms forwards;
+}
+@keyframes strike { to { transform: scaleX(1); } }
+
+.hero-sub {
+  margin: 28px 0 0;
+  font-size: clamp(15px, 1.4vw, 18px);
+  color: var(--ink-2);
+  line-height: 1.65;
+  max-width: 30em;
+  letter-spacing: 0.005em;
+  animation: fade-up 700ms var(--ease) 600ms both;
+}
+.hero-sub b { color: var(--ink-0); font-weight: 600; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-cta-row {
+  margin-top: 32px;
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  animation: fade-up 700ms var(--ease) 760ms both;
+}
+.hero-cta-row .kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--bg-0);
+  opacity: 0.55;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  margin-left: 4px;
+  letter-spacing: 0.04em;
+}
+
+.hero-microstats {
+  margin-top: 42px;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: clamp(20px, 4vw, 48px);
+  justify-content: start;
+  animation: fade-up 700ms var(--ease) 900ms both;
+}
+.hero-microstat .v {
+  font-family: var(--font-sans);
+  font-size: clamp(22px, 2.4vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hero-microstat .v .unit {
+  font-size: 0.55em;
+  color: var(--ink-3);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin-left: 2px;
+}
+.hero-microstat .l {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+}

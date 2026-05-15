@@ -1,0 +1,168 @@
+.confidence {
+  background: var(--ink-0);
+  color: var(--bg-0);
+}
+.confidence .section-title { color: var(--bg-0); }
+.confidence .section-title em { color: rgba(250,250,250,0.45); }
+.confidence .section-eyebrow { color: rgba(250,250,250,0.5); }
+.confidence .section-eyebrow .num { color: var(--bg-0); border-color: var(--bg-0); }
+.confidence .section-lede { color: rgba(250,250,250,0.65); }
+.confidence .section-lede b { color: var(--bg-0); }
+
+.conf-stage {
+  margin-top: 64px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+@media (min-width: 1024px) {
+  .conf-stage { grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+}
+.conf-dial-wrap {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 32px;
+  align-items: center;
+  padding: 32px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+}
+.conf-dial {
+  position: relative;
+  width: 200px; height: 200px;
+}
+.conf-dial svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.conf-dial .track { stroke: rgba(255,255,255,0.14); stroke-width: 4; fill: none; }
+.conf-dial .fill {
+  stroke: var(--bg-0); stroke-width: 4; fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1200ms var(--ease);
+}
+.conf-dial .center {
+  position: absolute; inset: 0;
+  display: grid; place-items: center; align-content: center;
+  text-align: center;
+}
+.conf-dial .center .v {
+  font-family: var(--font-sans);
+  font-size: 64px;
+  font-weight: 400;
+  letter-spacing: -0.038em;
+  color: var(--bg-0);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.conf-dial .center .v .unit { font-size: 22px; color: rgba(255,255,255,0.5); }
+.conf-dial .center .l {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.conf-dial-info { display: flex; flex-direction: column; gap: 14px; }
+.conf-dial-info .nm {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.conf-dial-info .v {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--bg-0);
+  letter-spacing: -0.018em;
+}
+.conf-dial-info .s {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.65;
+  max-width: 28em;
+}
+.conf-dial-info .picker {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.conf-dial-info .picker button {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all var(--t-fast) var(--ease);
+}
+.conf-dial-info .picker button.active {
+  background: var(--bg-0);
+  color: var(--ink-0);
+  border-color: var(--bg-0);
+}
+
+.conf-threshold {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.conf-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+}
+.conf-row .grade {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.65);
+  padding: 4px 0;
+  border-right: 1px solid rgba(255,255,255,0.16);
+  text-align: right;
+  padding-right: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.conf-row .label {
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.conf-row .label .sub {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+.conf-row .badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.conf-row.auto .badge { background: var(--bg-0); color: var(--ink-0); }
+.conf-row.review .badge { background: transparent; color: var(--bg-0); border: 1px solid var(--bg-0); }
+.conf-row.escalate .badge { background: transparent; color: var(--bg-0); border: 1px dashed var(--bg-0); }
+
+.conf-threshold-foot {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
