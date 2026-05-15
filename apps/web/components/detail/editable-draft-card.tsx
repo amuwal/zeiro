@@ -3,14 +3,17 @@
 import type { DraftWithCitations } from '@zeiro/db';
 import { Icon } from '@/components/ui/icon';
 import { formatFullJST } from '@/lib/format';
+import { CitedDraftBody } from './cited-draft-body';
 
 type Props = {
   draft: DraftWithCitations;
   editing: boolean;
   body: string;
   edited: boolean;
+  activeCitationIndex: number | null;
   onToggleEdit: () => void;
   onChangeBody: (body: string) => void;
+  onSelectCitation: (citationIndex: number) => void;
 };
 
 export function EditableDraftCard({
@@ -18,8 +21,10 @@ export function EditableDraftCard({
   editing,
   body,
   edited,
+  activeCitationIndex,
   onToggleEdit,
   onChangeBody,
+  onSelectCitation,
 }: Props) {
   return (
     <div className="section">
@@ -47,7 +52,12 @@ export function EditableDraftCard({
             rows={Math.max(10, body.split('\n').length + 2)}
           />
         ) : (
-          <div className="draft-body">{body}</div>
+          <CitedDraftBody
+            body={body}
+            blocks={draft.citationBlocks}
+            activeIndex={activeCitationIndex}
+            onSelectCitation={onSelectCitation}
+          />
         )}
       </div>
     </div>

@@ -2,7 +2,6 @@ import { getDraftByInquiry, getFirm, getInquiry, walkThread } from '@zeiro/db';
 import { notFound } from 'next/navigation';
 import { AiAnalysis } from '@/components/detail/ai-analysis';
 import { AiReviewCard } from '@/components/detail/ai-review-card';
-import { CitationList } from '@/components/detail/citation-list';
 import { ConversationTimeline } from '@/components/detail/conversation-timeline';
 import { DetailHeader } from '@/components/detail/detail-header';
 import { DraftReviewForm } from '@/components/detail/draft-review-form';
@@ -118,7 +117,7 @@ export default async function InquiryDetailPage({
             {aiReview && <AiReviewCard review={aiReview} />}
           </>
         }
-        postDraft={draft && <CitationList citations={draft.citations} />}
+        postDraft={null}
       />
     </section>
   );

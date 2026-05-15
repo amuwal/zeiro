@@ -1,4 +1,5 @@
 import { type AiReview, aiReviewSchema, type DraftResult, type TriageResult } from '@zeiro/core';
+import type { KnowledgeHit } from '@zeiro/db';
 import { ensureRePrefix } from '@zeiro/email';
 import { reflectorAgent } from '../mastra/agents/reflector';
 import { draftPrompt } from '../mastra/prompts/draft';
@@ -14,43 +15,59 @@ type Input = {
   threadHistory?: ThreadMessage[] | undefined;
 };
 
+export type DraftDiagnostics = {
+  hits: KnowledgeHit[];
+  drafter: DrafterResult | null;
+};
+
 export async function draftReply(input: Input, triage: TriageResult): Promise<DraftResult> {
+  const { result } = await runDraftPipeline(input, triage);
+  return result;
+}
+
+// Same pipeline as `draftReply` but also returns the retrieval hits and raw
+// drafter output, which the eval runner uses to assert retrieval quality and
+// to verify that each cited snippet actually appears in the source document.
+export async function runDraftPipeline(
+  input: Input,
+  triage: TriageResult,
+): Promise<{ result: DraftResult; diagnostics: DraftDiagnostics }> {
   const hits = await hybridSearch(input.firmId, input.body);
   if (hits.length === 0) {
-    const aiReview = await runReflector({
-      input,
-      triage,
-      hits,
-      draftBody: null,
-    });
-    return {
-      kind: aiReview.recommendation === 'no_reply_needed' ? 'no_draft' : 'escalate',
-      triage,
-      reason: aiReview.reasoning,
-      aiReview,
-    };
+    const aiReview = await runReflector({ input, triage, hits, draftBody: null });
+    const result: DraftResult =
+      aiReview.recommendation === 'no_reply_needed'
+        ? { kind: 'no_draft', triage, reason: aiReview.reasoning, aiReview }
+        : { kind: 'escalate', triage, reason: aiReview.reasoning, aiReview };
+    return { result, diagnostics: { hits, drafter: null } };
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing');
 
-  const result = await callDrafterWithCitations({
+  const drafter = await callDrafterWithCitations({
     apiKey,
     systemPrompt: draftPrompt,
     userMessage: buildUserMessage(input, triage),
     documents: hits.map((h) => ({ source: h.source, content: h.content })),
   });
 
-  const aiReview = await runReflector({
-    input,
-    triage,
-    hits,
-    draftBody: result.text,
-  });
+  const aiReview = await runReflector({ input, triage, hits, draftBody: drafter.text });
+  const result = composeResult({ input, triage, drafter, aiReview });
+  return { result, diagnostics: { hits, drafter } };
+}
 
-  // The reflector is the sole decision-maker for what happens with the draft.
-  // It sees triage + thread history + retrieved docs + the actual draft text,
-  // so it can spot issues that brittle keyword rules would miss.
+type ComposeArgs = {
+  input: Input;
+  triage: TriageResult;
+  drafter: DrafterResult;
+  aiReview: AiReview;
+};
+
+// The reflector is the sole decision-maker for what happens with the draft.
+// It sees triage + thread + retrieved docs + the actual draft text, so it can
+// spot issues that brittle keyword rules would miss.
+function composeResult({ input, triage, drafter, aiReview }: ComposeArgs): DraftResult {
   switch (aiReview.recommendation) {
     case 'send_as_is':
     case 'review_required':
@@ -58,9 +75,10 @@ export async function draftReply(input: Input, triage: TriageResult): Promise<Dr
         kind: 'draft',
         triage,
         subject: ensureRePrefix(input.subject),
-        body: result.text,
-        citations: result.citations.map((c) => ({ source: c.source, snippet: c.citedText })),
-        confidence: confidenceFromReview(aiReview, result.citations.length),
+        body: drafter.text,
+        citations: drafter.citations.map((c) => ({ source: c.source, snippet: c.citedText })),
+        citationBlocks: drafter.blocks,
+        confidence: confidenceFromReview(aiReview, drafter.citations.length),
         aiReview,
       };
     case 'human_handoff':
@@ -74,9 +92,9 @@ export function verifyCitationCoverage(result: DrafterResult): boolean {
   return result.citations.length >= 1;
 }
 
+// Numeric confidence still drives the inbox row's confidence dots — anchored
+// to the reflector's label, with a floor based on citation count.
 function confidenceFromReview(review: AiReview, citationCount: number): number {
-  // Numeric confidence is still surfaced to the inbox row's confidence dots —
-  // anchor it to the reflector's confidence label, with a floor based on citations.
   const base = review.confidence === 'high' ? 0.9 : review.confidence === 'medium' ? 0.6 : 0.3;
   const citationFloor = Math.min(0.5, citationCount / 5);
   return Math.max(base, citationFloor);

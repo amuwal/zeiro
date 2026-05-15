@@ -19,6 +19,15 @@ export type CaseResult = {
   citationCount: number;
   matchedExpectedSources: number;
   expectedSourceCount: number;
+  // Fraction of `mustMentionSources` retrieved by hybrid search (independent
+  // of whether the drafter actually cited them). Catches retrieval regressions
+  // that are hidden when the drafter compensates with a different source.
+  retrievalRecall: number;
+  retrievedHitCount: number;
+  // Fraction of returned citations whose snippet is a substring of the source
+  // document. Anthropic's Citations API guarantees this in principle; we
+  // verify it to catch any drift between cited_text and the supplied content.
+  citationAccuracy: number;
   passed: boolean;
   failures: string[];
   durationMs: number;
@@ -32,5 +41,7 @@ export type EvalReport = {
     sendWithoutEditCandidate: number;
     escalationRate: number;
     avgCitationsPerDraft: number;
+    avgRetrievalRecall: number;
+    avgCitationAccuracy: number;
   };
 };

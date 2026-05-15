@@ -18,6 +18,16 @@ export const citationSchema = z.object({
 });
 export type Citation = z.infer<typeof citationSchema>;
 
+// Each block is a contiguous span the drafter emitted as a single unit,
+// attributed to zero or more entries in the flat `citations` array
+// (1-based indices). Lets the review UI render inline anchors like
+// 「…と認識しております[1][2]。」 instead of a disconnected sources list.
+export const citationBlockSchema = z.object({
+  text: z.string(),
+  citationIndexes: z.array(z.number().int().min(1)),
+});
+export type CitationBlock = z.infer<typeof citationBlockSchema>;
+
 // AI review is the reflector's structured judgment after the drafter runs (or after
 // we decide there's nothing to draft). It's the source of truth for what the UI
 // shows the reviewer — replaces the keyword/regex heuristics that don't scale.
@@ -40,6 +50,7 @@ export const draftResultSchema = z.discriminatedUnion('kind', [
     subject: z.string(),
     body: z.string(),
     citations: z.array(citationSchema),
+    citationBlocks: z.array(citationBlockSchema).optional(),
     confidence: z.number().min(0).max(1),
     aiReview: aiReviewSchema,
   }),

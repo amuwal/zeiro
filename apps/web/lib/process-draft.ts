@@ -77,6 +77,7 @@ async function persistResult(
       subject: result.subject,
       body: result.body,
       citations: result.citations,
+      ...(result.citationBlocks ? { citationBlocks: result.citationBlocks } : {}),
       confidence: result.confidence,
       model: DRAFT_MODEL,
     });

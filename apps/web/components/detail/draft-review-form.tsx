@@ -1,9 +1,10 @@
 'use client';
 
 import type { DraftWithCitations, InquiryWithClient } from '@zeiro/db';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { rejectDraft, sendDraft, sendEditedDraft } from '@/app/(app)/inbox/actions';
 import { Icon } from '@/components/ui/icon';
+import { CitationList } from './citation-list';
 import { EditableDraftCard } from './editable-draft-card';
 
 type Props = {
@@ -25,7 +26,20 @@ export function DraftReviewForm({
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(draft?.body ?? '');
+  const [activeCitationIndex, setActiveCitationIndex] = useState<number | null>(null);
+  const citationRows = useRef(new Map<number, HTMLButtonElement>());
   const edited = draft != null && body !== draft.body;
+
+  const registerRow = useCallback((index: number, el: HTMLButtonElement | null) => {
+    if (el) citationRows.current.set(index, el);
+    else citationRows.current.delete(index);
+  }, []);
+
+  const activate = useCallback((index: number) => {
+    setActiveCitationIndex(index);
+    const el = citationRows.current.get(index);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   return (
     <>
@@ -37,12 +51,22 @@ export function DraftReviewForm({
             editing={editing}
             body={body}
             edited={edited}
+            activeCitationIndex={activeCitationIndex}
             onToggleEdit={() => setEditing((e) => !e)}
             onChangeBody={setBody}
+            onSelectCitation={activate}
           />
         ) : isEscalated ? (
           <NoDraftCard />
         ) : null}
+        {draft && draft.citations.length > 0 && (
+          <CitationList
+            citations={draft.citations}
+            activeIndex={activeCitationIndex}
+            onActivate={activate}
+            registerRow={registerRow}
+          />
+        )}
         {postDraft}
       </div>
       <footer className="detail-actions">

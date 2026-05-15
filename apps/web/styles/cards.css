@@ -331,15 +331,23 @@ textarea.draft-body:focus {
   font-weight: 500;
   margin-left: 1px;
   padding: 1px 4px;
+  border: 1px solid transparent;
   border-radius: 3px;
   background: var(--accent-soft);
   color: var(--accent-ink);
   cursor: pointer;
   transition: all 140ms var(--ease-out);
 }
-.cite-ref:hover {
+.cite-ref:hover,
+.cite-ref:focus-visible {
   background: var(--accent);
   color: var(--surface);
+  outline: none;
+}
+.cite-ref.is-active {
+  background: var(--accent);
+  color: var(--surface);
+  border-color: var(--accent);
 }
 
 .cite-list {
@@ -356,11 +364,23 @@ textarea.draft-body:focus {
   border: 1px solid var(--line);
   border-radius: 10px;
   align-items: start;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
   transition: all 160ms var(--ease-out);
 }
-.cite-row:hover {
+.cite-row:hover,
+.cite-row:focus-visible {
   border-color: var(--line-strong);
   background: var(--surface-2);
+  outline: none;
+  cursor: pointer;
+}
+.cite-row.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 15%, transparent);
 }
 .cite-num {
   width: 22px;

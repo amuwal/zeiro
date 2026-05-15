@@ -1,22 +1,36 @@
 import type { Draft, Prisma } from '@prisma/client';
-import { type Citation, citationSchema } from '@zeiro/core';
+import {
+  type Citation,
+  type CitationBlock,
+  citationBlockSchema,
+  citationSchema,
+} from '@zeiro/core';
 import { z } from 'zod';
 import { getPrisma } from '../server';
 
 const citationsArraySchema = z.array(citationSchema);
+const citationBlocksSchema = z.array(citationBlockSchema);
 
 type DraftInsert = {
   inquiryId: string;
   subject: string;
   body: string;
   citations: Citation[];
+  citationBlocks?: CitationBlock[];
   confidence: number;
   model: string;
 };
 
-export type DraftWithCitations = Omit<Draft, 'citations'> & { citations: Citation[] };
+export type DraftWithCitations = Omit<Draft, 'citations'> & {
+  citations: Citation[];
+  citationBlocks: CitationBlock[] | null;
+};
 
 export async function createDraft(input: DraftInsert): Promise<DraftWithCitations> {
+  const metadata: Prisma.InputJsonValue =
+    input.citationBlocks && input.citationBlocks.length > 0
+      ? { citationBlocks: input.citationBlocks }
+      : {};
   const row = await getPrisma().draft.create({
     data: {
       inquiryId: input.inquiryId,
@@ -25,6 +39,7 @@ export async function createDraft(input: DraftInsert): Promise<DraftWithCitation
       citations: input.citations,
       confidence: input.confidence,
       model: input.model,
+      metadata,
     },
   });
   return hydrate(row);
@@ -39,7 +54,19 @@ export async function getDraftByInquiry(inquiryId: string): Promise<DraftWithCit
 }
 
 function hydrate(row: Draft): DraftWithCitations {
-  return { ...row, citations: citationsArraySchema.parse(row.citations) };
+  return {
+    ...row,
+    citations: citationsArraySchema.parse(row.citations),
+    citationBlocks: readBlocks(row.metadata),
+  };
+}
+
+function readBlocks(metadata: Prisma.JsonValue): CitationBlock[] | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const raw = (metadata as { citationBlocks?: unknown }).citationBlocks;
+  if (raw === undefined) return null;
+  const parsed = citationBlocksSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }
 
 export async function patchDraftMetadata(
