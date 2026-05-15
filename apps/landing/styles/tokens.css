@@ -30,10 +30,10 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
 
-  --font-sans: "Inter Tight", "Noto Sans JP", system-ui, -apple-system, sans-serif;
-  --font-jp:   "Noto Sans JP", "Inter Tight", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-serif:"Newsreader", ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter-tight), var(--font-noto-jp), "Inter Tight", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+  --font-jp:   var(--font-noto-jp), var(--font-inter-tight), "Noto Sans JP", "Inter Tight", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  --font-serif:var(--font-newsreader), "Newsreader", ui-serif, Georgia, serif;
 
   --ease:      cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out:  cubic-bezier(0.22, 1, 0.36, 1);
