@@ -1,11 +1,17 @@
 import {
+  claimIngestionJob,
+  completeIngestionJob,
+  failIngestionJob,
   findLatestSentBody,
   getDraftByInquiry,
   getInquiry,
+  loadIngestionJobBytes,
   recordAudit,
   setInquiryAnalysis,
   setInquiryStatus,
 } from '@zeiro/db';
+import { extract } from '../knowledge/extract';
+import { ParserError } from '../knowledge/types';
 import { ingestKnowledge } from '../knowledge-ingest';
 import { processDraft } from '../process-draft';
 import { inngest } from './client';
@@ -99,4 +105,111 @@ function formatYMD(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export const functions = [draftInquiryFn, autoAddKnowledgeFn];
+// Runs the slow part of a user-initiated knowledge upload off the request
+// thread. The /knowledge/new server action validates + stores bytes + fires
+// this event; everything heavy (parse, OCR, embed, insert) happens here.
+// On failure we record the typed error code on the job row so the UI can
+// distinguish "file was bad" from "the worker crashed" without parsing
+// stack traces.
+export const userUploadIngestionFn = inngest.createFunction(
+  {
+    id: 'knowledge-user-upload-ingestion',
+    concurrency: { key: 'event.data.firmId', limit: 2 },
+    retries: 2,
+    onFailure: async ({ event, error }) => {
+      const { jobId } = event.data.event.data as { jobId: string };
+      await failIngestionJob({
+        jobId,
+        errorCode: 'extractor_failed',
+        errorMessage: error.message,
+      });
+    },
+  },
+  { event: 'knowledge.user_uploaded' },
+  async ({ event, step }) => {
+    const { jobId, firmId, actorId } = event.data;
+
+    // Everything happens in a single step. Inngest serializes step return
+    // values via JSON, which mangles `Buffer` into `{type:"Buffer", data:…}`.
+    // Keeping load → extract → ingest together avoids that boundary; retries
+    // still work because the outer function is what Inngest retries.
+    return step.run('ingest', async () => {
+      const loaded = await loadIngestionJobBytes(jobId);
+      if (!loaded) return { skipped: 'already-processed' };
+      await claimIngestionJob(jobId);
+
+      try {
+        const extracted = await extract({
+          buffer: loaded.bytes,
+          filename: loaded.job.filename,
+          ...(loaded.job.mimetype ? { mimetype: loaded.job.mimetype } : {}),
+        });
+
+        const ingest = await ingestKnowledge({
+          firmId,
+          source: loaded.job.source,
+          documentId: jobId,
+          body: extracted.text,
+          ...(extracted.detectedLanguage ? { language: extracted.detectedLanguage } : {}),
+          extractionKind: extracted.kind,
+          extractionWarnings: extracted.warnings,
+          extractionMeta: extracted.meta,
+        });
+
+        if (ingest.chunks === 0) {
+          await failIngestionJob({
+            jobId,
+            errorCode: 'empty_extraction',
+            errorMessage: '抽出は成功しましたが、有効な文章が見つかりませんでした。',
+          });
+          return { ok: false, reason: 'empty_extraction' };
+        }
+
+        await completeIngestionJob({
+          jobId,
+          chunkCount: ingest.chunks,
+          metadata: {
+            extractionKind: extracted.kind,
+            pages: extracted.pages ?? null,
+            language: extracted.detectedLanguage ?? null,
+            warnings: extracted.warnings,
+          },
+        });
+
+        await recordAudit({
+          firmId,
+          actorId,
+          inquiryId: null,
+          action: 'knowledge.updated',
+          metadata: {
+            op: 'ingest',
+            jobId,
+            source: loaded.job.source,
+            chunks: ingest.chunks,
+            parsedKind: extracted.kind,
+            ...(extracted.pages !== undefined ? { pageCount: extracted.pages } : {}),
+            ...(extracted.detectedLanguage ? { detectedLanguage: extracted.detectedLanguage } : {}),
+            ...(extracted.warnings.length > 0 ? { warnings: extracted.warnings } : {}),
+          },
+        });
+
+        return { ok: true, chunks: ingest.chunks };
+      } catch (e) {
+        // ParserError carries a typed code from preflight / extract. Anything
+        // else is a real bug — rethrow so Inngest retries it, then onFailure
+        // marks the job failed after retries are exhausted.
+        if (e instanceof ParserError) {
+          await failIngestionJob({
+            jobId,
+            errorCode: e.code,
+            errorMessage: e.message,
+          });
+          return { ok: false, code: e.code };
+        }
+        throw e;
+      }
+    });
+  },
+);
+
+export const functions = [draftInquiryFn, autoAddKnowledgeFn, userUploadIngestionFn];

@@ -22,7 +22,10 @@ export type IconName =
   | 'spark'
   | 'x'
   | 'arrow-right'
+  | 'chevron-right'
+  | 'chevron-down'
   | 'shield'
+  | 'upload'
   | 'doc';
 
 const PATHS: Record<IconName, JSX.Element> = {
@@ -130,7 +133,16 @@ const PATHS: Record<IconName, JSX.Element> = {
   spark: <path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z" />,
   x: <path d="M18 6L6 18M6 6l12 12" />,
   'arrow-right': <path d="M5 12h14M13 5l7 7-7 7" />,
+  'chevron-right': <path d="M9 6l6 6-6 6" />,
+  'chevron-down': <path d="M6 9l6 6 6-6" />,
   shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  upload: (
+    <>
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <path d="M17 8l-5-5-5 5" />
+      <path d="M12 3v12" />
+    </>
+  ),
   doc: (
     <>
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />

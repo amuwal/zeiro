@@ -7,34 +7,44 @@
     "dev": "next dev --port 6001",
     "build": "next build",
     "start": "next start --port 6001",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:extraction": "tsx scripts/battle-test-extraction.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.0",
     "@clerk/localizations": "^3.20.0",
     "@clerk/nextjs": "^6.18.0",
     "@clerk/themes": "^2.4.0",
+    "@napi-rs/canvas": "^0.1.100",
     "@sentry/nextjs": "^10.52.0",
     "@zeiro/core": "workspace:*",
     "@zeiro/db": "workspace:*",
     "@zeiro/email": "workspace:*",
     "ai": "^6.0.0",
+    "file-type": "^22.0.1",
+    "franc-min": "^6.2.0",
     "inngest": "^3.40.0",
     "mammoth": "^1.12.0",
     "next": "^16.0.0",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "svix": "^1.40.0",
+    "tesseract.js": "^7.0.0",
     "unpdf": "^1.6.2",
+    "xlsx": "^0.18.5",
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "dotenv": "^17.4.2",
     "postcss": "^8.5.14",
     "tailwindcss": "^4.3.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }
 }

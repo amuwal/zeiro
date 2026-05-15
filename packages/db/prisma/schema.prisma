@@ -17,14 +17,57 @@ model Firm {
   settings       Json     @default("{}")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  clients     Client[]
-  inquiries   Inquiry[]
-  audits      AuditEvent[]
-  knowledge   KnowledgeChunk[]
-  memberships Membership[]
-  channels    FirmChannel[]
+  clients         Client[]
+  inquiries       Inquiry[]
+  audits          AuditEvent[]
+  knowledge       KnowledgeChunk[]
+  memberships     Membership[]
+  channels        FirmChannel[]
+  globalDisabled  FirmGlobalDisabled[]
+  ingestionJobs   KnowledgeIngestionJob[]
 
   @@map("firms")
+}
+
+// Tracks each user-initiated knowledge upload from request to completion.
+// The raw bytes are stored on the row itself (bytea) so the Inngest worker
+// can be triggered from any process; once the worker finishes successfully it
+// clears `bytes` to keep the table small. Status row stays for audit history.
+model KnowledgeIngestionJob {
+  id           String    @id @default(uuid()) @db.Uuid
+  firmId       String    @map("firm_id") @db.Uuid
+  actorId      String    @map("actor_id") @db.Uuid
+  source       String
+  filename     String
+  mimetype     String?
+  bytes        Bytes?
+  status       String    @default("pending")
+  chunkCount   Int?      @map("chunk_count")
+  errorCode    String?   @map("error_code")
+  errorMessage String?   @map("error_message")
+  metadata     Json      @default("{}")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  startedAt    DateTime? @map("started_at") @db.Timestamptz()
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz()
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("knowledge_ingestion_jobs")
+}
+
+model FirmGlobalDisabled {
+  firmId     String   @map("firm_id") @db.Uuid
+  source     String
+  disabledBy String   @map("disabled_by") @db.Uuid
+  disabledAt DateTime @default(now()) @map("disabled_at") @db.Timestamptz()
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@id([firmId, source])
+  @@index([firmId])
+  @@map("firm_global_disabled")
 }
 
 model FirmChannel {
@@ -158,14 +201,16 @@ model AuditEvent {
 
 model KnowledgeChunk {
   id        String                      @id @default(uuid()) @db.Uuid
-  firmId    String                      @map("firm_id") @db.Uuid
+  firmId    String?                     @map("firm_id") @db.Uuid
+  scope     String                      @default("firm")
   source    String
   content   String
   embedding Unsupported("vector(1536)")
   metadata  Json                        @default("{}")
 
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  firm Firm? @relation(fields: [firmId], references: [id], onDelete: Cascade)
 
   @@index([firmId])
+  @@index([scope])
   @@map("knowledge_chunks")
 }
