@@ -1,12 +1,19 @@
-import { listClientsRich } from '@zeiro/db';
+import { listClientImports, listClientsRich } from '@zeiro/db';
 import Link from 'next/link';
 import { ClientFlashBanner } from '@/components/clients/client-flash-banner';
+import { ClientImportFlash } from '@/components/clients/client-import-flash';
+import { ClientImportsBanner } from '@/components/clients/client-imports-banner';
 import { ClientList } from '@/components/clients/client-list';
 import { ClientStats } from '@/components/clients/client-stats';
 import { Icon } from '@/components/ui/icon';
 import { requireFirmContext } from '@/lib/firm-context';
 
-type SearchParams = { deleted?: string; archived?: string };
+type SearchParams = {
+  deleted?: string;
+  archived?: string;
+  imported?: string;
+  skipped?: string;
+};
 
 export default async function ClientsPage({
   searchParams,
@@ -14,7 +21,11 @@ export default async function ClientsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { firmId } = await requireFirmContext();
-  const [items, params] = await Promise.all([listClientsRich(firmId), searchParams]);
+  const [items, imports, params] = await Promise.all([
+    listClientsRich(firmId),
+    listClientImports(firmId, 6),
+    searchParams,
+  ]);
 
   const monthly = items.filter((c) => c.contractType === 'monthly').length;
   const spot = items.filter((c) => c.contractType === 'spot').length;
@@ -32,6 +43,9 @@ export default async function ClientsPage({
           </div>
         </div>
         <div className="btn-cluster">
+          <Link href="/clients/import" className="btn btn-secondary">
+            <Icon name="upload" size={13} /> 一括取り込み
+          </Link>
           <Link href="/clients/new" className="btn btn-primary">
             <Icon name="user" size={13} /> 新規顧問先
           </Link>
@@ -39,6 +53,11 @@ export default async function ClientsPage({
       </div>
 
       <ClientFlashBanner deleted={params.deleted === '1'} />
+      {params.imported && (
+        <ClientImportFlash imported={Number(params.imported)} skipped={Number(params.skipped)} />
+      )}
+
+      <ClientImportsBanner imports={imports} />
 
       <ClientStats
         total={items.length}

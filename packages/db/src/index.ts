@@ -15,6 +15,7 @@ export * from './global-knowledge/jp-tax-faq';
 export * from './repositories/analytics';
 export * from './repositories/audit';
 export * from './repositories/client';
+export * from './repositories/client-imports';
 export * from './repositories/client-mutations';
 export * from './repositories/draft';
 export * from './repositories/firm';

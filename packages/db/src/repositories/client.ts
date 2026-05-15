@@ -24,6 +24,17 @@ export function listClients(firmId: string) {
   });
 }
 
+// Tight lookup used by the CSV-import flow to detect duplicates before
+// attempting inserts. Returns lowercase emails (citext column is already
+// case-insensitive; lowercasing here keeps the JS Set lookup predictable).
+export async function listClientEmails(firmId: string): Promise<Set<string>> {
+  const rows = await getPrisma().client.findMany({
+    where: { firmId },
+    select: { primaryEmail: true },
+  });
+  return new Set(rows.map((r) => r.primaryEmail.toLowerCase()));
+}
+
 export type ClientSearchHit = {
   id: string;
   name: string;

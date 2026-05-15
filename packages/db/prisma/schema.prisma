@@ -25,8 +25,40 @@ model Firm {
   channels        FirmChannel[]
   globalDisabled  FirmGlobalDisabled[]
   ingestionJobs   KnowledgeIngestionJob[]
+  clientImports   ClientImport[]
 
   @@map("firms")
+}
+
+// Tracks a CSV/XLSX of clients from upload → AI parse → preview → bulk insert.
+// Two-phase: a worker reads the bytes and produces a structured `parsed`
+// preview the user reviews and confirms; only on confirm do we materialise
+// rows in `clients`. Bytes get cleared on transition out of `parsing`.
+model ClientImport {
+  id            String    @id @default(uuid()) @db.Uuid
+  firmId        String    @map("firm_id") @db.Uuid
+  actorId       String    @map("actor_id") @db.Uuid
+  filename      String
+  mimetype      String?
+  bytes         Bytes?
+  status        String    @default("pending")
+  rawRowCount   Int?      @map("raw_row_count")
+  parsed        Json?
+  importedCount Int?      @map("imported_count")
+  skippedCount  Int?      @map("skipped_count")
+  errorCode     String?   @map("error_code")
+  errorMessage  String?   @map("error_message")
+  metadata      Json      @default("{}")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  startedAt     DateTime? @map("started_at") @db.Timestamptz()
+  parsedAt      DateTime? @map("parsed_at") @db.Timestamptz()
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz()
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("client_imports")
 }
 
 // Tracks each user-initiated knowledge upload from request to completion.

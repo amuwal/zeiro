@@ -3,8 +3,14 @@
 import { clientContractTypeSchema, clientCreateInputSchema } from '@zeiro/core';
 import {
   archiveClient,
+  completeClientImport,
   createClient,
+  createClientImport,
   deleteClient,
+  failClientImport,
+  getClientImport,
+  listClientEmails,
+  markClientImportImporting,
   promoteAllUnmatchedFromSender,
   recordAudit,
   unarchiveClient,
@@ -189,6 +195,185 @@ export async function deleteClientAction(
   });
   revalidatePath('/clients');
   redirect('/clients?deleted=1');
+}
+
+// ---------- bulk import ----------
+
+const MAX_IMPORT_BYTES = 5 * 1024 * 1024; // 5 MiB — sheetjs handles way bigger but typical 顧問先 lists fit comfortably
+
+export type ImportUploadState = { error: string | null; importId?: string };
+
+export async function uploadClientImport(
+  _prev: ImportUploadState,
+  formData: FormData,
+): Promise<ImportUploadState> {
+  const { firmId, userId } = await requireFirmContext();
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: 'CSV または Excel ファイルを選択してください' };
+  }
+  if (file.size > MAX_IMPORT_BYTES) {
+    return {
+      error: `ファイルサイズの上限 (${Math.round(MAX_IMPORT_BYTES / 1024 / 1024)}MB) を超えています`,
+    };
+  }
+  if (!isAcceptedImportType(file.name, file.type)) {
+    return { error: '対応形式: .csv / .xlsx / .xls' };
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const importRow = await createClientImport({
+    firmId,
+    actorId: userId,
+    filename: file.name,
+    ...(file.type ? { mimetype: file.type } : {}),
+    bytes: buffer,
+  });
+
+  await inngest.send({
+    name: 'clients.import_uploaded',
+    data: { importId: importRow.id, firmId, actorId: userId },
+  });
+
+  redirect(`/clients/import/${importRow.id}`);
+}
+
+const confirmRowSchema = z.object({
+  name: z.string().min(1).max(120),
+  primaryEmail: z.string().email().toLowerCase(),
+  contractType: clientContractTypeSchema.optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+const confirmPayloadSchema = z.object({
+  rows: z.array(confirmRowSchema),
+});
+
+// Confirms a preview the worker prepared. Client-side serializes the user's
+// edited preview as JSON in a hidden field; we re-validate every row server-
+// side because the user might paste weirdness into the rendered inputs.
+// Always redirects on success or failure — errors surface via the
+// /clients/import/[id] page when the import row's status flips to failed.
+export async function confirmClientImport(formData: FormData): Promise<void> {
+  const { firmId, userId } = await requireFirmContext();
+  const importId = formData.get('importId');
+  if (typeof importId !== 'string') throw new Error('importId required');
+
+  const payloadRaw = formData.get('rows');
+  if (typeof payloadRaw !== 'string') throw new Error('rows payload required');
+
+  let rows: z.infer<typeof confirmRowSchema>[];
+  try {
+    rows = confirmPayloadSchema.parse(JSON.parse(payloadRaw)).rows;
+  } catch {
+    await failClientImport({
+      importId,
+      errorCode: 'invalid_payload',
+      errorMessage: '行データの形式が不正です',
+    });
+    redirect(`/clients/import/${importId}`);
+  }
+
+  const importRow = await getClientImport(firmId, importId);
+  if (!importRow || importRow.status !== 'preview') {
+    redirect(`/clients/import/${importId}`);
+  }
+
+  // Dedupe inside the submitted set on primaryEmail, last write wins — so
+  // tax accountants don't get errors when their CSV has the same client
+  // mentioned twice (very common when sheets come from multiple sources).
+  const byEmail = new Map<string, z.infer<typeof confirmRowSchema>>();
+  for (const row of rows) byEmail.set(row.primaryEmail, row);
+
+  // Pre-fetch existing emails so duplicates surface as `skipped`, not
+  // database errors. The unique constraint on (firmId, primaryEmail) would
+  // also block them, but explicit handling gives an honest summary count.
+  const existingEmails = await listClientEmails(firmId);
+
+  await markClientImportImporting(importId);
+
+  let imported = 0;
+  let skipped = 0;
+  for (const row of byEmail.values()) {
+    if (existingEmails.has(row.primaryEmail)) {
+      skipped += 1;
+      continue;
+    }
+    const result = await createClient(firmId, {
+      name: row.name,
+      primaryEmail: row.primaryEmail,
+      contractType: row.contractType ?? 'unverified',
+      assignedTaxAccountantId: null,
+      notes: row.notes ?? null,
+      source: 'csv',
+      createdBy: userId,
+    });
+    if (result.ok) {
+      imported += 1;
+      existingEmails.add(row.primaryEmail);
+    } else {
+      skipped += 1;
+    }
+  }
+
+  await completeClientImport({ importId, importedCount: imported, skippedCount: skipped });
+  await recordAudit({
+    firmId,
+    actorId: userId,
+    inquiryId: null,
+    action: 'client.created',
+    metadata: {
+      op: 'csv_import',
+      importId,
+      filename: importRow.filename,
+      imported,
+      skipped,
+    },
+  });
+
+  revalidatePath('/clients');
+  revalidatePath(`/clients/import/${importId}`);
+  redirect(`/clients?imported=${imported}&skipped=${skipped}`);
+}
+
+export async function cancelClientImport(formData: FormData): Promise<void> {
+  const { firmId, userId } = await requireFirmContext();
+  const importId = formData.get('importId');
+  if (typeof importId !== 'string') return;
+  const importRow = await getClientImport(firmId, importId);
+  if (!importRow) return;
+  await failClientImport({
+    importId,
+    errorCode: 'cancelled',
+    errorMessage: '取り込みをキャンセルしました',
+  });
+  await recordAudit({
+    firmId,
+    actorId: userId,
+    inquiryId: null,
+    action: 'client.created',
+    metadata: { op: 'csv_import_cancelled', importId, filename: importRow.filename },
+  });
+  revalidatePath('/clients');
+  redirect('/clients');
+}
+
+export async function revalidateImportPreview(formData: FormData) {
+  await requireFirmContext();
+  const importId = formData.get('importId');
+  if (typeof importId !== 'string') return;
+  revalidatePath(`/clients/import/${importId}`);
+}
+
+function isAcceptedImportType(name: string, mime: string): boolean {
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.csv') || lower.endsWith('.xlsx') || lower.endsWith('.xls')) return true;
+  if (mime === 'text/csv') return true;
+  if (mime === 'application/vnd.ms-excel') return true;
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+    return true;
+  }
+  return false;
 }
 
 function readId(formData: FormData): string {

@@ -1,15 +1,20 @@
 import {
+  claimClientImport,
   claimIngestionJob,
   completeIngestionJob,
+  failClientImport,
   failIngestionJob,
   findLatestSentBody,
   getDraftByInquiry,
   getInquiry,
+  loadClientImportBytes,
   loadIngestionJobBytes,
   recordAudit,
+  setClientImportPreview,
   setInquiryAnalysis,
   setInquiryStatus,
 } from '@zeiro/db';
+import { parseImportFile } from '../clients/parse-import';
 import { extract } from '../knowledge/extract';
 import { ParserError } from '../knowledge/types';
 import { ingestKnowledge } from '../knowledge-ingest';
@@ -212,4 +217,53 @@ export const userUploadIngestionFn = inngest.createFunction(
   },
 );
 
-export const functions = [draftInquiryFn, autoAddKnowledgeFn, userUploadIngestionFn];
+// Two-phase client import: this worker only handles "parsing" — it reads the
+// bytes, calls the Claude-assisted parser, and stores the structured preview
+// on the row. The actual `clients` inserts happen later in a server action,
+// after the user has reviewed the preview and confirmed. Splitting like this
+// keeps the AI cost gated by user intent: no row hits the DB on a bad parse.
+export const clientImportParseFn = inngest.createFunction(
+  {
+    id: 'clients-import-parse',
+    concurrency: { key: 'event.data.firmId', limit: 2 },
+    retries: 1,
+    onFailure: async ({ event, error }) => {
+      const { importId } = event.data.event.data as { importId: string };
+      await failClientImport({
+        importId,
+        errorCode: 'parser_failed',
+        errorMessage: error.message,
+      });
+    },
+  },
+  { event: 'clients.import_uploaded' },
+  async ({ event, step }) =>
+    step.run('parse', async () => {
+      const { importId } = event.data;
+      const loaded = await loadClientImportBytes(importId);
+      if (!loaded) return { skipped: 'already-processed' };
+      await claimClientImport(importId);
+      try {
+        const { preview, rawRowCount } = await parseImportFile({
+          filename: loaded.row.filename,
+          buffer: loaded.bytes,
+        });
+        await setClientImportPreview({ importId, preview, rawRowCount });
+        return { ok: true, rows: preview.rows.length, rawRowCount };
+      } catch (e) {
+        await failClientImport({
+          importId,
+          errorCode: 'parser_failed',
+          errorMessage: (e as Error).message,
+        });
+        return { ok: false };
+      }
+    }),
+);
+
+export const functions = [
+  draftInquiryFn,
+  autoAddKnowledgeFn,
+  userUploadIngestionFn,
+  clientImportParseFn,
+];

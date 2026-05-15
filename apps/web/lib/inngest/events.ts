@@ -20,8 +20,16 @@ export const knowledgeUserUploadedSchema = z.object({
 });
 export type KnowledgeUserUploaded = z.infer<typeof knowledgeUserUploadedSchema>;
 
+export const clientImportUploadedSchema = z.object({
+  importId: z.string().uuid(),
+  firmId: z.string().uuid(),
+  actorId: z.string().uuid(),
+});
+export type ClientImportUploaded = z.infer<typeof clientImportUploadedSchema>;
+
 export type Events = {
   'inquiry.queued': { data: InquiryQueued };
   'knowledge.auto_add': { data: KnowledgeAutoAdd };
   'knowledge.user_uploaded': { data: KnowledgeUserUploaded };
+  'clients.import_uploaded': { data: ClientImportUploaded };
 };
