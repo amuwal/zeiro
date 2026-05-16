@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
@@ -107,11 +108,11 @@ export function SidebarV2({ items }: Props) {
         <div className="side-label">FOLDERS</div>
         <SidePillList activeKey={filter}>
           {folders.map((it) => (
-            <a key={it.id} data-key={it.id} href={hrefFor({ filter: it.id })} className={`side-item ${filter === it.id ? 'active' : ''}`}>
+            <Link key={it.id} data-key={it.id} href={hrefFor({ filter: it.id })} scroll={false} prefetch={false} className={`side-item ${filter === it.id ? 'active' : ''}`}>
               <span className="glyph"><Icon name={it.icon} size={14} /></span>
               <span>{it.label}</span>
               <span className="count">{it.count}</span>
-            </a>
+            </Link>
           ))}
         </SidePillList>
       </div>
@@ -120,11 +121,11 @@ export function SidebarV2({ items }: Props) {
         <div className="side-label">CHANNELS</div>
         <SidePillList activeKey={channel}>
           {channels.map((c) => (
-            <a key={c.id} data-key={c.id} href={hrefFor({ channel: c.id })} className={`side-item ${channel === c.id ? 'active' : ''}`}>
+            <Link key={c.id} data-key={c.id} href={hrefFor({ channel: c.id })} scroll={false} prefetch={false} className={`side-item ${channel === c.id ? 'active' : ''}`}>
               <span className="glyph ch-side">{c.glyph}</span>
               <span>{c.label}</span>
               {c.count !== undefined && c.count > 0 && <span className="count">{c.count}</span>}
-            </a>
+            </Link>
           ))}
         </SidePillList>
       </div>
@@ -133,12 +134,12 @@ export function SidebarV2({ items }: Props) {
         <div className="side-label">LIFECYCLE</div>
         <SidePillList activeKey={lifecycle}>
           {lifecycles.map((l) => (
-            <a key={l.id} data-key={l.id} href={hrefFor({ lifecycle: l.id })} className={`side-item ${lifecycle === l.id ? 'active' : ''}`}>
+            <Link key={l.id} data-key={l.id} href={hrefFor({ lifecycle: l.id })} scroll={false} prefetch={false} className={`side-item ${lifecycle === l.id ? 'active' : ''}`}>
               <span className="glyph">
                 <span className={`lifecycle-dot small ${l.id !== 'all' ? 'filled' : ''}`} data-state={l.id} />
               </span>
               <span>{l.label}</span>
-            </a>
+            </Link>
           ))}
         </SidePillList>
       </div>
@@ -147,10 +148,10 @@ export function SidebarV2({ items }: Props) {
         <div className="side-label">CATEGORIES</div>
         <SidePillList activeKey={category}>
           {categories.map((c) => (
-            <a key={c.id} data-key={c.id} href={hrefFor({ category: c.id })} className={`side-item ${category === c.id ? 'active' : ''}`}>
+            <Link key={c.id} data-key={c.id} href={hrefFor({ category: c.id })} scroll={false} prefetch={false} className={`side-item ${category === c.id ? 'active' : ''}`}>
               <span className="swatch" />
               <span>{c.label}</span>
-            </a>
+            </Link>
           ))}
         </SidePillList>
       </div>

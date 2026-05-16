@@ -5,7 +5,8 @@ import type { SourceItem } from '@/components/inquiry-v2/sidecar-tabs/sources-ta
 import type { StatusTabData } from '@/components/inquiry-v2/sidecar-tabs/status-tab';
 import { SidecarV2 } from '@/components/inquiry-v2/sidecar';
 import { deriveSuggestion, type SuggestionView } from '@/components/inquiry-v2/suggested-action';
-import { ThreadPlaceholder } from '@/components/inquiry-v2/thread-placeholder';
+import { ThreadV2 } from '@/components/inquiry-v2/thread';
+import type { Turn } from '@/components/inquiry-v2/turns';
 import { requireFirmContext } from '@/lib/firm-context';
 
 const CATEGORY_TO_ID: Record<string, string> = {
@@ -128,14 +129,46 @@ export default async function InquiryV2Page({
     },
   };
 
+  const turns: Turn[] = [
+    {
+      kind: 'incoming',
+      who: {
+        name: senderName,
+        role: inquiry.client?.name ? `· ${inquiry.client.name}` : '',
+        initials: toInitials(senderName),
+      },
+      time: formatTime(inquiry.receivedAt),
+      body: inquiry.body,
+    },
+  ];
+  if (draft) {
+    const blocks = blocksFromDraft(draft);
+    turns.push({
+      kind: 'draft',
+      who: { name: 'AI Agent', role: '下書きを生成', initials: 'AI' },
+      time: formatTime(draft.createdAt),
+      version: 1,
+      blocks,
+      citationCount: sources.length,
+      confidence: draft.confidence,
+      model: draft.model,
+    });
+  }
+  if (inquiry.status === 'sent' && draft) {
+    turns.push({
+      kind: 'outgoing',
+      who: { name: 'AI Agent', role: '送信済', initials: 'SK' },
+      time: formatTime(draft.createdAt),
+      body: draft.body,
+    });
+  }
+
   return (
     <>
-      <ThreadPlaceholder
-        inquiry={{
+      <ThreadV2
+        meta={{
           id: inquiry.id,
           subject: inquiry.subject,
-          body: inquiry.body,
-          receivedAt: inquiry.receivedAt.toISOString(),
           senderName,
           senderRole: '',
           senderCompany: inquiry.client?.name ?? '',
@@ -143,6 +176,7 @@ export default async function InquiryV2Page({
           category:
             (CATEGORY_TO_ID[typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'] as string) ?? 'other',
         }}
+        turns={turns}
       />
       <SidecarV2
         inquiryId={inquiry.id}
@@ -155,6 +189,35 @@ export default async function InquiryV2Page({
       />
     </>
   );
+}
+
+function formatTime(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+type DraftLike = {
+  body: string;
+  citations: unknown;
+  metadata?: unknown;
+};
+
+function blocksFromDraft(draft: DraftLike): Array<{ text: string; cite: string | null }> {
+  // citationBlocks (from Citations API) lives in draft.metadata.citationBlocks
+  // if it was stored — otherwise fall back to body-only single block.
+  const metadata = (draft.metadata ?? {}) as Record<string, unknown>;
+  const cb = metadata.citationBlocks;
+  if (Array.isArray(cb) && cb.length > 0) {
+    return cb
+      .map((b) => {
+        const obj = b as { text?: string; citationIndexes?: number[] };
+        if (typeof obj.text !== 'string') return null;
+        const idx = Array.isArray(obj.citationIndexes) ? obj.citationIndexes[0] : undefined;
+        const cite = typeof idx === 'number' ? `c${idx + 1}` : null;
+        return { text: obj.text, cite };
+      })
+      .filter((b): b is { text: string; cite: string | null } => b !== null);
+  }
+  return [{ text: draft.body, cite: null }];
 }
 
 function toInitials(name: string): string {
