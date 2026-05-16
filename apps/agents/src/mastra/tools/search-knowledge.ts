@@ -19,16 +19,16 @@ const outputSchema = z.object({
   ),
 });
 
-export const knowledgeSearchTool = createTool({
-  id: 'knowledge-search',
+export const searchKnowledgeTool = createTool({
+  id: 'search-knowledge',
   description:
-    '事務所のナレッジベース（過去メール・FAQ・マニュアル）をハイブリッド検索（ベクトル+BM25→RRF→Cohere Rerank）',
+    '事務所のナレッジベース (過去メール・FAQ・マニュアル) をハイブリッド検索する (ベクトル + BM25 → RRF → Cohere Rerank)。返り値の hits[].id は propose-draft の relevantSourceIds に渡すために使う。',
   inputSchema,
   outputSchema,
   execute: async (input, ctx) => {
-    const firmId = ctx.requestContext?.get('firmId');
+    const firmId = ctx?.requestContext?.get('firmId');
     if (typeof firmId !== 'string') {
-      throw new TenantIsolationError('knowledge-search invoked without firmId in request context');
+      throw new TenantIsolationError('search-knowledge invoked without firmId in request context');
     }
     const opts = input.topK !== undefined ? { topN: input.topK } : {};
     const hits = await hybridSearch(firmId, input.query, opts);

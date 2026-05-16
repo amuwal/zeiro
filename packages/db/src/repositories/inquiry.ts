@@ -98,6 +98,23 @@ export async function listInquiryThreads(
     });
 }
 
+// Last N inquiries for a single client, oldest→newest after slicing — used by
+// the agent's get-recent-inquiries tool to give the model "what did we tell
+// this client before" context without dragging in unrelated firm inquiries.
+export async function listRecentInquiriesForClient(
+  firmId: string,
+  clientId: string,
+  limit: number,
+): Promise<Array<{ id: string; subject: string; status: string; receivedAt: Date }>> {
+  const rows = await getPrisma().inquiry.findMany({
+    where: { firmId, clientId },
+    select: { id: true, subject: true, status: true, receivedAt: true },
+    orderBy: { receivedAt: 'desc' },
+    take: Math.max(1, Math.min(20, limit)),
+  });
+  return rows.reverse();
+}
+
 export function getInquiry(firmId: string, id: string) {
   return getPrisma().inquiry.findFirst({
     where: { id, firmId },

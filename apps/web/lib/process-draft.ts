@@ -25,6 +25,8 @@ export async function processDraft(firmId: string, inquiryId: string): Promise<v
 
   const result = await runInquiryPipeline({
     firmId,
+    inquiryId,
+    clientId: inquiry.clientId,
     clientNotes: await readClientNotes(firmId, inquiry.client.primaryEmail),
     subject: inquiry.subject,
     body: inquiry.body,

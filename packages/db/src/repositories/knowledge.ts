@@ -64,6 +64,33 @@ export async function searchKnowledgeBM25(
 /** @deprecated use searchKnowledgeVector */
 export const searchKnowledge = searchKnowledgeVector;
 
+// Re-fetch chunks by ID, scoped to firm + globals minus the firm's disables.
+// Used by the propose-draft tool to ground Anthropic Citations API on the
+// exact chunks the agent selected from earlier search-knowledge tool calls.
+// Returns chunks in the same order as `ids` so the agent's reasoning order
+// is preserved.
+export async function getKnowledgeChunksByIds(
+  firmId: string,
+  ids: string[],
+): Promise<Array<{ id: string; source: string; content: string }>> {
+  if (ids.length === 0) return [];
+  const rows = await getPrisma().$queryRaw<Array<{ id: string; source: string; content: string }>>`
+    SELECT id, source, content
+    FROM knowledge_chunks
+    WHERE id = ANY(${ids}::uuid[])
+      AND (firm_id = ${firmId}::uuid OR scope = 'global')
+      AND COALESCE((metadata->>'requiresReview')::boolean, false) = false
+      AND NOT (
+        scope = 'global'
+        AND source IN (
+          SELECT source FROM firm_global_disabled WHERE firm_id = ${firmId}::uuid
+        )
+      )
+  `;
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.map((id) => byId.get(id)).filter((r): r is (typeof rows)[number] => !!r);
+}
+
 export type KnowledgeListItem = Omit<KnowledgeChunk, 'embedding'>;
 
 export function listKnowledgeChunks(firmId: string): Promise<KnowledgeListItem[]> {

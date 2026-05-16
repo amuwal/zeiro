@@ -1,38 +1,49 @@
 import '../lib/sentry';
 import { Mastra } from '@mastra/core';
 import { LangfuseExporter } from '@mastra/langfuse';
-import { Observability } from '@mastra/observability';
+import {
+  DefaultExporter,
+  Observability,
+  SamplingStrategyType,
+  SensitiveDataFilter,
+} from '@mastra/observability';
+import { inquiryAgent } from './agents/inquiry';
 import { reflectorAgent } from './agents/reflector';
 import { triageAgent } from './agents/triage';
-import { inquiryPipeline } from './workflows/inquiry-pipeline';
+import { createMastraStorage } from './storage';
 
-const langfuseExporters =
-  process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY
-    ? [
-        new LangfuseExporter({
-          publicKey: process.env.LANGFUSE_PUBLIC_KEY,
-          secretKey: process.env.LANGFUSE_SECRET_KEY,
-          baseUrl: process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com',
-        }),
-      ]
-    : [];
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL required for Mastra storage');
 
-const observabilityConfig =
-  langfuseExporters.length > 0
-    ? new Observability({
-        configs: {
-          langfuse: {
-            serviceName: 'zeiro-agents',
-            exporters: langfuseExporters,
-          },
-        },
-      })
-    : null;
+const exporters: Array<DefaultExporter | LangfuseExporter> = [new DefaultExporter()];
+if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {
+  exporters.push(
+    new LangfuseExporter({
+      publicKey: process.env.LANGFUSE_PUBLIC_KEY,
+      secretKey: process.env.LANGFUSE_SECRET_KEY,
+      baseUrl: process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com',
+    }),
+  );
+}
 
+// SensitiveDataFilter scrubs common credential field names (token, secret,
+// password, bearer, jwt, etc.) from span attributes/input/output BEFORE they
+// reach any exporter. It does NOT redact JP-specific PII (My Number, names,
+// addresses) — that still happens inside the app via redactPIIDeep before
+// content is handed to the LLM in the first place.
 export const mastra = new Mastra({
-  agents: { triageAgent, reflectorAgent },
-  workflows: { inquiryPipeline },
-  ...(observabilityConfig ? { observability: observabilityConfig } : {}),
+  agents: { inquiryAgent, triageAgent, reflectorAgent },
+  storage: createMastraStorage(databaseUrl),
+  observability: new Observability({
+    configs: {
+      default: {
+        serviceName: 'zeiro-agents',
+        sampling: { type: SamplingStrategyType.ALWAYS },
+        exporters,
+        spanOutputProcessors: [new SensitiveDataFilter()],
+      },
+    },
+  }),
   bundler: {
     externals: true,
   },

@@ -8,8 +8,10 @@ export type ThreadMessage = {
   body: string;
 };
 
-export type PipelineRequest = {
+export type InquiryRunRequest = {
   firmId: string;
+  inquiryId?: string;
+  clientId?: string | null;
   clientNotes: string | null;
   subject: string;
   body: string;
@@ -20,12 +22,16 @@ const responseSchema = z.object({
   result: z.unknown(),
 });
 
-export async function runInquiryPipeline(input: PipelineRequest): Promise<DraftResult> {
-  const url = `${env.AGENTS_BASE_URL}/api/workflows/inquiry-pipeline/start-async`;
+// Calls the agents service's autonomous inquiry agent (Mastra Agent loop with
+// tools: search-knowledge, get-client, get-recent-inquiries, propose-draft,
+// escalate, no-reply-needed). Returns the same DraftResult shape as the old
+// workflow so the persistence layer doesn't change.
+export async function runInquiryPipeline(input: InquiryRunRequest): Promise<DraftResult> {
+  const url = `${env.AGENTS_BASE_URL}/api/inquiries/run`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ inputData: input }),
+    body: JSON.stringify({ input }),
   });
   if (!response.ok) {
     throw new Error(`agents service ${response.status}: ${await response.text()}`);
