@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import {
+  findIntegration,
   getFirm,
   getFirmChannel,
   getInboxCounts,
@@ -11,6 +12,7 @@ import {
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
 import { EmailInboundSection } from '@/components/settings/email-inbound-section';
+import { FreeeSection } from '@/components/settings/freee-section';
 import { InviteMemberForm } from '@/components/settings/invite-member-form';
 import { LineChannelForm } from '@/components/settings/line-channel-form';
 import { PendingInvitations } from '@/components/settings/pending-invitations';
@@ -18,13 +20,25 @@ import { PendingLineLinks } from '@/components/settings/pending-line-links';
 import { TeamTree } from '@/components/settings/team-tree';
 import { TombstoneSection } from '@/components/settings/tombstone-section';
 import { WebChannelSection } from '@/components/settings/web-channel-section';
+import { env } from '@/lib/env';
 import { requireFirmContext } from '@/lib/firm-context';
 import { asTier } from '@/lib/team';
 import { listPendingInvitations } from '@/lib/team-server';
 
-export default async function SettingsPage() {
+type SettingsSearchParams = {
+  integration?: string;
+  status?: string;
+  message?: string;
+};
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SettingsSearchParams>;
+}) {
   const { firmId, userId, role } = await requireFirmContext();
   const admin = role.toLowerCase().includes('admin');
+  const flash = await searchParams;
   const [
     channel,
     webChannel,
@@ -36,6 +50,7 @@ export default async function SettingsPage() {
     firm,
     session,
     inboxCounts,
+    freeeIntegration,
   ] = await Promise.all([
     getFirmChannel(firmId, 'line'),
     getFirmChannel(firmId, 'web'),
@@ -49,7 +64,30 @@ export default async function SettingsPage() {
     getFirm(firmId),
     auth(),
     getInboxCounts(firmId),
+    findIntegration(firmId, 'freee'),
   ]);
+  const canConfigureOAuth = Boolean(
+    env.FREEE_CLIENT_ID && env.FREEE_CLIENT_SECRET && env.FREEE_REDIRECT_URI,
+  );
+  const freeeView = freeeIntegration
+    ? {
+        status: (freeeIntegration.status === 'active'
+          ? 'connected'
+          : freeeIntegration.status === 'needs_reconnect'
+            ? 'needs_reconnect'
+            : freeeIntegration.status === 'revoked'
+              ? 'revoked'
+              : 'error') as 'connected' | 'needs_reconnect' | 'revoked' | 'error',
+        lastError: freeeIntegration.lastError,
+        companies:
+          ((freeeIntegration.metadata as Record<string, unknown>)?.companies as Array<{
+            id: string;
+            name: string;
+            role: string;
+          }>) ?? [],
+        connectedAt: freeeIntegration.createdAt.toISOString(),
+      }
+    : ({ status: 'not_connected' as const });
   const invitations =
     admin && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
   const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
@@ -70,6 +108,21 @@ export default async function SettingsPage() {
         inboundAddress={firm.inboundAddress}
         unmatchedCount={inboxCounts.unmatched}
       />
+
+      {admin && (
+        <FreeeSection
+          view={freeeView}
+          canConfigureOAuth={canConfigureOAuth}
+          flash={
+            flash.integration === 'freee'
+              ? {
+                  ...(flash.status !== undefined ? { status: flash.status } : {}),
+                  ...(flash.message !== undefined ? { message: flash.message } : {}),
+                }
+              : undefined
+          }
+        />
+      )}
 
       <section
         style={{

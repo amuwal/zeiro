@@ -1,4 +1,10 @@
-import { getClientDetail, listFirmUsers, listInquiriesByClient } from '@zeiro/db';
+import {
+  findIntegration,
+  getBindingByClient,
+  getClientDetail,
+  listFirmUsers,
+  listInquiriesByClient,
+} from '@zeiro/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ClientArchiveBanner } from '@/components/clients/client-archive-banner';
@@ -6,6 +12,7 @@ import { ClientDangerZone } from '@/components/clients/client-danger-zone';
 import { ClientDetailHeader } from '@/components/clients/client-detail-header';
 import { ClientEditForm } from '@/components/clients/client-edit-form';
 import { ClientInquiryHistory } from '@/components/clients/client-inquiry-history';
+import { FreeeBindingCard } from '@/components/clients/freee-binding';
 import { Icon } from '@/components/ui/icon';
 import { requireFirmContext } from '@/lib/firm-context';
 
@@ -21,12 +28,21 @@ export default async function ClientDetailPage({
   const { firmId } = await requireFirmContext();
   const { id } = await params;
   const flash = await searchParams;
-  const [client, users, inquiries] = await Promise.all([
+  const [client, users, inquiries, freeeIntegration, freeeBinding] = await Promise.all([
     getClientDetail(firmId, id),
     listFirmUsers(firmId),
     listInquiriesByClient(firmId, id),
+    findIntegration(firmId, 'freee'),
+    getBindingByClient(firmId, id, 'freee'),
   ]);
   if (!client) notFound();
+
+  const freeeCompanies =
+    ((freeeIntegration?.metadata as Record<string, unknown> | undefined)?.companies as Array<{
+      id: string;
+      name: string;
+      role: string;
+    }> | undefined) ?? [];
 
   return (
     <div className="kb-pane cl-detail-pane anim-stagger">
@@ -47,6 +63,17 @@ export default async function ClientDetailPage({
       )}
 
       <ClientEditForm client={client} users={users.map((u) => ({ id: u.id, name: u.name }))} />
+
+      <FreeeBindingCard
+        clientId={client.id}
+        isFirmConnected={Boolean(freeeIntegration && freeeIntegration.status === 'active')}
+        companies={freeeCompanies}
+        binding={
+          freeeBinding
+            ? { externalId: freeeBinding.externalId, externalName: freeeBinding.externalName }
+            : null
+        }
+      />
 
       <ClientInquiryHistory inquiries={inquiries} />
 
