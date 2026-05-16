@@ -20,6 +20,7 @@
     "@zeiro/core": "workspace:*",
     "@zeiro/db": "workspace:*",
     "@zeiro/email": "workspace:*",
+    "@zeiro/integrations": "workspace:*",
     "ai": "^6.0.0",
     "file-type": "^22.0.1",
     "franc-min": "^6.2.0",

@@ -17,6 +17,9 @@ const schema = z.object({
     .min(1, 'GOOGLE_GENERATIVE_AI_API_KEY required for triage / reflector'),
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY required for knowledge embeddings'),
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
+  ENCRYPTION_KEY: z
+    .string()
+    .regex(/^[0-9a-fA-F]{64}$/, 'ENCRYPTION_KEY must be 64 hex chars (32 bytes)'),
 });
 
 const parsed = schema.safeParse(process.env);

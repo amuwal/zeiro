@@ -6,6 +6,7 @@ import { inquiryAgentPrompt } from '../prompts/inquiry';
 import { escalateTool } from '../tools/escalate';
 import { getClientTool } from '../tools/get-client';
 import { getRecentInquiriesTool } from '../tools/get-recent-inquiries';
+import { lookupFreeeBooksTool } from '../tools/lookup-freee-books';
 import { noReplyNeededTool } from '../tools/no-reply-needed';
 import { proposeDraftTool } from '../tools/propose-draft';
 import { searchKnowledgeTool } from '../tools/search-knowledge';
@@ -25,6 +26,7 @@ export const inquiryAgent = new Agent({
     searchKnowledge: searchKnowledgeTool,
     getClient: getClientTool,
     getRecentInquiries: getRecentInquiriesTool,
+    lookupFreeeBooks: lookupFreeeBooksTool,
     proposeDraft: proposeDraftTool,
     escalate: escalateTool,
     noReplyNeeded: noReplyNeededTool,

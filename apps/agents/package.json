@@ -29,6 +29,7 @@
     "@zeiro/core": "workspace:*",
     "@zeiro/db": "workspace:*",
     "@zeiro/email": "workspace:*",
+    "@zeiro/integrations": "workspace:*",
     "ai": "^6.0.184",
     "dotenv": "^17.4.2",
     "hono": "^4.12.18",

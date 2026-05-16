@@ -1,5 +1,6 @@
 import './lib/env-loader';
 import './lib/sentry';
+import './lib/integrations-bootstrap';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { runInquiry } from './lib/run-inquiry';
