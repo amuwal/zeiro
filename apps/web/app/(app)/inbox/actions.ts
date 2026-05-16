@@ -2,11 +2,13 @@
 
 import {
   createDraft,
-  findAdminUserId,
+  findEscalationTarget,
   getDraftByInquiry,
   getFirm,
   getInquiry,
+  getMembership,
   type InquiryWithClient,
+  listFirmUsers,
   patchDraftMetadata,
   recordAudit,
   setInquiryAssignee,
@@ -35,21 +37,84 @@ export async function sendEditedDraft(formData: FormData) {
   await sendCore(formData, { useEditedBody: true });
 }
 
-export async function assignToAdmin(formData: FormData) {
+// Escalate to the assignee's supervisor (or oldest admin if no chain).
+// Replaces the previous "always pick oldest admin" behaviour now that the
+// firm has a real supervisor tree.
+export async function escalateInquiry(formData: FormData) {
   const inquiryId = readId(formData);
   const { firmId, userId } = await requireFirmContext();
-  const adminId = await findAdminUserId(firmId);
-  if (!adminId) throw new Error('no admin in this firm');
-  await setInquiryAssignee(firmId, inquiryId, adminId);
+  const inquiry = await getInquiry(firmId, inquiryId);
+  if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
+  const fromUserId = inquiry.assignedToId ?? userId;
+  const target = await findEscalationTarget(firmId, fromUserId);
+  if (!target) throw new Error('no escalation target available in this firm');
+  await setInquiryAssignee(firmId, inquiryId, target);
   await recordAudit({
     firmId,
     actorId: userId,
     inquiryId,
     action: 'inquiry.assigned',
-    metadata: { assigneeId: adminId, reason: 'escalated_to_admin' },
+    metadata: { assigneeId: target, fromUserId, reason: 'escalated_via_supervisor_chain' },
   });
   revalidatePath('/inbox');
   redirect(`/inbox/${inquiryId}`);
+}
+
+// Backwards-compat alias for callers that still import the old name. The
+// new escalate-banner / detail-header forms reference `escalateInquiry`.
+export const assignToAdmin = escalateInquiry;
+
+// Manual reassignment from the inquiry detail header. Permitted for:
+//   • admins (anyone → anyone),
+//   • the current assignee (handing off to a teammate).
+// Pure unassign (assigneeUserId = '') is also allowed under the same rules.
+export async function reassignInquiry(formData: FormData) {
+  const inquiryId = readId(formData);
+  const targetRaw = formData.get('assigneeUserId');
+  const target = typeof targetRaw === 'string' && targetRaw.length > 0 ? targetRaw : null;
+  const { firmId, userId } = await requireFirmContext();
+
+  const [inquiry, actor] = await Promise.all([
+    getInquiry(firmId, inquiryId),
+    getMembership(userId, firmId),
+  ]);
+  if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
+  if (!actor) throw new Error('actor membership missing');
+
+  const isAdmin = actor.tier === 'admin' || actor.role.toLowerCase().includes('admin');
+  const isCurrentAssignee = inquiry.assignedToId === userId;
+  if (!isAdmin && !isCurrentAssignee) {
+    throw new Error('not authorized to reassign this inquiry');
+  }
+
+  // Reassigning to someone outside the firm would be a real bug — guard
+  // with an explicit membership check.
+  if (target) {
+    const targetMembership = await getMembership(target, firmId);
+    if (!targetMembership) throw new Error('target user is not a member of this firm');
+  }
+
+  await setInquiryAssignee(firmId, inquiryId, target);
+  await recordAudit({
+    firmId,
+    actorId: userId,
+    inquiryId,
+    action: 'inquiry.assigned',
+    metadata: {
+      assigneeId: target,
+      previousAssigneeId: inquiry.assignedToId,
+      reason: target === null ? 'manual_unassign' : 'manual_reassign',
+    },
+  });
+  revalidatePath('/inbox');
+  revalidatePath(`/inbox/${inquiryId}`);
+}
+
+// Used by the reassign dropdown to enumerate team members.
+export async function listFirmAssignees() {
+  const { firmId } = await requireFirmContext();
+  const users = await listFirmUsers(firmId);
+  return users.map((u) => ({ id: u.id, name: u.name, tier: u.tier }));
 }
 
 export async function rejectDraft(formData: FormData) {

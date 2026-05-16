@@ -1,4 +1,4 @@
-import { getDraftByInquiry, getFirm, getInquiry, walkThread } from '@zeiro/db';
+import { getDraftByInquiry, getFirm, getInquiry, listFirmUsers, walkThread } from '@zeiro/db';
 import { notFound } from 'next/navigation';
 import { AiAnalysis } from '@/components/detail/ai-analysis';
 import { AiReviewCard } from '@/components/detail/ai-review-card';
@@ -12,6 +12,7 @@ import { SentStateView } from '@/components/detail/sent-state-view';
 import { UnmatchedBanner } from '@/components/detail/unmatched-banner';
 import { requireFirmContext } from '@/lib/firm-context';
 import { readAiReview, readFailureType, readReason, readSenderName } from '@/lib/inquiry-derived';
+import { isAdminRole } from '@/lib/team';
 
 type Params = { inquiryId: string };
 type SearchParams = { promoted?: string };
@@ -24,17 +25,23 @@ export default async function InquiryDetailPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { inquiryId } = await params;
-  const { firmId } = await requireFirmContext();
+  const { firmId, userId, role } = await requireFirmContext();
 
-  const [inquiry, draft, firm, thread, query] = await Promise.all([
+  const [inquiry, draft, firm, thread, members, query] = await Promise.all([
     getInquiry(firmId, inquiryId),
     getDraftByInquiry(inquiryId),
     getFirm(firmId),
     walkThread(firmId, inquiryId),
+    listFirmUsers(firmId),
     searchParams,
   ]);
 
   if (!inquiry) notFound();
+
+  const assigneeMembers = members.map((m) => ({ id: m.id, name: m.name, tier: m.tier }));
+  // Admin can always reassign. The current assignee can hand it off. Everyone
+  // else sees the badge read-only — the dropdown menu just doesn't open.
+  const canReassign = isAdminRole(role) || inquiry.assignedToId === userId;
 
   const isEscalated = inquiry.status === 'escalated';
   const isPending = inquiry.status === 'pending';
@@ -48,7 +55,7 @@ export default async function InquiryDetailPage({
   if (isUnmatched) {
     return (
       <section className="detail-col" key={inquiry.id}>
-        <DetailHeader inquiry={inquiry} />
+        <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
         <div className="detail-body detail-anim">
           <UnmatchedBanner
             inquiryId={inquiry.id}
@@ -65,7 +72,7 @@ export default async function InquiryDetailPage({
   if (isSent) {
     return (
       <section className="detail-col" key={inquiry.id}>
-        <DetailHeader inquiry={inquiry} />
+        <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
         <SentStateView
           inquiryId={inquiry.id}
           thread={thread}
@@ -83,7 +90,7 @@ export default async function InquiryDetailPage({
   if (isEscalated) {
     return (
       <section className="detail-col" key={inquiry.id}>
-        <DetailHeader inquiry={inquiry} />
+        <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
         <EscalatedStateView
           inquiryId={inquiry.id}
           thread={thread}
@@ -99,7 +106,7 @@ export default async function InquiryDetailPage({
   return (
     <section className="detail-col" key={inquiry.id}>
       {isPending && <DraftingPoller />}
-      <DetailHeader inquiry={inquiry} />
+      <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
       <DraftReviewForm
         inquiry={inquiry}
         draft={draft}

@@ -1,6 +1,7 @@
 import {
   findFirmByClerkOrgId,
   findUserByClerkUserId,
+  getMembership,
   removeMembership,
   upsertFirmFromClerk,
   upsertMembership,
@@ -8,6 +9,7 @@ import {
 } from '@zeiro/db';
 import { z } from 'zod';
 import { env } from './env';
+import { asTier, reconcileTier } from './team';
 
 const userPayload = z.object({
   id: z.string(),
@@ -98,7 +100,15 @@ async function onMembershipUpserted(data: unknown): Promise<void> {
     inboundAddress: defaultInboundAddress(m.organization.slug ?? m.organization.id),
   });
 
-  await upsertMembership({ userId: user.id, firmId: firm.id, role: m.role });
+  // Reconcile with the in-app tier the settings UI may have set previously:
+  // Clerk admin always wins, Clerk member doesn't downgrade an existing
+  // `senior` promotion.
+  const existing = await getMembership(user.id, firm.id);
+  const tier = reconcileTier({
+    clerkRole: m.role,
+    currentTier: existing ? asTier(existing.tier) : null,
+  });
+  await upsertMembership({ userId: user.id, firmId: firm.id, role: m.role, tier });
 }
 
 async function onMembershipRemoved(data: unknown): Promise<void> {

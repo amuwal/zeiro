@@ -124,7 +124,8 @@ model User {
   metadata    Json     @default("{}")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  memberships       Membership[]
+  memberships       Membership[] @relation("MembershipUser")
+  supervises        Membership[] @relation("MembershipSupervisor")
   assignedClients   Client[]     @relation("ClientAssignment")
   assignedInquiries Inquiry[]    @relation("InquiryAssignment")
 
@@ -132,17 +133,22 @@ model User {
 }
 
 model Membership {
-  userId    String   @map("user_id") @db.Uuid
-  firmId    String   @map("firm_id") @db.Uuid
-  role      String
-  metadata  Json     @default("{}")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  userId       String   @map("user_id") @db.Uuid
+  firmId       String   @map("firm_id") @db.Uuid
+  role         String
+  tier         String   @default("member")
+  supervisorId String?  @map("supervisor_id") @db.Uuid
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user       User  @relation("MembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  firm       Firm  @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  supervisor User? @relation("MembershipSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
 
   @@id([userId, firmId])
   @@index([firmId])
+  @@index([supervisorId])
+  @@index([firmId, tier])
   @@map("memberships")
 }
 

@@ -57,7 +57,10 @@ export async function createInquiry(input: InquiryInsert): Promise<CreateInquiry
 export function listInquiries(firmId: string, status?: InquiryStatus) {
   return getPrisma().inquiry.findMany({
     where: { firmId, ...(status ? { status } : {}) },
-    include: { client: { select: { name: true, primaryEmail: true } } },
+    include: {
+      client: { select: { name: true, primaryEmail: true } },
+      assignedTo: { select: { id: true, name: true } },
+    },
     orderBy: { receivedAt: 'desc' },
   });
 }

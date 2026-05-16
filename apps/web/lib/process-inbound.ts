@@ -59,6 +59,18 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
     return { kind: 'unmatched_persisted', firmId: firm.id, inquiryId: unmatched.id };
   }
 
+  // Default assignment policy:
+  //   • If the client has an assigned tax accountant, inherit it. That's the
+  //     stable case — incoming mail goes to the same human the client always
+  //     deals with.
+  //   • If the client has no assignee, leave the inquiry unassigned. The
+  //     inbox row shows a clear "未割り当て" chip; any reviewer can claim it
+  //     by reassigning to themselves. We deliberately don't round-robin or
+  //     pick the oldest admin because that creates queue churn for that one
+  //     person every time a new client without an explicit 担当 comes in.
+  //
+  // Draft generation runs independently of assignment — the AI does its work
+  // regardless of who'll review.
   const insert = await createInquiry({
     firmId: firm.id,
     clientId: client.id,

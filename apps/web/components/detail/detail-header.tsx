@@ -4,8 +4,17 @@ import { CategoryTag } from '@/components/ui/category-pill';
 import { Icon } from '@/components/ui/icon';
 import { formatFullJST } from '@/lib/format';
 import { readCategory, readSenderName } from '@/lib/inquiry-derived';
+import { AssigneeControl } from './assignee-control';
 
-export function DetailHeader({ inquiry }: { inquiry: InquiryWithClient }) {
+type AssigneeMember = { id: string; name: string; tier: string };
+
+type Props = {
+  inquiry: InquiryWithClient;
+  members: AssigneeMember[];
+  canReassign: boolean;
+};
+
+export function DetailHeader({ inquiry, members, canReassign }: Props) {
   const category = readCategory(inquiry);
   const senderName = inquiry.client?.name ?? readSenderName(inquiry) ?? '(未登録の送信者)';
   const senderEmail = inquiry.client?.primaryEmail ?? inquiry.unmatchedSender ?? '不明';
@@ -41,6 +50,7 @@ export function DetailHeader({ inquiry }: { inquiry: InquiryWithClient }) {
         <span className="detail-tag mono">
           <Icon name="clock" size={11} /> {formatFullJST(inquiry.receivedAt)}
         </span>
+        <AssigneeControl inquiry={inquiry} members={members} editable={canReassign} />
       </div>
     </header>
   );

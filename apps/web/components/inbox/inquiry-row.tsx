@@ -42,6 +42,7 @@ export function InquiryRow({ inquiry, selected, query }: Props) {
           <CategoryPill category={category} />
           {confidence !== null && <ConfidenceDots score={confidence} />}
           <StatusChip status={inquiry.status} />
+          <AssigneeChip name={inquiry.assignedTo?.name ?? null} />
           {inquiry.threadCount > 1 && (
             <span className="thread-count">
               <Icon name="inbox" size={11} />
@@ -51,6 +52,23 @@ export function InquiryRow({ inquiry, selected, query }: Props) {
         </div>
       </div>
     </Link>
+  );
+}
+
+function AssigneeChip({ name }: { name: string | null }) {
+  if (name) {
+    return (
+      <span className="assignee-chip">
+        <Icon name="user" size={10} />
+        {name}
+      </span>
+    );
+  }
+  return (
+    <span className="assignee-chip is-unassigned">
+      <Icon name="user" size={10} />
+      未割り当て
+    </span>
   );
 }
 

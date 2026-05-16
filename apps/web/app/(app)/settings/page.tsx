@@ -3,41 +3,59 @@ import {
   getFirm,
   getFirmChannel,
   getInboxCounts,
+  getMembership,
   listClients,
-  listFirmUsers,
+  listFirmTree,
   listUnmatchedLineEvents,
 } from '@zeiro/db';
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
 import { EmailInboundSection } from '@/components/settings/email-inbound-section';
+import { InviteMemberForm } from '@/components/settings/invite-member-form';
 import { LineChannelForm } from '@/components/settings/line-channel-form';
+import { PendingInvitations } from '@/components/settings/pending-invitations';
 import { PendingLineLinks } from '@/components/settings/pending-line-links';
-import { TeamManagementSection } from '@/components/settings/team-management-section';
+import { TeamTree } from '@/components/settings/team-tree';
 import { TombstoneSection } from '@/components/settings/tombstone-section';
 import { WebChannelSection } from '@/components/settings/web-channel-section';
 import { requireFirmContext } from '@/lib/firm-context';
+import { asTier } from '@/lib/team';
 import { listPendingInvitations } from '@/lib/team-server';
 
 export default async function SettingsPage() {
-  const { firmId, role } = await requireFirmContext();
+  const { firmId, userId, role } = await requireFirmContext();
   const admin = role.toLowerCase().includes('admin');
-  const [channel, webChannel, baseUrl, pending, clients, members, firm, session, inboxCounts] =
-    await Promise.all([
-      getFirmChannel(firmId, 'line'),
-      getFirmChannel(firmId, 'web'),
-      buildBaseUrl(),
-      admin ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
-      admin ? listClients(firmId) : Promise.resolve([]),
-      admin ? listFirmUsers(firmId) : Promise.resolve([]),
-      getFirm(firmId),
-      auth(),
-      getInboxCounts(firmId),
-    ]);
+  const [
+    channel,
+    webChannel,
+    baseUrl,
+    pending,
+    clients,
+    treeMembers,
+    actorMembership,
+    firm,
+    session,
+    inboxCounts,
+  ] = await Promise.all([
+    getFirmChannel(firmId, 'line'),
+    getFirmChannel(firmId, 'web'),
+    buildBaseUrl(),
+    admin ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
+    admin ? listClients(firmId) : Promise.resolve([]),
+    // Everyone in the firm can SEE the tree; edit affordances are gated by
+    // `canEditTier` / `canEditSupervisor` per row.
+    listFirmTree(firmId),
+    getMembership(userId, firmId),
+    getFirm(firmId),
+    auth(),
+    getInboxCounts(firmId),
+  ]);
   const invitations =
     admin && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
   const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
   const contactUrl = `${baseUrl}/contact/${firmId}`;
-  const currentClerkUserId = session.userId ?? '';
+  const actorTier = asTier(actorMembership?.tier);
+  void session; // keep the auth() side-effect; member identification now uses firmContext.userId
 
   return (
     <div className="kb-pane anim-stagger">
@@ -128,13 +146,44 @@ export default async function SettingsPage() {
         )}
       </section>
 
-      {admin && (
-        <TeamManagementSection
-          members={members}
-          invitations={invitations}
-          currentClerkUserId={currentClerkUserId}
+      <section className="team-section">
+        <header className="team-section-head">
+          <div>
+            <h2 className="team-section-title">メンバーと階層</h2>
+            <p className="team-section-sub">
+              事務所のメンバーと上下関係を一目で確認できます。エスカレーション (上位への引き継ぎ)
+              は、ここで設定した上司に自動で振り分けられます。
+            </p>
+          </div>
+          <div className="team-section-legend">
+            <span className="tier-mini tier-admin">所長</span>
+            <span className="tier-mini tier-senior">上席</span>
+            <span className="tier-mini tier-member">担当</span>
+          </div>
+        </header>
+
+        <TeamTree
+          members={treeMembers}
+          currentUserId={userId}
+          currentUserTier={actorTier}
+          isAdmin={admin}
         />
-      )}
+
+        {admin && (
+          <>
+            {invitations.length > 0 && (
+              <div className="team-pending">
+                <div className="kb-section-eyebrow">未承諾の招待 ({invitations.length}件)</div>
+                <PendingInvitations invitations={invitations} />
+              </div>
+            )}
+            <div className="team-invite-block">
+              <div className="kb-section-eyebrow">新しいメンバーを招待</div>
+              <InviteMemberForm />
+            </div>
+          </>
+        )}
+      </section>
 
       {admin && <TombstoneSection />}
 

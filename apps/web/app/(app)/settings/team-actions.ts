@@ -1,10 +1,28 @@
 'use server';
 
 import { clerkClient } from '@clerk/nextjs/server';
-import { recordAudit } from '@zeiro/db';
+import {
+  countAdmins,
+  getMembership,
+  listFirmTree,
+  recordAudit,
+  setMembershipSupervisor,
+  setMembershipTier,
+  wouldCreateSupervisorCycle,
+} from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { requireFirmContext } from '@/lib/firm-context';
+import { asTier, TIERS } from '@/lib/team';
 import { ensureNotLastAdmin, extractClerkError, requireAdminFirm } from '@/lib/team-guard';
+import {
+  allowedSupervisorCandidates,
+  allowedTierTargets,
+  canEditSupervisor,
+  canEditTier,
+  toActorView,
+  toTargetView,
+} from '@/lib/tree-authz';
 import type { TeamActionState } from './team-state';
 
 const clerkRoleEnum = z.enum(['org:admin', 'org:member']);
@@ -173,4 +191,158 @@ export async function revokeInvitation(
   });
   revalidatePath('/settings');
   return { status: 'success', message: '招待を取り消しました' };
+}
+
+// ---------- tier (admin / senior / member) ----------
+
+const tierEnum = z.enum(TIERS);
+const tierOpSchema = z.object({
+  targetUserId: z.string().uuid(),
+  tier: tierEnum,
+});
+
+export async function setMemberTier(
+  _prev: TeamActionState,
+  formData: FormData,
+): Promise<TeamActionState> {
+  const ctx = await requireFirmContext();
+  const parsed = tierOpSchema.safeParse({
+    targetUserId: formData.get('targetUserId'),
+    tier: formData.get('tier'),
+  });
+  if (!parsed.success) return { status: 'error', message: '入力内容を確認してください' };
+
+  const [actorMembership, targetMembership] = await Promise.all([
+    getMembership(ctx.userId, ctx.firmId),
+    getMembership(parsed.data.targetUserId, ctx.firmId),
+  ]);
+  if (!actorMembership || !targetMembership) {
+    return { status: 'error', message: 'メンバーが見つかりません' };
+  }
+
+  const actor = toActorView({ userId: ctx.userId, tier: actorMembership.tier });
+  const target = toTargetView({
+    userId: targetMembership.userId,
+    tier: targetMembership.tier,
+    supervisorId: targetMembership.supervisorId,
+  });
+
+  if (!canEditTier(actor, target)) {
+    return { status: 'error', message: 'この権限を変更する権限がありません' };
+  }
+  if (!allowedTierTargets(actor, target).includes(parsed.data.tier)) {
+    return { status: 'error', message: '指定された権限には変更できません' };
+  }
+
+  // Demoting an admin: last-admin protection. We mirror the same check the
+  // Clerk role flow uses so the two paths can't disagree.
+  if (asTier(targetMembership.tier) === 'admin' && parsed.data.tier !== 'admin') {
+    const adminCount = await countAdmins(ctx.firmId);
+    if (adminCount <= 1) {
+      return { status: 'error', message: '最後の管理者を降格することはできません' };
+    }
+  }
+
+  await setMembershipTier({
+    firmId: ctx.firmId,
+    userId: parsed.data.targetUserId,
+    tier: parsed.data.tier,
+  });
+
+  await recordAudit({
+    firmId: ctx.firmId,
+    actorId: ctx.userId,
+    inquiryId: null,
+    action: 'member.role_changed',
+    metadata: {
+      op: 'tier_changed',
+      targetUserId: parsed.data.targetUserId,
+      fromTier: targetMembership.tier,
+      toTier: parsed.data.tier,
+    },
+  });
+  revalidatePath('/settings');
+  return { status: 'success', message: '階層を更新しました' };
+}
+
+// ---------- supervisor ----------
+
+const supervisorOpSchema = z.object({
+  targetUserId: z.string().uuid(),
+  // Empty string clears the supervisor (top-of-tree).
+  supervisorUserId: z.string().uuid().or(z.literal('')),
+});
+
+export async function setMemberSupervisor(
+  _prev: TeamActionState,
+  formData: FormData,
+): Promise<TeamActionState> {
+  const ctx = await requireFirmContext();
+  const parsed = supervisorOpSchema.safeParse({
+    targetUserId: formData.get('targetUserId'),
+    supervisorUserId: formData.get('supervisorUserId') ?? '',
+  });
+  if (!parsed.success) return { status: 'error', message: '入力内容を確認してください' };
+
+  const nextSupervisorId =
+    parsed.data.supervisorUserId === '' ? null : parsed.data.supervisorUserId;
+
+  const [actorMembership, targetMembership, members] = await Promise.all([
+    getMembership(ctx.userId, ctx.firmId),
+    getMembership(parsed.data.targetUserId, ctx.firmId),
+    listFirmTree(ctx.firmId),
+  ]);
+  if (!actorMembership || !targetMembership) {
+    return { status: 'error', message: 'メンバーが見つかりません' };
+  }
+
+  const actor = toActorView({ userId: ctx.userId, tier: actorMembership.tier });
+  const target = toTargetView({
+    userId: targetMembership.userId,
+    tier: targetMembership.tier,
+    supervisorId: targetMembership.supervisorId,
+  });
+
+  if (!canEditSupervisor(actor, target)) {
+    return { status: 'error', message: 'この上司を変更する権限がありません' };
+  }
+  if (nextSupervisorId !== null) {
+    const allowed = allowedSupervisorCandidates(
+      actor,
+      target,
+      members.map((m) => ({ userId: m.id, tier: asTier(m.tier) })),
+    );
+    if (!allowed.includes(nextSupervisorId)) {
+      return { status: 'error', message: '指定された上司には設定できません' };
+    }
+    const wouldLoop = await wouldCreateSupervisorCycle(
+      ctx.firmId,
+      parsed.data.targetUserId,
+      nextSupervisorId,
+    );
+    if (wouldLoop) {
+      return { status: 'error', message: '循環参照になるため設定できません' };
+    }
+  }
+
+  await setMembershipSupervisor({
+    firmId: ctx.firmId,
+    userId: parsed.data.targetUserId,
+    supervisorId: nextSupervisorId,
+  });
+
+  await recordAudit({
+    firmId: ctx.firmId,
+    actorId: ctx.userId,
+    inquiryId: null,
+    action: 'member.role_changed',
+    metadata: {
+      op: 'supervisor_changed',
+      targetUserId: parsed.data.targetUserId,
+      fromSupervisorId: targetMembership.supervisorId,
+      toSupervisorId: nextSupervisorId,
+    },
+  });
+  revalidatePath('/settings');
+  return { status: 'success', message: '上司を更新しました' };
 }
