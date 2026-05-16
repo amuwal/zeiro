@@ -22,7 +22,9 @@ const FIXTURES = [
   { path: '.test-fixtures/messy-koumonsaki.csv', expect: 'parse' },
   { path: '.test-fixtures/multi-sheet-koumonsaki.xlsx', expect: 'parse' },
   { path: '.test-fixtures/shift-jis-koumonsaki.csv', expect: 'parse' },
+  { path: '.test-fixtures/legacy.xls', expect: 'parse' },
   { path: '.test-fixtures/large-200.csv', expect: 'parse' },
+  { path: '.test-fixtures/over-cap-520.csv', expect: 'parse-clamp' },
 ] as const;
 
 const MAX_BYTES = 5 * 1024 * 1024;

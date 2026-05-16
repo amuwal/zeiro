@@ -89,6 +89,34 @@ function makeOversized() {
   writeFileSync(join(DIR, 'oversized.csv'), big);
 }
 
+// 6. A 520-row file to exercise the MAX_ROWS_PER_IMPORT=500 clamp.
+function makeOverCapCsv() {
+  const rows: string[] = ['会社名,メール,契約'];
+  for (let i = 1; i <= 520; i++) {
+    const id = String(i).padStart(4, '0');
+    rows.push(`オーバーキャップ商事 ${id},cap.${id}@example.co.jp,月次顧問`);
+  }
+  writeFileSync(join(DIR, 'over-cap-520.csv'), `${rows.join('\n')}\n`);
+}
+
+// 7. Legacy XLS (binary Excel 97-2003). SheetJS can write XLS too; we use
+//    bookType:'biff8' which is the format real legacy accounting software
+//    still exports. Smaller fixture so the test runs fast.
+function makeLegacyXls() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['顧問先名', 'メール', '契約', '備考'],
+    ['(株)レガシー会計', 'legacy@example.co.jp', '月次', '古いExcel形式'],
+    ['オールド商事', 'old@example.jp', 'スポット', '1997年からの取引'],
+    ['ビンテージ事務所', 'vintage@example.com', '月次', null],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '顧問先');
+  writeFileSync(
+    join(DIR, 'legacy.xls'),
+    XLSX.write(wb, { type: 'buffer', bookType: 'biff8' }),
+  );
+}
+
 async function main() {
   console.log('generating fixtures into', DIR);
   makeMultiSheetXlsx();
@@ -105,6 +133,10 @@ async function main() {
   console.log('  ✓ spoofed.csv (PDF disguised as CSV)');
   makeOversized();
   console.log('  ✓ oversized.csv (6 MB)');
+  makeOverCapCsv();
+  console.log('  ✓ over-cap-520.csv (520 rows, exceeds 500-row clamp)');
+  makeLegacyXls();
+  console.log('  ✓ legacy.xls (binary Excel 97-2003, 3 rows)');
 }
 
 main();
