@@ -70,21 +70,17 @@ export function ThreadPlaceholder({ inquiry }: Props) {
 
       <div className="thread-body">
         <article className="turn incoming">
-          <div className="turn-head">
-            <div className="pic">{inquiry.senderInitials}</div>
-            <div className="who">
-              <div className="name">{inquiry.senderName}</div>
-              <div className="role">
-                {inquiry.senderRole || inquiry.senderCompany}
-                {inquiry.senderRole && inquiry.senderCompany ? ` · ${inquiry.senderCompany}` : ''}
-              </div>
+          <div className="turn-marker">{inquiry.senderInitials}</div>
+          <div className="turn-content">
+            <div className="turn-head">
+              <span className="who">{inquiry.senderName}</span>
+              {inquiry.senderRole && <span className="role">· {inquiry.senderRole}</span>}
+              {inquiry.senderCompany && inquiry.senderCompany !== inquiry.senderName && (
+                <span className="role">· {inquiry.senderCompany}</span>
+              )}
+              <span className="time">{formatTime(inquiry.receivedAt)}</span>
             </div>
-            <span className="time">{formatTime(inquiry.receivedAt)}</span>
-          </div>
-          <div className="turn-body">
-            {inquiry.body.split('\n').map((line, i) => (
-              <p key={i}>{line || ' '}</p>
-            ))}
+            <div className="turn-msg">{inquiry.body}</div>
           </div>
         </article>
       </div>
