@@ -1,24 +1,12 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
-
-type Counts = {
-  all: number;
-  unread: number;
-  draft: number;
-  escalated: number;
-  sent: number;
-  byChannel: Partial<Record<'email' | 'form' | 'line', number>>;
-};
+import type { InboxItemView } from './inbox-list';
 
 type Props = {
-  counts: Counts;
-  escalationRate: number;
-  filter: string;
-  channel: string;
-  lifecycle: string;
-  category: string;
+  items: InboxItemView[];
 };
 
 function SidePillList({ activeKey, children }: { activeKey: string; children: React.ReactNode }) {
@@ -46,7 +34,33 @@ function SidePillList({ activeKey, children }: { activeKey: string; children: Re
   );
 }
 
-export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, category }: Props) {
+export function SidebarV2({ items }: Props) {
+  const sp = useSearchParams();
+  const pathname = usePathname();
+  const filter = sp.get('filter') ?? 'all';
+  const channel = sp.get('channel') ?? 'all';
+  const lifecycle = sp.get('lifecycle') ?? 'all';
+  const category = sp.get('category') ?? 'all';
+
+  const counts = useMemo(
+    () => ({
+      all: items.length,
+      unread: items.filter((i) => i.unread).length,
+      draft: items.filter((i) => !i.unread).length,
+      escalated: items.filter((i) => i.confidence <= 0.7).length,
+      sent: items.filter((i) => i.lifecycle === 'resolved').length,
+      byChannel: items.reduce(
+        (acc, i) => {
+          acc[i.channel] = (acc[i.channel] ?? 0) + 1;
+          return acc;
+        },
+        {} as Record<'email' | 'form' | 'line', number>,
+      ),
+    }),
+    [items],
+  );
+  const escalationRate = counts.all === 0 ? 0 : Math.round((counts.escalated / counts.all) * 100);
+
   const folders = [
     { id: 'all', label: '受信トレイ', icon: 'inbox' as const, count: counts.all },
     { id: 'unread', label: '未対応', icon: 'alert' as const, count: counts.unread },
@@ -76,18 +90,24 @@ export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, 
     { id: 'other', label: 'その他' },
   ];
 
+  const hrefFor = (overrides: Partial<{ filter: string; channel: string; lifecycle: string; category: string }>): string => {
+    const next = { filter, channel, lifecycle, category, ...overrides };
+    const q = new URLSearchParams();
+    if (next.filter !== 'all') q.set('filter', next.filter);
+    if (next.channel !== 'all') q.set('channel', next.channel);
+    if (next.lifecycle !== 'all') q.set('lifecycle', next.lifecycle);
+    if (next.category !== 'all') q.set('category', next.category);
+    const s = q.toString();
+    return s ? `${pathname}?${s}` : pathname;
+  };
+
   return (
     <aside className="sidebar">
       <div className="side-section">
         <div className="side-label">FOLDERS</div>
         <SidePillList activeKey={filter}>
           {folders.map((it) => (
-            <a
-              key={it.id}
-              data-key={it.id}
-              href={filterHref({ filter: it.id, channel, lifecycle, category })}
-              className={`side-item ${filter === it.id ? 'active' : ''}`}
-            >
+            <a key={it.id} data-key={it.id} href={hrefFor({ filter: it.id })} className={`side-item ${filter === it.id ? 'active' : ''}`}>
               <span className="glyph"><Icon name={it.icon} size={14} /></span>
               <span>{it.label}</span>
               <span className="count">{it.count}</span>
@@ -100,12 +120,7 @@ export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, 
         <div className="side-label">CHANNELS</div>
         <SidePillList activeKey={channel}>
           {channels.map((c) => (
-            <a
-              key={c.id}
-              data-key={c.id}
-              href={filterHref({ filter, channel: c.id, lifecycle, category })}
-              className={`side-item ${channel === c.id ? 'active' : ''}`}
-            >
+            <a key={c.id} data-key={c.id} href={hrefFor({ channel: c.id })} className={`side-item ${channel === c.id ? 'active' : ''}`}>
               <span className="glyph ch-side">{c.glyph}</span>
               <span>{c.label}</span>
               {c.count !== undefined && c.count > 0 && <span className="count">{c.count}</span>}
@@ -118,17 +133,9 @@ export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, 
         <div className="side-label">LIFECYCLE</div>
         <SidePillList activeKey={lifecycle}>
           {lifecycles.map((l) => (
-            <a
-              key={l.id}
-              data-key={l.id}
-              href={filterHref({ filter, channel, lifecycle: l.id, category })}
-              className={`side-item ${lifecycle === l.id ? 'active' : ''}`}
-            >
+            <a key={l.id} data-key={l.id} href={hrefFor({ lifecycle: l.id })} className={`side-item ${lifecycle === l.id ? 'active' : ''}`}>
               <span className="glyph">
-                <span
-                  className={`lifecycle-dot small ${l.id !== 'all' ? 'filled' : ''}`}
-                  data-state={l.id}
-                />
+                <span className={`lifecycle-dot small ${l.id !== 'all' ? 'filled' : ''}`} data-state={l.id} />
               </span>
               <span>{l.label}</span>
             </a>
@@ -140,12 +147,7 @@ export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, 
         <div className="side-label">CATEGORIES</div>
         <SidePillList activeKey={category}>
           {categories.map((c) => (
-            <a
-              key={c.id}
-              data-key={c.id}
-              href={filterHref({ filter, channel, lifecycle, category: c.id })}
-              className={`side-item ${category === c.id ? 'active' : ''}`}
-            >
+            <a key={c.id} data-key={c.id} href={hrefFor({ category: c.id })} className={`side-item ${category === c.id ? 'active' : ''}`}>
               <span className="swatch" />
               <span>{c.label}</span>
             </a>
@@ -154,13 +156,8 @@ export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, 
       </div>
 
       <div className="side-foot">
-        <div className="side-foot-head">
-          <span>ESCALATION TODAY</span>
-          <span>↗ 32% target</span>
-        </div>
-        <div className="side-foot-rate">
-          {escalationRate}<span className="pct">%</span>
-        </div>
+        <div className="side-foot-head"><span>ESCALATION TODAY</span><span>↗ 32% target</span></div>
+        <div className="side-foot-rate">{escalationRate}<span className="pct">%</span></div>
         <div className="side-foot-bar">
           <i style={{ width: `${escalationRate}%` }} />
           <span className="target" style={{ left: '32%' }} />
@@ -172,14 +169,4 @@ export function SidebarV2({ counts, escalationRate, filter, channel, lifecycle, 
       </div>
     </aside>
   );
-}
-
-function filterHref(p: { filter: string; channel: string; lifecycle: string; category: string }): string {
-  const q = new URLSearchParams();
-  if (p.filter !== 'all') q.set('filter', p.filter);
-  if (p.channel !== 'all') q.set('channel', p.channel);
-  if (p.lifecycle !== 'all') q.set('lifecycle', p.lifecycle);
-  if (p.category !== 'all') q.set('category', p.category);
-  const s = q.toString();
-  return s ? `?${s}` : '?';
 }
