@@ -119,6 +119,7 @@ export abstract class BaseIntegrationAdapter {
       tokens = await this.refreshAccessToken(decrypt(row.refreshToken));
     } catch (error) {
       await markIntegrationStatus(
+        row.firmId,
         row.id,
         'needs_reconnect',
         error instanceof Error ? error.message : String(error),
@@ -138,7 +139,7 @@ export abstract class BaseIntegrationAdapter {
       updateArgs.expiresAt = new Date(Date.now() + tokens.expiresInSec * 1000);
     }
     if (tokens.scope !== undefined) updateArgs.scope = tokens.scope;
-    await updateIntegrationTokens(row.id, updateArgs);
+    await updateIntegrationTokens(row.firmId, row.id, updateArgs);
     const refreshed = await this.requireIntegration(row.firmId);
     return refreshed;
   }

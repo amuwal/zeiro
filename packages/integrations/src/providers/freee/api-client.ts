@@ -95,7 +95,9 @@ export class FreeeApiClient {
       if (res.status === 401) {
         const { markIntegrationStatus, findIntegration } = await import('@zeiro/db');
         const row = await findIntegration(this.firmId, 'freee');
-        if (row) await markIntegrationStatus(row.id, 'revoked', 'persistent 401 after refresh');
+        if (row) {
+          await markIntegrationStatus(this.firmId, row.id, 'revoked', 'persistent 401 after refresh');
+        }
         throw new IntegrationRevokedError(row?.id ?? '?', 'freee');
       }
     }

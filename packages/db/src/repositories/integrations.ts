@@ -82,6 +82,7 @@ export async function upsertIntegration(input: IntegrationUpsert): Promise<Integ
 }
 
 export async function updateIntegrationTokens(
+  firmId: string,
   id: string,
   update: {
     accessToken: string;
@@ -90,8 +91,8 @@ export async function updateIntegrationTokens(
     scope?: string | null;
   },
 ): Promise<void> {
-  await getPrisma().integration.update({
-    where: { id },
+  const result = await getPrisma().integration.updateMany({
+    where: { id, firmId },
     data: {
       accessToken: update.accessToken,
       ...(update.refreshToken !== undefined ? { refreshToken: update.refreshToken } : {}),
@@ -102,30 +103,35 @@ export async function updateIntegrationTokens(
       lastError: null,
     },
   });
+  if (result.count === 0) throw new Error(`integration ${id} not found in firm ${firmId}`);
 }
 
 export async function markIntegrationStatus(
+  firmId: string,
   id: string,
   status: 'active' | 'needs_reconnect' | 'revoked' | 'error',
   lastError?: string,
 ): Promise<void> {
-  await getPrisma().integration.update({
-    where: { id },
+  const result = await getPrisma().integration.updateMany({
+    where: { id, firmId },
     data: { status, ...(lastError !== undefined ? { lastError } : {}) },
   });
+  if (result.count === 0) throw new Error(`integration ${id} not found in firm ${firmId}`);
 }
 
 export async function updateIntegrationMetadata(
+  firmId: string,
   id: string,
   patch: Record<string, unknown>,
 ): Promise<void> {
-  const existing = await getPrisma().integration.findUniqueOrThrow({
-    where: { id },
+  const existing = await getPrisma().integration.findFirst({
+    where: { id, firmId },
     select: { metadata: true },
   });
+  if (!existing) throw new Error(`integration ${id} not found in firm ${firmId}`);
   const merged = { ...((existing.metadata ?? {}) as Record<string, unknown>), ...patch };
-  await getPrisma().integration.update({
-    where: { id },
+  await getPrisma().integration.updateMany({
+    where: { id, firmId },
     data: { metadata: merged as Prisma.InputJsonValue },
   });
 }
