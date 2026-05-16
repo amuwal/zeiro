@@ -1,9 +1,19 @@
 import { auth } from '@clerk/nextjs/server';
-import { findUserByClerkUserId, getInquiry, listInquiries } from '@zeiro/db';
+import {
+  findUserByClerkUserId,
+  getClientDetail,
+  getDraftByInquiry,
+  getInquiry,
+  listInquiries,
+} from '@zeiro/db';
 import { notFound } from 'next/navigation';
 import { InboxListV2, type InboxItemView } from '@/components/inquiry-v2/inbox-list';
 import { SidebarV2 } from '@/components/inquiry-v2/sidebar';
-import { SidecarPlaceholder } from '@/components/inquiry-v2/sidecar-placeholder';
+import type { ClientTabData } from '@/components/inquiry-v2/sidecar-tabs/client-tab';
+import type { SourceItem } from '@/components/inquiry-v2/sidecar-tabs/sources-tab';
+import type { StatusTabData } from '@/components/inquiry-v2/sidecar-tabs/status-tab';
+import { SidecarV2 } from '@/components/inquiry-v2/sidecar';
+import { deriveSuggestion, type SuggestionView } from '@/components/inquiry-v2/suggested-action';
 import { ThreadPlaceholder } from '@/components/inquiry-v2/thread-placeholder';
 import { TopbarV2 } from '@/components/inquiry-v2/topbar';
 import { requireFirmContext } from '@/lib/firm-context';
@@ -35,12 +45,16 @@ export default async function InquiryV2Page({
   const sp = await searchParams;
   const { firmId } = await requireFirmContext();
 
-  const [inquiry, allInquiries, session] = await Promise.all([
+  const [inquiry, allInquiries, draft, session] = await Promise.all([
     getInquiry(firmId, inquiryId),
     listInquiries(firmId),
+    getDraftByInquiry(inquiryId),
     auth(),
   ]);
   if (!inquiry) notFound();
+  const clientDetail = inquiry.clientId
+    ? await getClientDetail(firmId, inquiry.clientId)
+    : null;
 
   const meClerkId = session.userId;
   const meUser = meClerkId ? await findUserByClerkUserId(meClerkId) : null;
@@ -102,9 +116,106 @@ export default async function InquiryV2Page({
 
   const inqAnalysis = (inquiry.analysis ?? {}) as Record<string, unknown>;
   const inqTriage = (inqAnalysis.triage ?? {}) as Record<string, unknown>;
+  const inqAiReview = (inqAnalysis.aiReview ?? {}) as Record<string, unknown>;
   const senderName = inquiry.client?.name ?? inquiry.unmatchedSender ?? 'Unknown';
 
   const sortedSearch = buildSearchString({ filter, channel, lifecycle, category });
+
+  const draftCitations = Array.isArray(draft?.citations) ? draft.citations : [];
+  const sources: SourceItem[] = draftCitations.map((c, i) => {
+    const cite = c as { source?: string; snippet?: string };
+    const src = typeof cite.source === 'string' ? cite.source : '';
+    const [sourceName, section] = src.includes('/')
+      ? src.split('/').map((s) => s.trim())
+      : [src, ''];
+    return {
+      id: `c${i + 1}`,
+      title: typeof cite.snippet === 'string' ? cite.snippet.slice(0, 80) : src,
+      src: sourceName ?? src,
+      section: section ?? '',
+      status: 'fresh' as const,
+      score: 0.85 - i * 0.05,
+    };
+  });
+
+  const inquiryConfidence = typeof inqTriage.confidence === 'number' ? inqTriage.confidence : 0.5;
+  const inquiryRecommendation =
+    typeof inqAiReview.recommendation === 'string' ? inqAiReview.recommendation : null;
+  const inquiryReasoning = typeof inqAiReview.reasoning === 'string' ? inqAiReview.reasoning : '';
+  const inquiryIsUrgent = inqTriage.urgency === 'high';
+
+  const suggestion: SuggestionView = deriveSuggestion({
+    status: inquiry.status,
+    confidence: inquiryConfidence,
+    isUrgent: inquiryIsUrgent,
+    citationCount: sources.length,
+    recommendation: inquiryRecommendation,
+  });
+
+  const elapsed = Date.now() - inquiry.receivedAt.getTime();
+  const elapsedLabel = formatElapsed(elapsed);
+
+  const clientTab: ClientTabData | null = clientDetail
+    ? {
+        id: clientDetail.id,
+        initials: toInitials(clientDetail.name),
+        company: clientDetail.name,
+        contactName: clientDetail.name,
+        contactRole: clientDetail.contractType,
+        tags: [clientDetail.contractType],
+        contract: clientDetail.contractType,
+        monthlyFee: 0,
+        since: '—',
+        fiscalYearEnd: '—',
+        industry: '—',
+        lifetimeInquiries: clientDetail.inquiryCount,
+        avgFirstReplyMin: 0,
+        openCount: 0,
+        note: clientDetail.notes ?? '',
+      }
+    : null;
+
+  const statusTab: StatusTabData = {
+    inboundCount: 1,
+    outboundCount: inquiry.status === 'sent' ? 1 : 0,
+    sentiment: inquiryIsUrgent ? '至急・不安' : '通常・協力的',
+    elapsedLabel,
+    openItems: deriveOpenItems(inqAiReview),
+    reasoning: inquiryReasoning || '判定理由は未生成です。',
+    timeline: [
+      {
+        time: shortTime(inquiry.receivedAt),
+        label: '受信',
+        sub: inquiry.client?.name ?? inquiry.unmatchedSender ?? '',
+        state: 'done',
+      },
+      {
+        time: shortTime(inquiry.receivedAt),
+        label: 'AI分類',
+        sub:
+          `${typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'} · 信頼度 ${Math.round(inquiryConfidence * 100)}%`,
+        state: draft ? 'done' : 'now',
+      },
+      ...(draft
+        ? [{
+            time: shortTime(draft.createdAt),
+            label: '下書き生成',
+            sub: `${sources.length}件参照`,
+            state: 'done' as const,
+          }]
+        : []),
+      ...(inquiry.status === 'sent'
+        ? [{ time: '—', label: '送信完了', sub: 'アーカイブ可能', state: 'done' as const }]
+        : [{ time: '—', label: '送信', sub: '承認待ち', state: 'pending' as const }]),
+    ],
+    audit: {
+      channel:
+        inquiry.channel === 'email' ? 'メール' : inquiry.channel === 'line' ? 'LINE' : 'Webフォーム',
+      threadId: `INQ-${inquiry.id.slice(0, 8).toUpperCase()}`,
+      tenantIsolation: '有効',
+      recording: '全イベント保存',
+    },
+  };
 
   return (
     <div className="zeiro-v2" data-theme="light">
@@ -142,7 +253,15 @@ export default async function InquiryV2Page({
                   ] as string) ?? 'other',
               }}
             />
-            <SidecarPlaceholder />
+            <SidecarV2
+              inquiryId={inquiry.id}
+              lifecycleLabel={inquiry.status === 'sent' ? '完了' : '対応中'}
+              lifecycleState={inquiry.status === 'sent' ? 'resolved' : 'open'}
+              suggestion={suggestion}
+              sources={sources}
+              client={clientTab}
+              status={statusTab}
+            />
           </div>
         </div>
       </div>
@@ -165,6 +284,24 @@ function shortTime(d: Date): string {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
   return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function formatElapsed(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min >= 60 * 24) return `${Math.floor(min / 60 / 24)}日`;
+  if (min >= 60) return `${Math.floor(min / 60)}時間`;
+  if (min >= 1) return `${min}分${sec}秒`;
+  return `${sec}秒`;
+}
+
+function deriveOpenItems(aiReview: Record<string, unknown>): string[] {
+  const suggestions = aiReview.suggestions;
+  if (Array.isArray(suggestions)) return suggestions.filter((s): s is string => typeof s === 'string');
+  const gaps = aiReview.gaps;
+  if (Array.isArray(gaps)) return gaps.filter((s): s is string => typeof s === 'string');
+  return [];
 }
 
 function buildSearchString(p: { filter: string; channel: string; lifecycle: string; category: string }): string {
