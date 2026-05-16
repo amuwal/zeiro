@@ -52,9 +52,10 @@ async function main() {
   logKV('preview', listedText.slice(0, 200));
 
   logSection(`4. tools/call freee_set_current_company → ${companyId}`);
+  // company_id must be string per tool schema
   const setRes = await client.callTool({
     name: 'freee_set_current_company',
-    arguments: { company_id: companyId },
+    arguments: { company_id: String(companyId) },
   });
   logKV('result', extractText(setRes).slice(0, 200));
 
@@ -64,15 +65,16 @@ async function main() {
   const dealsRes = await client.callTool({
     name: 'freee_api_get',
     arguments: {
+      service: 'accounting',
       path: '/api/1/deals',
       query: {
-        company_id: companyId,
+        company_id: String(companyId),
         start_issue_date: since.toISOString().slice(0, 10),
         limit: 5,
       },
     },
   });
-  logKV('preview', extractText(dealsRes).slice(0, 400));
+  logKV('preview', extractText(dealsRes).slice(0, 600));
 
   await client.close();
   logSection(`done in ${Date.now() - t0}ms`);
