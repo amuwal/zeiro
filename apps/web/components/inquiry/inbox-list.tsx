@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import type { FilterState } from './shell';
 
@@ -64,22 +64,39 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
   const selectedId = params.inquiryId ?? '';
   const { filter, channel, lifecycle, category } = state;
   const listRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [pill, setPill] = useState<{ top: number; height: number } | null>(null);
+  const [query, setQuery] = useState('');
 
-  const filtered = useMemo(
-    () =>
-      items.filter((it) => {
-        if (filter === 'unread' && !it.unread) return false;
-        if (filter === 'draft' && it.unread) return false;
-        if (filter === 'escalated' && it.confidence > 0.7) return false;
-        if (filter === 'sent' && it.lifecycle !== 'resolved') return false;
-        if (channel !== 'all' && it.channel !== channel) return false;
-        if (lifecycle !== 'all' && it.lifecycle !== lifecycle) return false;
-        if (category !== 'all' && it.category !== category) return false;
-        return true;
-      }),
-    [items, filter, channel, lifecycle, category],
-  );
+  // ⌘K / Ctrl+K focuses the search input from anywhere in the inbox.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items.filter((it) => {
+      if (filter === 'unread' && !it.unread) return false;
+      if (filter === 'draft' && it.unread) return false;
+      if (filter === 'escalated' && it.confidence > 0.7) return false;
+      if (filter === 'sent' && it.lifecycle !== 'resolved') return false;
+      if (channel !== 'all' && it.channel !== channel) return false;
+      if (lifecycle !== 'all' && it.lifecycle !== lifecycle) return false;
+      if (category !== 'all' && it.category !== category) return false;
+      if (q) {
+        const hay = `${it.company} ${it.subject} ${it.preview}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [items, filter, channel, lifecycle, category, query]);
 
   const filteredHasSelected = filtered.some((i) => i.id === selectedId);
   useLayoutEffect(() => {
@@ -107,7 +124,12 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
       </div>
       <div className="inbox-search">
         <Icon name="search" size={14} />
-        <input placeholder="顧問先・件名・本文を検索…" />
+        <input
+          ref={searchRef}
+          placeholder="顧問先・件名・本文を検索…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
         <kbd>⌘K</kbd>
       </div>
       <div className="inbox-list" key={`${filter}|${channel}|${lifecycle}|${category}`} ref={listRef}>

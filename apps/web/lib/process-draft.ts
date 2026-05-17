@@ -99,8 +99,26 @@ async function persistResult(
     return;
   }
 
-  // no_draft and escalate both end up at 'escalated' status — the UI distinguishes
-  // them via aiReview.recommendation (human_handoff vs no_reply_needed).
+  // no_draft and escalate both end up at 'escalated' status — the UI
+  // distinguishes them via aiReview.recommendation. We still create a
+  // skeleton draft row so the composer always has a starting template
+  // (instead of falling back to the textarea placeholder) and reviewers
+  // can immediately edit + send if they choose to override the agent's
+  // judgment. The skeleton is marked via metadata so future UI can flag it.
+  const inquiry = await getInquiry(firmId, inquiryId);
+  const recipientName = inquiry?.client?.name ?? '顧問先';
+  await createDraft({
+    inquiryId,
+    subject: inquiry?.subject ?? '',
+    body: buildSkeletonBody({
+      recipientName,
+      kind: result.kind,
+      reason: result.reason,
+    }),
+    citations: [],
+    confidence: result.kind === 'no_draft' ? 0 : 0.1,
+    model: DRAFT_MODEL,
+  });
   await setInquiryStatus(firmId, inquiryId, 'escalated');
   await recordAudit({
     firmId,
@@ -112,8 +130,30 @@ async function persistResult(
       triage: result.triage,
       recommendation: result.aiReview.recommendation,
       reviewConfidence: result.aiReview.confidence,
+      skeletonDraft: true,
     },
   });
+}
+
+function buildSkeletonBody(args: {
+  recipientName: string;
+  kind: 'escalate' | 'no_draft';
+  reason: string;
+}): string {
+  const note =
+    args.kind === 'escalate'
+      ? `※ AI判定: 所長税理士による個別判断が推奨されています。\n※ 理由: ${args.reason}\n`
+      : `※ AI判定: 返信不要と判定されました（${args.reason}）。\n※ 必要な場合のみ送信してください。\n`;
+  return [
+    note,
+    `${args.recipientName} 様`,
+    '',
+    'いつもお世話になっております。',
+    '',
+    '[ここに本文を記入してください]',
+    '',
+    'ご不明な点がございましたら、お気軽にお申し付けください。',
+  ].join('\n');
 }
 
 function analysisFromResult(result: DraftResult): Record<string, unknown> {

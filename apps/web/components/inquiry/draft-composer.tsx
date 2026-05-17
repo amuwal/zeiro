@@ -1,8 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { regenerateDraftAction } from '@/app/(app)/inbox/actions';
+import {
+  escalateInquiryAction,
+  regenerateDraftAction,
+  rejectDraftAction,
+  sendDraftAction,
+  sendEditedDraftAction,
+} from '@/app/(app)/inbox/actions';
 import { Icon } from '@/components/ui/icon';
+import { SentDraftView } from './sent-draft-view';
+import { useDraftConflict } from './use-draft-conflict';
 
 export type DraftView = {
   body: string;
@@ -12,30 +20,23 @@ export type DraftView = {
   time: string;
 };
 
-// Placeholder is a neutral skeleton — we don't claim "AI is generating" because
-// an empty draft just means none was produced (e.g. agent escalated). User can
-// type directly, or hit 再生成 to retry the pipeline.
 const SKELETON_PLACEHOLDER =
   'ここに返信内容を入力してください。\n\n[あいさつ]\n\n[本文]\n\n[締めの一文]';
 
-export function DraftComposer({ draft, inquiryId }: { draft: DraftView | null; inquiryId: string }) {
-  const [text, setText] = useState(draft?.body ?? '');
-  const [regenerating, startRegen] = useTransition();
+type Props = {
+  draft: DraftView | null;
+  inquiryId: string;
+  inquiryStatus: string;
+};
+
+export function DraftComposer({ draft, inquiryId, inquiryStatus }: Props) {
+  const { text, setText, pendingDraftBody, loadIncoming, keepMyEdits } = useDraftConflict(
+    draft?.body ?? '',
+  );
+  const [busy, startTransition] = useTransition();
+  const [busyKind, setBusyKind] = useState<null | 'regen' | 'send' | 'reject' | 'escalate'>(null);
+  const [error, setError] = useState<string | null>(null);
   const ta = useRef<HTMLTextAreaElement>(null);
-
-  const regenerate = () => {
-    startRegen(() => {
-      regenerateDraftAction(inquiryId).catch((e) => {
-        // Surface in console for now; persistResult already audits failures.
-        // biome-ignore lint/suspicious/noConsole: surface user-visible failure
-        console.error('regenerate failed', e);
-      });
-    });
-  };
-
-  useEffect(() => {
-    setText(draft?.body ?? '');
-  }, [draft?.body]);
 
   useEffect(() => {
     if (!ta.current) return;
@@ -44,6 +45,20 @@ export function DraftComposer({ draft, inquiryId }: { draft: DraftView | null; i
   }, [text]);
 
   const hasDraft = draft !== null;
+  const isSent = inquiryStatus === 'sent';
+  const isEdited = hasDraft && text.trim() !== draft.body.trim();
+
+  const run = (kind: typeof busyKind, fn: () => Promise<void>) => {
+    setError(null);
+    setBusyKind(kind);
+    startTransition(() => {
+      fn()
+        .catch((e) => setError(e instanceof Error ? e.message : 'failed'))
+        .finally(() => setBusyKind(null));
+    });
+  };
+
+  if (isSent) return <SentDraftView draft={draft} />;
 
   return (
     <div className="draft-composer">
@@ -71,45 +86,93 @@ export function DraftComposer({ draft, inquiryId }: { draft: DraftView | null; i
         onChange={(e) => setText(e.target.value)}
         placeholder={SKELETON_PLACEHOLDER}
         rows={6}
+        disabled={busy}
       />
+
+      {pendingDraftBody !== null && (
+        <div className="draft-composer-toast">
+          <Icon name="spark" size={11} />
+          <span>新しい下書きが届きました（あなたの編集中です）</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={keepMyEdits}>
+            編集を維持
+          </button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={loadIncoming}>
+            読み込む
+          </button>
+        </div>
+      )}
 
       <div className="draft-composer-actions">
         <button
           type="button"
           className="btn btn-ghost"
-          onClick={regenerate}
-          disabled={regenerating}
+          onClick={() => run('regen', () => regenerateDraftAction(inquiryId))}
+          disabled={busy}
         >
-          <Icon name="spark" size={12} /> {regenerating ? '生成中…' : '再生成'}
+          <Icon name="spark" size={12} /> {busyKind === 'regen' ? '生成中…' : '再生成'}
         </button>
-        <button type="button" className="icon-btn-sm" title="添付">
+        <button type="button" className="icon-btn-sm" title="添付" disabled={busy}>
           <Icon name="paperclip" size={13} />
         </button>
-        <button type="button" className="icon-btn-sm" title="ナレッジ参照">
+        <button type="button" className="icon-btn-sm" title="ナレッジ参照" disabled={busy}>
           <Icon name="book" size={13} />
         </button>
         <span className="spacer" />
-        <button type="button" className="btn btn-ghost">
-          <Icon name="x" size={12} /> 却下
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => run('reject', () => rejectDraftAction(inquiryId))}
+          disabled={busy || !hasDraft}
+        >
+          <Icon name="x" size={12} /> {busyKind === 'reject' ? '処理中…' : '却下'}
         </button>
-        <button type="button" className="btn btn-ghost">
-          <Icon name="arrow-right" size={12} /> 所長に転送
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => run('escalate', () => escalateInquiryAction(inquiryId))}
+          disabled={busy}
+        >
+          <Icon name="arrow-right" size={12} />{' '}
+          {busyKind === 'escalate' ? '転送中…' : '所長に転送'}
         </button>
-        <button type="button" className="btn btn-secondary" disabled={!hasDraft}>
-          <Icon name="check" size={12} /> そのまま送信
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => run('send', () => sendDraftAction(inquiryId))}
+          disabled={busy || !hasDraft || isEdited}
+          title={isEdited ? '編集された内容は「編集して送信」で送ってください' : undefined}
+        >
+          <Icon name="check" size={12} /> {busyKind === 'send' ? '送信中…' : 'そのまま送信'}
         </button>
-        <button type="button" className="btn btn-primary">
-          <Icon name="send" size={12} /> 編集して送信
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => run('send', () => sendEditedDraftAction(inquiryId, text))}
+          disabled={busy || text.trim().length === 0}
+        >
+          <Icon name="send" size={12} /> {busyKind === 'send' ? '送信中…' : '編集して送信'}
           <span className="kbd">⌘↵</span>
         </button>
       </div>
 
+      {error && (
+        <div className="draft-composer-error">
+          <Icon name="alert" size={11} /> {error}
+        </div>
+      )}
+
       <div className="composer-meta">
         <div className="group">
-          <span className="item"><Icon name="shield" size={11} /> <b>テナント分離</b> 有効</span>
-          <span className="item"><Icon name="clock" size={11} /> 一次対応 <b>—</b></span>
+          <span className="item">
+            <Icon name="shield" size={11} /> <b>テナント分離</b> 有効
+          </span>
+          <span className="item">
+            <Icon name="clock" size={11} /> 一次対応 <b>—</b>
+          </span>
         </div>
-        <span className="item">監査ログ <b>記録中</b></span>
+        <span className="item">
+          監査ログ <b>記録中</b>
+        </span>
       </div>
     </div>
   );

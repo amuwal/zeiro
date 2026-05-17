@@ -140,6 +140,8 @@ export default async function InquiryDetailPage({
           turns={turns}
           draft={draftView}
           suggestion={suggestion}
+          inquiryStatus={inquiry.status}
+          unmatchedSender={inquiry.unmatchedSender}
         />
       }
       sidecar={

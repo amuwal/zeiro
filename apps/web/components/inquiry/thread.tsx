@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/icon';
 import { DraftComposer, type DraftView } from './draft-composer';
 import type { SuggestionView } from './suggested-action';
 import { type Turn, TurnView } from './turns';
+import { UnmatchedBanner } from './unmatched-banner';
 
 type Props = {
   meta: {
@@ -19,6 +20,9 @@ type Props = {
   turns: Turn[];
   draft: DraftView | null;
   suggestion: SuggestionView;
+  inquiryStatus: string;
+  /** When status === 'unmatched', the sender's email so we can offer promotion. */
+  unmatchedSender: string | null;
 };
 
 const CATEGORY_JP: Record<string, string> = {
@@ -29,7 +33,15 @@ const CATEGORY_JP: Record<string, string> = {
   other: 'その他',
 };
 
-export function Thread({ meta, turns, draft, suggestion }: Props) {
+export function Thread({
+  meta,
+  turns,
+  draft,
+  suggestion,
+  inquiryStatus,
+  unmatchedSender,
+}: Props) {
+  const isUnmatched = inquiryStatus === 'unmatched';
   const [highlightedCite, setHighlightedCite] = useState<string | null>(null);
   const cat = CATEGORY_JP[meta.category] ?? meta.category;
   return (
@@ -78,6 +90,13 @@ export function Thread({ meta, turns, draft, suggestion }: Props) {
       </div>
 
       <div className="thread-body">
+        {isUnmatched && unmatchedSender && (
+          <UnmatchedBanner
+            inquiryId={meta.id}
+            fromAddress={unmatchedSender}
+            suggestedName={meta.senderCompany || meta.senderName}
+          />
+        )}
         {turns.map((t, i) => (
           <TurnView
             key={i}
@@ -89,7 +108,13 @@ export function Thread({ meta, turns, draft, suggestion }: Props) {
         ))}
       </div>
 
-      <DraftComposer draft={draft} inquiryId={meta.id} />
+      {!isUnmatched && (
+        <DraftComposer
+          draft={draft}
+          inquiryId={meta.id}
+          inquiryStatus={inquiryStatus}
+        />
+      )}
     </section>
   );
 }
