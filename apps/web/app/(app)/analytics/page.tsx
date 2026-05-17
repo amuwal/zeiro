@@ -121,7 +121,9 @@ function buildKpis(a: Awaited<ReturnType<typeof getWindowAnalytics>>): KpiInput[
       label: '総問い合わせ数',
       value: a.current.total,
       unit: '件',
-      target: `前期間 ${a.previous.total}件`,
+      // total = conversations (chain), messages = raw customer turns.
+      // Surface both so a 1-conversation / 3-message inbox isn't confusing.
+      target: `メッセージ ${a.current.messages}件 · 前期間 ${a.previous.total}件`,
       delta: totalDelta,
       deltaUp: totalDeltaIsUp,
       good: true,

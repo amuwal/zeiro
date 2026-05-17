@@ -22,7 +22,8 @@ export async function getCategoryDistribution(
 }
 
 export type KpiSnapshot = {
-  total: number;
+  total: number; // conversations (chains)
+  messages: number; // raw customer messages (rows)
   escalationRate: number;
   adoptionRate: number;
   avgResponseMinutes: number | null;
@@ -54,7 +55,8 @@ export async function getWindowAnalytics(
 function toSnapshot(row: Awaited<ReturnType<typeof getWindowKpis>>): KpiSnapshot {
   const decided = row.draftedInquiries + row.sentInquiries;
   return {
-    total: row.totalInquiries,
+    total: row.totalInquiries, // chain-based — matches inbox
+    messages: row.messagesReceived, // row-based — every customer message
     escalationRate: row.totalInquiries === 0 ? 0 : row.escalatedInquiries / row.totalInquiries,
     adoptionRate: decided === 0 ? 0 : row.sentInquiries / decided,
     avgResponseMinutes: row.avgResponseSeconds === null ? null : row.avgResponseSeconds / 60,
