@@ -1,162 +1,158 @@
-import { getDraftByInquiry, getFirm, getInquiry, listFirmUsers, walkThread } from '@zeiro/db';
+import { getClientDetail, getDraftByInquiry, getInquiry } from '@zeiro/db';
 import { notFound } from 'next/navigation';
-import { AiAnalysis } from '@/components/detail/ai-analysis';
-import { AiReviewCard } from '@/components/detail/ai-review-card';
-import { ConversationTimeline } from '@/components/detail/conversation-timeline';
-import { DetailHeader } from '@/components/detail/detail-header';
-import { DraftReviewForm } from '@/components/detail/draft-review-form';
-import { DraftingPoller } from '@/components/detail/drafting-poller';
-import { EscalatedStateView } from '@/components/detail/escalated-state-view';
-import { OriginalMessage } from '@/components/detail/original-message';
-import { SentStateView } from '@/components/detail/sent-state-view';
-import { UnmatchedBanner } from '@/components/detail/unmatched-banner';
+import type { StatusTabData } from '@/components/inquiry/sidecar-tabs/status-tab';
+import { Sidecar } from '@/components/inquiry/sidecar';
+import { deriveSuggestion } from '@/components/inquiry/suggested-action';
+import { Thread } from '@/components/inquiry/thread';
+import { ThreadSidecarSplit } from '@/components/inquiry/thread-sidecar-split';
+import type { Turn } from '@/components/inquiry/turns';
 import { requireFirmContext } from '@/lib/firm-context';
-import { readAiReview, readFailureType, readReason, readSenderName } from '@/lib/inquiry-derived';
-import { isAdminRole } from '@/lib/team';
-
-type Params = { inquiryId: string };
-type SearchParams = { promoted?: string };
+import {
+  CATEGORY_TO_ID,
+  deriveOpenItems,
+  formatElapsed,
+  formatTime,
+  mapCitationsToSources,
+  shortTime,
+  toClientTab,
+  toInitials,
+} from '@/lib/inquiry-mappers';
 
 export default async function InquiryDetailPage({
   params,
-  searchParams,
 }: {
-  params: Promise<Params>;
-  searchParams: Promise<SearchParams>;
+  params: Promise<{ inquiryId: string }>;
 }) {
   const { inquiryId } = await params;
-  const { firmId, userId, role } = await requireFirmContext();
+  const { firmId } = await requireFirmContext();
 
-  const [inquiry, draft, firm, thread, members, query] = await Promise.all([
+  const [inquiry, draft] = await Promise.all([
     getInquiry(firmId, inquiryId),
     getDraftByInquiry(inquiryId),
-    getFirm(firmId),
-    walkThread(firmId, inquiryId),
-    listFirmUsers(firmId),
-    searchParams,
   ]);
-
   if (!inquiry) notFound();
-
-  const assigneeMembers = members.map((m) => ({ id: m.id, name: m.name, tier: m.tier }));
-  // Admin can always reassign. The current assignee can hand it off. Everyone
-  // else sees the badge read-only — the dropdown menu just doesn't open.
-  const canReassign = isAdminRole(role) || inquiry.assignedToId === userId;
-
-  const isEscalated = inquiry.status === 'escalated';
-  const isPending = inquiry.status === 'pending';
-  const isUnmatched = inquiry.status === 'unmatched';
-  const isSent = inquiry.status === 'sent';
-  const promotedCount = parsePromotedCount(query.promoted);
-  const primaryDurationMin = draft
-    ? (draft.createdAt.getTime() - inquiry.receivedAt.getTime()) / 60_000
+  const clientDetail = inquiry.clientId
+    ? await getClientDetail(firmId, inquiry.clientId)
     : null;
 
-  if (isUnmatched) {
-    return (
-      <section className="detail-col" key={inquiry.id}>
-        <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
-        <div className="detail-body detail-anim">
-          <UnmatchedBanner
-            inquiryId={inquiry.id}
-            fromAddress={inquiry.unmatchedSender ?? ''}
-            fromName={readSenderName(inquiry)}
-            subject={inquiry.subject}
-          />
-          <OriginalMessage inquiry={inquiry} firmInbound={firm.inboundAddress} />
-        </div>
-      </section>
-    );
+  const inqAnalysis = (inquiry.analysis ?? {}) as Record<string, unknown>;
+  const inqTriage = (inqAnalysis.triage ?? {}) as Record<string, unknown>;
+  const inqAiReview = (inqAnalysis.aiReview ?? {}) as Record<string, unknown>;
+  const senderName = inquiry.client?.name ?? inquiry.unmatchedSender ?? 'Unknown';
+
+  const sources = mapCitationsToSources(draft?.citations);
+
+  const confidence = typeof inqTriage.confidence === 'number' ? inqTriage.confidence : 0.5;
+  const recommendation = typeof inqAiReview.recommendation === 'string' ? inqAiReview.recommendation : null;
+  const reasoning = typeof inqAiReview.reasoning === 'string' ? inqAiReview.reasoning : '';
+  const isUrgent = inqTriage.urgency === 'high';
+
+  const suggestion = deriveSuggestion({
+    status: inquiry.status,
+    confidence,
+    isUrgent,
+    citationCount: sources.length,
+    recommendation,
+  });
+
+  const elapsedLabel = formatElapsed(Date.now() - inquiry.receivedAt.getTime());
+
+  const statusTab: StatusTabData = {
+    inboundCount: 1,
+    outboundCount: inquiry.status === 'sent' ? 1 : 0,
+    sentiment: isUrgent ? '至急・不安' : '通常・協力的',
+    elapsedLabel,
+    openItems: deriveOpenItems(inqAiReview),
+    reasoning: reasoning || '判定理由は未生成です。',
+    timeline: [
+      {
+        time: shortTime(inquiry.receivedAt),
+        label: '受信',
+        sub: inquiry.client?.name ?? inquiry.unmatchedSender ?? '',
+        state: 'done',
+      },
+      {
+        time: shortTime(inquiry.receivedAt),
+        label: 'AI分類',
+        sub: `${typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'} · 信頼度 ${Math.round(confidence * 100)}%`,
+        state: draft ? 'done' : 'now',
+      },
+      ...(draft
+        ? [{ time: shortTime(draft.createdAt), label: '下書き生成', sub: `${sources.length}件参照`, state: 'done' as const }]
+        : []),
+      ...(inquiry.status === 'sent'
+        ? [{ time: '—', label: '送信完了', sub: 'アーカイブ可能', state: 'done' as const }]
+        : [{ time: '—', label: '送信', sub: '承認待ち', state: 'pending' as const }]),
+    ],
+    audit: {
+      channel: inquiry.channel === 'email' ? 'メール' : inquiry.channel === 'line' ? 'LINE' : 'Webフォーム',
+      threadId: `INQ-${inquiry.id.slice(0, 8).toUpperCase()}`,
+      tenantIsolation: '有効',
+      recording: '全イベント保存',
+    },
+  };
+
+  const turns: Turn[] = [
+    {
+      kind: 'incoming',
+      who: {
+        name: senderName,
+        role: inquiry.client?.name ? `· ${inquiry.client.name}` : '',
+        initials: toInitials(senderName),
+      },
+      time: formatTime(inquiry.receivedAt),
+      body: inquiry.body,
+    },
+  ];
+  if (inquiry.status === 'sent' && draft) {
+    turns.push({
+      kind: 'outgoing',
+      who: { name: 'AI Agent', role: '送信済', initials: 'SK' },
+      time: formatTime(draft.createdAt),
+      body: draft.body,
+    });
   }
 
-  if (isSent) {
-    return (
-      <section className="detail-col" key={inquiry.id}>
-        <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
-        <SentStateView
-          inquiryId={inquiry.id}
-          thread={thread}
-          firmName={firm.name}
-          lastSentAt={lastSentAtFromThread(thread)}
-        />
-      </section>
-    );
-  }
-
-  const aiReview = readAiReview(inquiry);
-
-  // Escalated: no draft to send. Reviewer composes manually, with AI's review
-  // (or a fallback escalation banner for legacy / pipeline-failure rows) in view.
-  if (isEscalated) {
-    return (
-      <section className="detail-col" key={inquiry.id}>
-        <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
-        <EscalatedStateView
-          inquiryId={inquiry.id}
-          thread={thread}
-          firmName={firm.name}
-          aiReview={aiReview}
-          fallbackReason={readReason(inquiry)}
-          fallbackFailureType={readFailureType(inquiry)}
-        />
-      </section>
-    );
-  }
+  const draftView = draft
+    ? {
+        body: draft.body,
+        citationCount: sources.length,
+        confidence: draft.confidence,
+        model: draft.model,
+        time: formatTime(draft.createdAt),
+      }
+    : null;
 
   return (
-    <section className="detail-col" key={inquiry.id}>
-      {isPending && <DraftingPoller />}
-      <DetailHeader inquiry={inquiry} members={assigneeMembers} canReassign={canReassign} />
-      <DraftReviewForm
-        inquiry={inquiry}
-        draft={draft}
-        isEscalated={false}
-        primaryDurationMin={primaryDurationMin}
-        preDraft={
-          <>
-            {promotedCount !== null && <PromotedFlash count={promotedCount} />}
-            <ConversationTimeline
-              thread={thread}
-              firmName={firm.name}
-              currentInquiryId={inquiry.id}
-            />
-            <AiAnalysis inquiry={inquiry} />
-            {aiReview && <AiReviewCard review={aiReview} />}
-          </>
-        }
-        postDraft={null}
-      />
-    </section>
-  );
-}
-
-function parsePromotedCount(raw: string | undefined): number | null {
-  if (!raw) return null;
-  const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-function lastSentAtFromThread(thread: { drafts: { metadata: unknown }[] }[]): Date | null {
-  let latest: Date | null = null;
-  for (const inq of thread) {
-    for (const d of inq.drafts) {
-      const m = d.metadata;
-      if (!m || typeof m !== 'object' || Array.isArray(m)) continue;
-      const at = (m as { sentAt?: unknown }).sentAt;
-      if (typeof at !== 'string') continue;
-      const t = new Date(at);
-      if (Number.isNaN(t.getTime())) continue;
-      if (!latest || t > latest) latest = t;
-    }
-  }
-  return latest;
-}
-
-function PromotedFlash({ count }: { count: number }) {
-  return (
-    <div className="bg-accent-soft text-accent-ink rounded-md px-3.5 py-2.5 text-[12.5px]">
-      送信元を顧問先として登録しました。同じアドレスからの未登録メール {count} 件を紐付け、AI
-      が下書きを生成しています。
-    </div>
+    <ThreadSidecarSplit
+      thread={
+        <Thread
+          meta={{
+            id: inquiry.id,
+            subject: inquiry.subject,
+            senderName,
+            senderRole: '',
+            senderCompany: inquiry.client?.name ?? '',
+            senderInitials: toInitials(senderName),
+            category:
+              (CATEGORY_TO_ID[typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'] as string) ?? 'other',
+          }}
+          turns={turns}
+          draft={draftView}
+          suggestion={suggestion}
+        />
+      }
+      sidecar={
+        <Sidecar
+          inquiryId={inquiry.id}
+          inquiryStatus={inquiry.status}
+          lifecycleLabel={inquiry.status === 'sent' ? '完了' : '対応中'}
+          lifecycleState={inquiry.status === 'sent' ? 'resolved' : 'open'}
+          sources={sources}
+          client={toClientTab(clientDetail)}
+          status={statusTab}
+        />
+      }
+    />
   );
 }

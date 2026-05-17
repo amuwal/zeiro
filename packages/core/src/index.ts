@@ -12,6 +12,7 @@ export {
 } from './errors';
 export * from './pii/mask';
 export * from './schemas/audit';
+export * from './schemas/chat';
 export * from './schemas/classification';
 export * from './schemas/client';
 export * from './schemas/import';

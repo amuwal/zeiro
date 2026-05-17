@@ -44,14 +44,9 @@
   --ease-out: var(--ease-out);
   --ease-in-out: var(--ease-in-out);
 }
-@import "../styles/buttons.css";
-@import "../styles/shell.css";
-@import "../styles/inbox.css";
-@import "../styles/detail.css";
-@import "../styles/cards.css";
+@import "../styles/inquiry.css";
 @import "../styles/knowledge.css";
 @import "../styles/analytics.css";
-@import "../styles/audit.css";
 @import "../styles/settings.css";
 @import "../styles/clients.css";
 @import "../styles/animations.css";

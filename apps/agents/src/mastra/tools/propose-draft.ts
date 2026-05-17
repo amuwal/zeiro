@@ -4,6 +4,7 @@ import { getKnowledgeChunksByIds } from '@zeiro/db';
 import { z } from 'zod';
 import { callDrafterWithCitations } from '../../lib/anthropic-draft';
 import { draftPrompt } from '../prompts/draft';
+import { assertMutableInquiry } from './state-guard';
 
 const inputSchema = z.object({
   relevantSourceIds: z
@@ -35,6 +36,9 @@ export const proposeDraftTool = createTool({
   inputSchema,
   outputSchema,
   execute: async (input, ctx) => {
+    // Refuse before any expensive work (drafter LLM call, KB fetch) if the
+    // inquiry is in a state where mutating the draft is meaningless.
+    assertMutableInquiry(ctx?.requestContext, 'propose-draft');
     const firmId = ctx?.requestContext?.get('firmId');
     if (typeof firmId !== 'string') {
       throw new TenantIsolationError('propose-draft invoked without firmId in request context');

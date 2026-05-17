@@ -1,0 +1,136 @@
+import type { InboxItemView } from '@/components/inquiry/inbox-list';
+import type { ClientTabData } from '@/components/inquiry/sidecar-tabs/client-tab';
+import type { SourceItem } from '@/components/inquiry/sidecar-tabs/sources-tab';
+
+export const CATEGORY_TO_ID: Record<string, InboxItemView['category']> = {
+  期日確認: 'deadline',
+  書類提出: 'docs',
+  税務質問: 'tax',
+  顧問契約: 'contract',
+  その他: 'other',
+};
+
+export function normalizeChannel(raw: string | null | undefined): InboxItemView['channel'] {
+  switch (raw) {
+    case 'email':
+      return 'email';
+    case 'line':
+      return 'line';
+    case 'form':
+    case 'web':
+    case 'webform':
+      return 'form';
+    default:
+      return 'email';
+  }
+}
+
+export type ClientDetail = {
+  id: string;
+  name: string;
+  contractType: string;
+  inquiryCount: number;
+  notes: string | null;
+};
+
+export function toClientTab(detail: ClientDetail | null): ClientTabData | null {
+  if (!detail) return null;
+  return {
+    id: detail.id,
+    initials: toInitials(detail.name),
+    company: detail.name,
+    contactName: detail.name,
+    contactRole: detail.contractType,
+    tags: [detail.contractType],
+    contract: detail.contractType,
+    monthlyFee: 0,
+    since: '—',
+    fiscalYearEnd: '—',
+    industry: '—',
+    lifetimeInquiries: detail.inquiryCount,
+    avgFirstReplyMin: 0,
+    openCount: 0,
+    note: detail.notes ?? '',
+  };
+}
+
+export function mapCitationsToSources(citations: unknown): SourceItem[] {
+  const arr = Array.isArray(citations) ? citations : [];
+  return arr.map((c, i) => {
+    const cite = c as { source?: string; snippet?: string };
+    const src = typeof cite.source === 'string' ? cite.source : '';
+    const [sourceName, section] = src.includes('/')
+      ? src.split('/').map((s) => s.trim())
+      : [src, ''];
+    return {
+      id: `c${i + 1}`,
+      title: typeof cite.snippet === 'string' ? cite.snippet.slice(0, 80) : src,
+      src: sourceName ?? src,
+      section: section ?? '',
+      status: 'fresh' as const,
+      score: 0.85 - i * 0.05,
+    };
+  });
+}
+
+type DraftLike = {
+  body: string;
+  citations: unknown;
+  metadata?: unknown;
+};
+
+export function blocksFromDraft(draft: DraftLike): Array<{ text: string; cite: string | null }> {
+  const metadata = (draft.metadata ?? {}) as Record<string, unknown>;
+  const cb = metadata.citationBlocks;
+  if (Array.isArray(cb) && cb.length > 0) {
+    return cb
+      .map((b) => {
+        const obj = b as { text?: string; citationIndexes?: number[] };
+        if (typeof obj.text !== 'string') return null;
+        const idx = Array.isArray(obj.citationIndexes) ? obj.citationIndexes[0] : undefined;
+        const cite = typeof idx === 'number' ? `c${idx + 1}` : null;
+        return { text: obj.text, cite };
+      })
+      .filter((b): b is { text: string; cite: string | null } => b !== null);
+  }
+  return [{ text: draft.body, cite: null }];
+}
+
+export function toInitials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  const parts = trimmed.split(/[\s ]+/);
+  const first = parts[0]?.[0] ?? '?';
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
+export function formatTime(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function shortTime(d: Date): string {
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+export function formatElapsed(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min >= 60 * 24) return `${Math.floor(min / 60 / 24)}日`;
+  if (min >= 60) return `${Math.floor(min / 60)}時間`;
+  if (min >= 1) return `${min}分${sec}秒`;
+  return `${sec}秒`;
+}
+
+export function deriveOpenItems(aiReview: Record<string, unknown>): string[] {
+  const suggestions = aiReview.suggestions;
+  if (Array.isArray(suggestions)) return suggestions.filter((s): s is string => typeof s === 'string');
+  const gaps = aiReview.gaps;
+  if (Array.isArray(gaps)) return gaps.filter((s): s is string => typeof s === 'string');
+  return [];
+}

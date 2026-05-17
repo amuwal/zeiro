@@ -1,14 +1,10 @@
-import { Icon } from '@/components/ui/icon';
-
 export default function InboxIndexPage() {
   return (
-    <section className="detail-col">
-      <div className="empty">
-        <div>
-          <div className="ico">
-            <Icon name="inbox" size={16} />
-          </div>
-          問い合わせを選択してください
+    <section className="thread-col">
+      <div className="empty-pane">
+        <div className="empty-pane-title">問い合わせを選択してください</div>
+        <div className="empty-pane-sub">
+          左の一覧から問い合わせを選ぶと、ここに会話とAIの分析が表示されます。
         </div>
       </div>
     </section>

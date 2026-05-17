@@ -1,0 +1,95 @@
+'use client';
+
+import { useState } from 'react';
+import { Icon } from '@/components/ui/icon';
+import { DraftComposer, type DraftView } from './draft-composer';
+import type { SuggestionView } from './suggested-action';
+import { type Turn, TurnView } from './turns';
+
+type Props = {
+  meta: {
+    id: string;
+    subject: string;
+    senderName: string;
+    senderRole: string;
+    senderCompany: string;
+    senderInitials: string;
+    category: string;
+  };
+  turns: Turn[];
+  draft: DraftView | null;
+  suggestion: SuggestionView;
+};
+
+const CATEGORY_JP: Record<string, string> = {
+  deadline: '期日確認',
+  docs: '書類提出',
+  tax: '税務質問',
+  contract: '顧問契約',
+  other: 'その他',
+};
+
+export function Thread({ meta, turns, draft, suggestion }: Props) {
+  const [highlightedCite, setHighlightedCite] = useState<string | null>(null);
+  const cat = CATEGORY_JP[meta.category] ?? meta.category;
+  return (
+    <section className="thread-col">
+      <div className="thread-head">
+        <div className="thread-crumbs">
+          <span>受信トレイ</span>
+          <span className="sep">/</span>
+          <b>{cat}</b>
+          <span className="id">INQ-{meta.id.slice(0, 8).toUpperCase()}</span>
+          <div className="actions">
+            <button type="button" className="icon-btn-sm" title="アーカイブ"><Icon name="archive" size={14} /></button>
+            <button type="button" className="icon-btn-sm" title="その他"><Icon name="more" size={14} /></button>
+          </div>
+        </div>
+
+        <h1 className="thread-subject">{meta.subject}</h1>
+
+        <div className="thread-meta">
+          <div className="thread-from">
+            <div className="pic">{meta.senderInitials}</div>
+            <span className="who">{meta.senderName}</span>
+            {meta.senderRole && (
+              <>
+                <span className="sep">/</span>
+                <span>{meta.senderRole}</span>
+              </>
+            )}
+            {meta.senderCompany && meta.senderCompany !== meta.senderName && (
+              <>
+                <span className="sep">/</span>
+                <span>{meta.senderCompany}</span>
+              </>
+            )}
+          </div>
+          <span className="thread-tag">
+            <span className="swatch" />
+            {cat}
+          </span>
+          <button type="button" className={`thread-suggest-pill suggest-${suggestion.tone}`}>
+            <Icon name="spark" size={10} />
+            <b>{suggestion.verb}</b>
+            <span className="conf">{Math.round(suggestion.confidence * 100)}%</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="thread-body">
+        {turns.map((t, i) => (
+          <TurnView
+            key={i}
+            turn={t}
+            highlightedCite={highlightedCite}
+            onCiteHover={setHighlightedCite}
+            onCiteLeave={() => setHighlightedCite(null)}
+          />
+        ))}
+      </div>
+
+      <DraftComposer draft={draft} inquiryId={meta.id} />
+    </section>
+  );
+}

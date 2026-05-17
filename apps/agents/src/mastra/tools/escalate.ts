@@ -1,5 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { assertMutableInquiry } from './state-guard';
 
 const inputSchema = z.object({
   reason: z.string().min(1).describe('所長税理士へ引き継ぐ理由を 1〜2 行で'),
@@ -18,7 +19,8 @@ export const escalateTool = createTool({
   description: '所長税理士または有資格者の判断が必要な場合に呼ぶ終端ツール。',
   inputSchema,
   outputSchema,
-  execute: async (input) => {
+  execute: async (input, ctx) => {
+    assertMutableInquiry(ctx?.requestContext, 'escalate');
     return { kind: 'escalate' as const, reason: input.reason };
   },
 });

@@ -23,7 +23,7 @@ export function Topbar({ inboxCount, admin }: { inboxCount: number; admin: boole
         <Link href="/settings" className="icon-btn" aria-label="設定">
           <Icon name="settings" size={15} />
         </Link>
-        <div className="topbar-divider" />
+        <div style={{ width: 1, height: 20, background: 'var(--line)' }} />
         <UserMenu />
       </div>
     </header>
