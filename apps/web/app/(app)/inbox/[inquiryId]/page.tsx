@@ -142,6 +142,7 @@ export default async function InquiryDetailPage({
           suggestion={suggestion}
           inquiryStatus={inquiry.status}
           unmatchedSender={inquiry.unmatchedSender}
+          assignedTo={inquiry.assignedTo}
         />
       }
       sidecar={

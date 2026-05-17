@@ -1225,6 +1225,234 @@ html, body {
   align-self: flex-start;
 }
 
+/* =========================================================
+   AUDIT LOG VIEWER (/audit)
+   ========================================================= */
+.audit-pane {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg-0);
+}
+.audit-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 28px 24px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.audit-title {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink-0);
+}
+.audit-sub {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+.audit-pager {
+  display: flex; justify-content: center;
+  padding: 16px 24px 32px;
+}
+.audit-filters {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-0);
+}
+.audit-filter {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+.audit-filter select {
+  font-family: var(--font-jp);
+  font-size: 12.5px;
+  padding: 6px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-0);
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  outline: none;
+  min-width: 160px;
+}
+.audit-filter select:focus {
+  border-color: var(--c-blue);
+  box-shadow: 0 0 0 3px var(--c-blue-bg);
+}
+.audit-filter-label { color: var(--ink-3); }
+
+.audit-table {
+  display: flex; flex-direction: column;
+  padding: 0 24px 24px;
+}
+.audit-row {
+  display: grid;
+  grid-template-columns: 150px 200px 180px 140px 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+  font-size: 12.5px;
+  color: var(--ink-1);
+  min-width: 0;
+}
+.audit-row.head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  background: var(--bg-0);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-top: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.audit-row.tone-ok { border-left: 2px solid var(--c-green); }
+.audit-row.tone-warn { border-left: 2px solid var(--c-amber); }
+.audit-row.tone-info { border-left: 2px solid var(--c-blue); }
+.audit-row.tone-muted { border-left: 2px solid var(--line); }
+
+.audit-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.audit-action {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 500;
+  color: var(--ink-0);
+}
+.audit-row.tone-ok .audit-action { color: var(--c-green); }
+.audit-row.tone-warn .audit-action { color: var(--c-amber); }
+.audit-row.tone-info .audit-action { color: var(--c-blue); }
+.audit-actor {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.audit-mono {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.audit-link {
+  font-size: 11.5px;
+  color: var(--c-blue);
+  text-decoration: none;
+}
+.audit-link:hover { text-decoration: underline; }
+
+.audit-meta-summary {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+.audit-meta-summary:hover { color: var(--ink-1); }
+.audit-meta {
+  margin: 6px 0 0;
+  padding: 7px 9px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--ink-1);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.audit-empty-card {
+  margin: 32px 24px;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+/* Assignee picker — small dropdown sitting in the thread head next to the
+   suggestion pill. Loads firm members lazily on first open. */
+.assignee-picker { position: relative; }
+.assignee-picker-trigger {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px;
+  padding: 4px 9px 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.assignee-picker-trigger:hover { border-color: var(--line-strong); color: var(--ink-0); }
+.assignee-picker-trigger:disabled { opacity: 0.5; cursor: not-allowed; }
+.assignee-picker-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 220px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  z-index: 20;
+  display: flex; flex-direction: column;
+  gap: 1px;
+  animation: assignee-menu-in 160ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes assignee-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.assignee-picker-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink-1);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+.assignee-picker-item:hover { background: var(--hover); }
+.assignee-picker-item.active { background: var(--c-blue-bg); color: var(--c-blue); }
+.assignee-picker-item .tier-tag {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.assignee-picker-loading {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
 /* Banner shown above the thread body when status === 'unmatched'. Asks the
    reviewer to either promote the unknown sender to a real client (so the
    agent can draft) or reject the inquiry. */

@@ -5,6 +5,8 @@ import {
   createClient,
   findEscalationTarget,
   getInquiry,
+  getMembership,
+  listFirmUsers,
   promoteUnmatchedInquiry,
   recordAudit,
   setInquiryAssignee,
@@ -73,6 +75,54 @@ export async function escalateInquiryAction(inquiryId: string): Promise<void> {
     action: 'inquiry.assigned',
     metadata: { assigneeId: target, fromUserId, reason: 'escalated_via_composer' },
   });
+  revalidatePath(`/inbox/${inquiryId}`);
+}
+
+/** 担当者一覧 — enumerate firm members for the assignment dropdown. */
+export async function listFirmAssigneesAction() {
+  const { firmId } = await requireFirmContext();
+  const users = await listFirmUsers(firmId);
+  return users.map((u) => ({ id: u.id, name: u.name, tier: u.tier }));
+}
+
+/** 担当変更 — reassign the inquiry. Permitted for admins (anyone → anyone)
+ * and the current assignee (handing off). Pass null to unassign. */
+export async function reassignInquiryAction(
+  inquiryId: string,
+  assigneeUserId: string | null,
+): Promise<void> {
+  const { firmId, userId } = await requireFirmContext();
+  const [inquiry, actor] = await Promise.all([
+    getInquiry(firmId, inquiryId),
+    getMembership(userId, firmId),
+  ]);
+  if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
+  if (!actor) throw new Error('actor membership missing');
+
+  const isAdmin = actor.tier === 'admin' || actor.role.toLowerCase().includes('admin');
+  const isCurrentAssignee = inquiry.assignedToId === userId;
+  if (!isAdmin && !isCurrentAssignee) {
+    throw new Error('not authorized to reassign this inquiry');
+  }
+
+  if (assigneeUserId) {
+    const targetMembership = await getMembership(assigneeUserId, firmId);
+    if (!targetMembership) throw new Error('target user is not a member of this firm');
+  }
+
+  await setInquiryAssignee(firmId, inquiryId, assigneeUserId);
+  await recordAudit({
+    firmId,
+    actorId: userId,
+    inquiryId,
+    action: 'inquiry.assigned',
+    metadata: {
+      assigneeId: assigneeUserId,
+      previousAssigneeId: inquiry.assignedToId,
+      reason: assigneeUserId === null ? 'manual_unassign' : 'manual_reassign',
+    },
+  });
+  revalidatePath('/inbox');
   revalidatePath(`/inbox/${inquiryId}`);
 }
 

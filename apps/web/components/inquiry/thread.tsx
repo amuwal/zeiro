@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/ui/icon';
+import { AssigneePicker } from './assignee-picker';
 import { DraftComposer, type DraftView } from './draft-composer';
 import type { SuggestionView } from './suggested-action';
 import { type Turn, TurnView } from './turns';
@@ -23,6 +24,8 @@ type Props = {
   inquiryStatus: string;
   /** When status === 'unmatched', the sender's email so we can offer promotion. */
   unmatchedSender: string | null;
+  /** Currently-assigned user; null = 未割当. */
+  assignedTo: { id: string; name: string } | null;
 };
 
 const CATEGORY_JP: Record<string, string> = {
@@ -40,6 +43,7 @@ export function Thread({
   suggestion,
   inquiryStatus,
   unmatchedSender,
+  assignedTo,
 }: Props) {
   const isUnmatched = inquiryStatus === 'unmatched';
   const [highlightedCite, setHighlightedCite] = useState<string | null>(null);
@@ -86,6 +90,11 @@ export function Thread({
             <b>{suggestion.verb}</b>
             <span className="conf">{Math.round(suggestion.confidence * 100)}%</span>
           </button>
+          <AssigneePicker
+            inquiryId={meta.id}
+            currentAssigneeId={assignedTo?.id ?? null}
+            currentAssigneeName={assignedTo?.name ?? null}
+          />
         </div>
       </div>
 
