@@ -22,3 +22,7 @@ coverage/
 next-env.d.ts
 .vercel
 .env*.local
+
+# Claude Code skill installer artifacts (per-developer, not project code)
+.agents/
+skills-lock.json
