@@ -13,6 +13,7 @@ import {
   sendReply,
 } from '@zeiro/email';
 import { env } from './env';
+import { inngest } from './inngest/client';
 
 /**
  * Send an inquiry's latest draft to the customer via Resend. Used by both the
@@ -91,5 +92,16 @@ export async function sendDraftEmail(args: {
           }
         : {}),
     },
+  });
+
+  // Compounding-learning loop: every sent draft becomes future knowledge for
+  // the agent (chunked + embedded + indexed by autoAddKnowledgeFn). Without
+  // this, the agent re-discovers the same answers every time the same kind
+  // of question comes in. Inngest event id is idempotent per-draft so a
+  // double-fire (e.g. user clicks send twice) is a no-op downstream.
+  await inngest.send({
+    name: 'knowledge.auto_add',
+    data: { firmId: args.firmId, inquiryId: args.inquiryId, draftId: draft.id },
+    id: `auto-add-${draft.id}`,
   });
 }
