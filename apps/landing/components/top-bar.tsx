@@ -26,8 +26,8 @@ export function TopBar() {
     <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="topbar-inner">
         <a className="brand" href="#top">
-          <span className="brand-mark">z</span>
-          <span>zeiro</span>
+          <span className="brand-mark">Z</span>
+          <span>Zeiro</span>
           <span className="brand-tag">tax-office agent</span>
         </a>
         <nav className="nav">

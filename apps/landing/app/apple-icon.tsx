@@ -15,13 +15,26 @@ export default function AppleIcon() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: 132,
-        fontWeight: 700,
+        fontFamily: 'system-ui, -apple-system, "Helvetica Neue", sans-serif',
+        fontSize: 140,
+        fontWeight: 800,
         letterSpacing: '-0.06em',
+        position: 'relative',
+        lineHeight: 1,
       }}
     >
-      z
+      <span style={{ display: 'flex', marginTop: -6 }}>Z</span>
+      <span
+        style={{
+          position: 'absolute',
+          left: 40,
+          right: 40,
+          bottom: 26,
+          height: 7,
+          background: '#7ba66a',
+          borderRadius: 3,
+        }}
+      />
     </div>,
     { ...size },
   );

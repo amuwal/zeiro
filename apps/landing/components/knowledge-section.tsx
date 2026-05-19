@@ -30,7 +30,7 @@ export function KnowledgeSection() {
             そのまま下書きの根拠に。
           </h2>
           <p className="section-lede">
-            汎用 LLM は、貴所の<b>運用ルールも、顧問先の特記事項も知りません</b>。zeiro は事務所マニュアル、FAQ、
+            汎用 LLM は、貴所の<b>運用ルールも、顧問先の特記事項も知りません</b>。Zeiro は事務所マニュアル、FAQ、
             過去回答、顧問先マスタ、国税庁通達まで取り込み、答えるたびに必ず<b>どこから来た答えか</b>を示します。
           </p>
         </div>

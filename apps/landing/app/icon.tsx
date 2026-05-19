@@ -15,13 +15,26 @@ export default function Icon() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: 188,
-        fontWeight: 700,
+        fontFamily: 'system-ui, -apple-system, "Helvetica Neue", sans-serif',
+        fontSize: 196,
+        fontWeight: 800,
         letterSpacing: '-0.06em',
+        position: 'relative',
+        lineHeight: 1,
       }}
     >
-      z
+      <span style={{ display: 'flex', marginTop: -8 }}>Z</span>
+      <span
+        style={{
+          position: 'absolute',
+          left: 56,
+          right: 56,
+          bottom: 36,
+          height: 10,
+          background: '#7ba66a',
+          borderRadius: 4,
+        }}
+      />
     </div>,
     { ...size },
   );

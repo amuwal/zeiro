@@ -153,7 +153,7 @@ export function ChannelConstellation() {
         className="cc-hub"
         style={{ left: `${hubLeftPct}%`, top: `${hubTopPct}%`, width: `${hubWidthPct}%` }}
       >
-        <span className="cc-hub-name">zeiro</span>
+        <span className="cc-hub-name">Zeiro</span>
         <span className="cc-hub-tag">UNIFIED INBOX</span>
       </div>
 

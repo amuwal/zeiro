@@ -13,13 +13,26 @@ export function GET() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: 24,
-        fontWeight: 700,
+        fontFamily: 'system-ui, -apple-system, "Helvetica Neue", sans-serif',
+        fontSize: 26,
+        fontWeight: 800,
         letterSpacing: '-0.06em',
+        position: 'relative',
+        lineHeight: 1,
       }}
     >
-      z
+      <span style={{ display: 'flex', marginTop: -1 }}>Z</span>
+      <span
+        style={{
+          position: 'absolute',
+          left: 7,
+          right: 7,
+          bottom: 4,
+          height: 2,
+          background: '#7ba66a',
+          borderRadius: 1,
+        }}
+      />
     </div>,
     { width: 32, height: 32 },
   );

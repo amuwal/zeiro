@@ -14,7 +14,7 @@ const lines = [
   `Data residency: jp-tokyo. Compliance: 税理士法 §38 守秘義務. LLM contracts: no-training.`,
   `Contact: ${BRAND.emailContact}`,
   ``,
-  `## What zeiro does`,
+  `## What ${BRAND.name} does`,
   `- Unifies customer inquiries across email (IMAP, Gmail, Microsoft 365), LINE Official Account, Chatwork, Slack Connect, Webフォーム, SMS, 電話 (transcript).`,
   `- Auto-classifies into 期日確認 / 書類提出 / 税務質問 / 顧問契約 / その他.`,
   `- Drafts replies grounded in the firm's own manuals, FAQ, 顧問先 master, past answers, and 国税庁 通達.`,

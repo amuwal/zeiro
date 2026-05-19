@@ -38,6 +38,7 @@ const newsreader = Newsreader({
 
 const title = `${BRAND.name} — ${BRAND.taglineJa}`;
 const keywords = [
+  'Zeiro',
   'zeiro',
   'ゼイロ',
   'ZEIRO',

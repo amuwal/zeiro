@@ -2,14 +2,14 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://zeiro.io')
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.zeiro.io';
 
 export const BRAND = {
-  name: 'zeiro',
-  legalName: 'zeiro',
-  alternateNames: ['ゼイロ', 'ZEIRO', '税理士事務所のAIエージェント'],
+  name: 'Zeiro',
+  legalName: 'Zeiro',
+  alternateNames: ['ゼイロ', 'ZEIRO', 'zeiro', '税理士事務所のAIエージェント'],
   taglineJa: '税理士事務所のための、顧客対応AI Agent',
   descriptionJa:
     'メール、LINE、Webフォームに届く問い合わせを、事務所のマニュアル・FAQ・顧問先情報・過去回答で自動下書き。引用付き、信頼度判定付き、所長エスカレーション付き。',
   descriptionEn:
-    'zeiro is the customer-correspondence AI agent built for Japanese tax-accountant offices (税理士事務所). It unifies email, LINE, and web-form inquiries; drafts replies grounded in the firm’s own manuals, FAQs, client master, and past answers; cites every claim; and escalates low-confidence cases to the senior partner.',
+    'Zeiro is the customer-correspondence AI agent built for Japanese tax-accountant offices (税理士事務所). It unifies email, LINE, and web-form inquiries; drafts replies grounded in the firm’s own manuals, FAQs, client master, and past answers; cites every claim; and escalates low-confidence cases to the senior partner.',
   emailContact: 'info@zeiro.jp',
   locale: 'ja_JP',
   language: 'ja',
@@ -26,8 +26,8 @@ type FaqItem = { q: string; a: string };
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
-    q: 'zeiroはどのような税理士事務所向けのAIエージェントですか？',
-    a: 'zeiroは、税理士事務所に届くメール・LINE・Webフォーム・チャットワークなどの顧客問い合わせを自動的に受信し、事務所のマニュアル・FAQ・顧問先マスタ・過去回答ログから根拠を引いて返信ドラフトを生成するAIエージェントです。',
+    q: 'Zeiroはどのような税理士事務所向けのAIエージェントですか？',
+    a: 'Zeiroは、税理士事務所に届くメール・LINE・Webフォーム・チャットワークなどの顧客問い合わせを自動的に受信し、事務所のマニュアル・FAQ・顧問先マスタ・過去回答ログから根拠を引いて返信ドラフトを生成するAIエージェントです。',
   },
   {
     q: '引用や根拠はどのように示されますか？',
@@ -35,7 +35,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: '低信頼の案件はどう扱われますか？',
-    a: '0–1の信頼度スコアが事務所が設定した閾値（既定 0.70）を下回ると、zeiroは自動送信せず、所長へエスカレーションして承認を仰ぎます。',
+    a: '0–1の信頼度スコアが事務所が設定した閾値（既定 0.70）を下回ると、Zeiroは自動送信せず、所長へエスカレーションして承認を仰ぎます。',
   },
   {
     q: '対応チャネルは何ですか？',
@@ -47,7 +47,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: 'デモはどのように予約できますか？',
-    a: '公式サイトのフォームからメールアドレスをご登録ください。30分のデモは無料で、事務所マニュアルPDFを1つお渡しいただければ、貴所のナレッジで動くzeiroをその場で起動します。',
+    a: '公式サイトのフォームからメールアドレスをご登録ください。30分のデモは無料で、事務所マニュアルPDFを1つお渡しいただければ、貴所のナレッジで動くZeiroをその場で起動します。',
   },
 ];
 
@@ -83,7 +83,7 @@ export function organizationLd(): OrganizationLd {
     name: BRAND.name,
     alternateName: BRAND.alternateNames,
     url: SITE_URL,
-    logo: `${SITE_URL}/icon.png`,
+    logo: `${SITE_URL}/icon`,
     email: BRAND.emailContact,
     description: BRAND.descriptionJa,
     inLanguage: BRAND.language,
@@ -164,16 +164,6 @@ export function faqLd() {
   };
 }
 
-export function breadcrumbLd() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'ホーム', item: SITE_URL },
-    ],
-  };
-}
-
 export function structuredData() {
-  return [organizationLd(), softwareApplicationLd(), websiteLd(), faqLd(), breadcrumbLd()];
+  return [organizationLd(), softwareApplicationLd(), websiteLd(), faqLd()];
 }

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { BRAND, SITE_URL } from '@/lib/seo';
+import { BRAND } from '@/lib/seo';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -8,7 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: BRAND.descriptionJa,
     start_url: '/',
     scope: '/',
-    display: 'browser',
+    display: 'standalone',
+    orientation: 'portrait',
     lang: 'ja-JP',
     dir: 'ltr',
     background_color: '#fafafa',
@@ -16,12 +17,8 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['business', 'productivity', 'finance'],
     icons: [
       { src: '/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { src: '/icon', sizes: '256x256', type: 'image/png' },
-      { src: '/apple-icon', sizes: '180x180', type: 'image/png' },
-    ],
-    related_applications: [
-      { platform: 'webapp', url: `${SITE_URL}/` },
-      { platform: 'webapp', url: 'https://app.zeiro.io/' },
+      { src: '/icon', sizes: '256x256', type: 'image/png', purpose: 'any' },
+      { src: '/apple-icon', sizes: '180x180', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }

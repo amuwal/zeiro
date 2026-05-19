@@ -76,7 +76,7 @@ export function KnowledgeVault() {
 
       <div className="vault-base">
         <div>
-          <div className="nm">zeiro / knowledge base</div>
+          <div className="nm">Zeiro / knowledge base</div>
           <div className="sub">indexed · embedded · cited</div>
         </div>
         <div className="counter">

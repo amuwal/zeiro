@@ -23,23 +23,36 @@ export default function OpenGraphImage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div
           style={{
-            width: 56,
-            height: 56,
+            width: 64,
+            height: 64,
             background: '#0a0a0a',
             color: '#fafafa',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 38,
-            fontWeight: 700,
+            fontSize: 46,
+            fontWeight: 800,
             letterSpacing: '-0.06em',
-            borderRadius: 12,
+            borderRadius: 14,
+            position: 'relative',
+            lineHeight: 1,
           }}
         >
-          z
+          <span style={{ display: 'flex', marginTop: -2 }}>Z</span>
+          <span
+            style={{
+              position: 'absolute',
+              left: 14,
+              right: 14,
+              bottom: 10,
+              height: 3,
+              background: '#7ba66a',
+              borderRadius: 2,
+            }}
+          />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 36, fontWeight: 600, color: '#0a0a0a', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: 40, fontWeight: 700, color: '#0a0a0a', letterSpacing: '-0.02em' }}>
             {BRAND.name}
           </div>
           <div

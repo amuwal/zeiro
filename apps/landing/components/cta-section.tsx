@@ -25,8 +25,8 @@ export function CtaSection() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           access_key: WEB3FORMS_KEY,
-          subject: `zeiro デモ予約リクエスト — ${email}`,
-          from_name: 'zeiro landing',
+          subject: `Zeiro デモ予約リクエスト — ${email}`,
+          from_name: 'Zeiro landing',
           email,
           message: `デモ予約リクエスト\n\nメールアドレス: ${email}\n所要: 30分・無料`,
           botcheck: '',
@@ -70,7 +70,7 @@ export function CtaSection() {
                 </h2>
                 <p className="cta-sub">
                   まずは 30 分のデモから。事務所マニュアル PDF を 1 つお渡しいただければ、 その場で{' '}
-                  <b>貴所のナレッジで動く zeiro</b> を起動します。
+                  <b>貴所のナレッジで動く Zeiro</b> を起動します。
                 </p>
               </div>
 

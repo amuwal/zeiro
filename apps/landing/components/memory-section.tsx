@@ -77,7 +77,7 @@ export function MemorySection() {
           </h2>
           <p className="section-lede">
             「先週話していた e-Tax の件、もう一度送信先URLを教えて」— こうした<b>2往復目・3往復目の問い合わせ</b>でも、
-            zeiro は前回までのやり取り、顧問契約、送付済み資料を踏まえた上で答えます。
+            Zeiro は前回までのやり取り、顧問契約、送付済み資料を踏まえた上で答えます。
           </p>
         </div>
 
