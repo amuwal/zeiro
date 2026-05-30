@@ -2,6 +2,7 @@ import { roleLabel } from '@zeiro/core';
 import { getInboxCounts, getUser, listInquiryThreads } from '@zeiro/db';
 import Link from 'next/link';
 import { EmptyRow, QueueRow, SectionCard, StatTile } from '@/components/dashboard/dashboard-parts';
+import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { getWindowAnalytics, TARGET_ESCALATION_PCT } from '@/lib/analytics';
 import { resolveWindow } from '@/lib/analytics-window';
@@ -139,29 +140,32 @@ export default async function HomePage() {
             )}
           </SectionCard>
 
-          {/* Quick links */}
-          <SectionCard title="クイックアクション">
-            <nav className="flex flex-col">
-              <QuickLink href="/clients" icon="user" label="顧問先" sub="担当先の確認・管理" />
-              <QuickLink href="/knowledge" icon="book" label="ナレッジ" sub="事務所の回答資産" />
-              {isManager && (
-                <QuickLink
-                  href="/analytics"
-                  icon="chart"
-                  label="パフォーマンス"
-                  sub="KPI・エスカレーション率"
-                />
-              )}
-              {ctxCan(ctx, 'member.manage') && (
-                <QuickLink
-                  href="/settings"
-                  icon="settings"
-                  label="設定・メンバー"
-                  sub="連携・チーム・権限"
-                />
-              )}
-            </nav>
-          </SectionCard>
+          {/* Quick links + owner setup checklist */}
+          <div className="flex flex-col gap-6">
+            <SectionCard title="クイックアクション">
+              <nav className="flex flex-col">
+                <QuickLink href="/clients" icon="user" label="顧問先" sub="担当先の確認・管理" />
+                <QuickLink href="/knowledge" icon="book" label="ナレッジ" sub="事務所の回答資産" />
+                {isManager && (
+                  <QuickLink
+                    href="/analytics"
+                    icon="chart"
+                    label="パフォーマンス"
+                    sub="KPI・エスカレーション率"
+                  />
+                )}
+                {ctxCan(ctx, 'member.manage') && (
+                  <QuickLink
+                    href="/settings"
+                    icon="settings"
+                    label="設定・メンバー"
+                    sub="連携・チーム・権限"
+                  />
+                )}
+              </nav>
+            </SectionCard>
+            {ctxCan(ctx, 'member.manage') && <SetupChecklist />}
+          </div>
         </div>
       </div>
     </div>

@@ -326,7 +326,8 @@ LineReplyAdapter.send(draft):
 | ⛔ | Auth provider (Logto, ADR-7) | |
 | ⛔ | Google Workspace SSO with `hd` claim enforcement | Reject personal Gmail for firm scope. |
 | ⛔ | Multi-firm membership (one user → many firms) | Necessary for partners and shared accountants. |
-| ⛔ | RBAC: 所長 / 担当税理士 / 事務員 | Centralised `withFirmScope()` helper. |
+| ✅ | RBAC: 所長 / 担当税理士 / 事務員 → owner / reviewer / staff / viewer | `appRole` on membership; `can(actor, action)` in `@zeiro/core`, `requireCan` / `ctxCan` at the boundary. Orthogonal `can_send` + `client_scope` flags. |
+| ✅ | Per-client scoping (assigned-only visibility) | `client_assignees` 担当 table; repos take `viewerScope` to filter to assigned clients (§54 守秘義務 default for staff/viewer). |
 | ⛔ | Invitation flow | Admin creates invite → email link → accept via SSO. |
 | ⛔ | Audit log actor resolution from JWT | Replace SYSTEM_ACTOR uuid stub. |
 
@@ -440,6 +441,7 @@ This lets us swap the queue (Inngest → Trigger.dev → Temporal) without rewri
 ## 5. Architecture decisions (ADRs)
 
 ### ADR-1: SendGrid Inbound Parse for MVP (resolved — fastest signup)
+> **Superseded by ADR-9** (Resend) for the provider choice; the SES-Tokyo migration narrative below still stands.
 **Decision:** SendGrid Inbound Parse for both dev and pilot. Migrate inbound to AWS SES Tokyo in Phase 2 (pre-multi-firm rollout).
 **Rationale:** AWS SES starts in sandbox; production access requires a manual review that takes 24-48h+ and adds Lambda/IAM/S3 setup. SendGrid Inbound Parse is same-day: create subuser → set MX → configure webhook. We need to ship.
 **Trade-off accepted:** mail bodies transit US datacenters. Pilot firm signs an APPI cross-border-transfer consent in the engagement contract (consistent with their existing trust in Notion/Google Workspace/Anthropic — all of which already transit US).
@@ -449,6 +451,7 @@ This lets us swap the queue (Inngest → Trigger.dev → Temporal) without rewri
 **Phase-2 migration plan:** when we onboard firm #2 we file the SES production-access form, set up SES Tokyo + S3 + Lambda, run dual-ingest for 1 week to validate parity, then cut over MX. The `InputAdapter` interface (§4.1) means the workflow doesn't change.
 
 ### ADR-2: Send as `*.zeiro.jp` for MVP (resolved — no firm DNS step)
+> **Superseded by ADR-9** (Resend) for the provider choice; the threading + per-firm From/Reply-To narrative below still stands (now on `reply.zeiro.io`, see P3.1/P3.2).
 **Decision:** Outbound via SendGrid (same provider as inbound for MVP). Sender = `"税理士法人 凜事務所" <reply-firmA@reply.zeiro.jp>` — display name = firm, sending domain = ours. Per-firm SendGrid subuser for reputation isolation.
 **Why not firm-owned subdomain at MVP:** that requires the firm's IT to publish DKIM CNAMEs in their DNS — adds onboarding wait that depends on a third party we don't control (the firm's IT vendor or Workspace admin). For pilot speed, ours.
 **Deliverability OK:** we own `zeiro.jp` so SPF/DKIM/DMARC align under our domain. Yahoo JP + docomo + au accept this. Cosmetic: Gmail/Outlook show "via reply.zeiro.jp" in the From line but it's a recognised pattern (Gmail itself uses similar for forwarded mail).
@@ -588,7 +591,7 @@ The "GA" label was a placeholder during planning. What Phase 3 actually means ri
 Driven by what pilot firms ask for, NOT by speculation:
 
 - AWS SES Tokyo migration for residency hardening (queued from ADR-1 since Phase 1).
-- freee / MFクラウド read-only integrations (per requirements §10).
+- ✅ freee read-only integration shipped early (read scope, `prompt=select_company`, per-client `client_integration_bindings`, `lookup-freee-books` → `propose-draft` cited as `freee会計データ`, `integration.freee_data_accessed` audit). MFクラウド still deferred. (per requirements §10)
 - Slack / MS Teams channel adapter.
 - Voicemail-to-inbox (Twilio + Deepgram).
 - Multi-region failover (Tokyo primary + Osaka warm).

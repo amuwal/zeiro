@@ -13,7 +13,7 @@ Project context: [requirements.md](./requirements.md). Read it before any non-tr
 - DB: PostgreSQL + pgvector. Local: Docker (`pgvector/pgvector:pg17`). Prod: Neon.
 - ORM: Prisma 6 with `@prisma/adapter-neon` (auto-detected when `DATABASE_URL` points to `*.neon.tech`)
 - LLM: Anthropic Claude (drafting), Google Gemini Flash (classification), OpenAI text-embedding-3-small (RAG)
-- Email: SendGrid Inbound Parse
+- Email: Resend (outbound via the `resend` SDK; inbound + event webhooks Svix-signed)
 - Validation: Zod 4
 - Lint/format: Biome 2
 
@@ -23,7 +23,7 @@ Project context: [requirements.md](./requirements.md). Read it before any non-tr
 - `apps/agents` — Mastra service (agents, tools, workflows, prompts)
 - `packages/core` — shared Zod schemas, constants, PII utils, domain errors
 - `packages/db` — Prisma schema + generated client + repositories
-- `packages/email` — SendGrid Inbound Parse adapter
+- `packages/email` — Resend adapter (`sendReply` + inbound/event parsers)
 
 ## Ports (reserve 6xxx range)
 
@@ -96,6 +96,23 @@ Add a comment only when the *why* is non-obvious — hidden constraint, workarou
 - Data residency: `jp-tokyo` only.
 - LLM provider must have a no-training contract.
 
+### Roles & permissions
+
+Authorization is driven by `membership.appRole` (not Clerk's org role — that only mirrors billing-admin). Four app roles:
+
+- **owner** (所長) — all permissions: integrations, member management, RTBF (削除要求), billing. At least one per firm.
+- **reviewer** (税理士) — inquiry handling, can send replies, knowledge editing, client management. No integration/member admin.
+- **staff** (補助者) — drafts only. Sending is gated by the per-user `membership.can_send` flag (default off; an owner/reviewer may grant it).
+- **viewer** (閲覧) — read-only.
+
+Two orthogonal capability flags on the membership row: `can_send` (per-user send gate) and `client_scope` (`'assigned'` | `'all'`). Staff and viewer default to **assigned**-client scope per §54 守秘義務 need-to-know; owner/reviewer default to `all`. Per-client 担当 is stored in the `client_assignees` table.
+
+How to gate:
+- Decision logic: `can(actor, action)` in `@zeiro/core` (`actor = { role, canSend }`). `inquiry.send` is the only action that honours `canSend` for staff.
+- Server actions: `const ctx = await requireCan('<action>')` from `apps/web/lib/authz.ts` — loads the firm context and throws `ForbiddenError` when denied.
+- Pages / route handlers (to hide affordances): `ctxCan(ctx, action)`.
+- Repositories that a non-admin can reach take a `viewerScope(ctx)` (`{ userId, seeAll }`) and filter list/get to assigned clients via `client_assignees` when `seeAll` is false.
+
 ## Don'ts
 
 - No fallbacks for cases that can't happen.
@@ -116,9 +133,9 @@ Add a comment only when the *why* is non-obvious — hidden constraint, workarou
 ## Adding a Server Action / route handler that touches tenant data
 
 1. First line: `const { firmId, userId, role } = await requireFirmContext();`
-2. Pass `firmId` into every repository call. Never hard-code or read from headers/query.
+2. Gate every mutating action with `requireCan('<action>')`; scope every list/get that a non-admin can reach with `viewerScope(ctx)`. Pass `firmId` into every repository call. Never hard-code or read from headers/query.
 3. For audit log writes, `actorId = userId`. For system-driven flows (inbound webhook, scheduled jobs), use a fixed system-actor UUID and the call site should make the "why system" intent obvious.
-4. Public routes (no Clerk auth) verify their own signatures: SendGrid Basic Auth + IP allowlist for `/api/inbound`, Svix for `/api/webhooks/clerk`. Add new public routes to `middleware.ts` `isPublicRoute`.
+4. Public routes (no Clerk auth) verify their own signatures: Svix for `/api/inbound` + `/api/webhooks/resend` (Resend webhooks are Svix-signed) and `/api/webhooks/clerk`. Add new public routes to `middleware.ts` `isPublicRoute`.
 
 ## Adding a new repository
 
@@ -126,6 +143,15 @@ Add a comment only when the *why* is non-obvious — hidden constraint, workarou
 2. Export narrow query functions (`listX`, `getX`, `createX`). Always include a `firmId` parameter — no exceptions.
 3. Add a Zod schema for the row in `packages/core/src/schemas/<entity>.ts` if it's shared with the client.
 4. Re-export from `packages/db/src/index.ts`.
+
+## freee 連携 (read integration)
+
+- **Read-only**: the freee adapter requests `scope: 'read'` only. We never write to a firm's books.
+- **OAuth**: authorize with `prompt=select_company` so the firm explicitly picks which 事業所 to grant on every connect.
+- **Per-client binding**: `client_assignees` is staff↔client 担当; freee uses a separate `client_integration_bindings` table to bind one 顧問先 to one freee 事業所 (the `external_id`).
+- **Agent path**: the `lookup-freee-books` tool (read transactions / partners) feeds `propose-draft` via `freeeFacts` — these are cited in the draft as `'freee会計データ'`, so a number in a reply is always a verifiable citation, never an un-grounded figure.
+- **Audit**: every agent-driven read writes `integration.freee_data_accessed` (who=system on behalf of firm, which client, scope, row count — never transaction contents, per §38).
+- **Pre-scale dependency**: the freee app store caps a pre-review app at **20 事業所**. Production-review approval is required before we exceed that — treat it as a scale gate, not a code limit.
 
 ## Adding a Prisma migration
 

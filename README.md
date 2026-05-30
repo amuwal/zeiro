@@ -16,7 +16,7 @@ apps/
 packages/
   core/        共有 Zod スキーマ・PII マスク・ドメインエラー
   db/          Prisma 6 schema + マイグレーション + リポジトリ
-  email/       SendGrid Inbound Parse パーサ
+  email/       Resend アダプタ (送信 + Inbound/Event パーサ)
 
 docker-compose.yml   pgvector Postgres (port 6432) — ローカル開発用
 ```
@@ -54,32 +54,63 @@ npx inngest-cli@latest dev -u http://localhost:6001/api/inngest
 - `draft-inquiry` 関数が登録され、`inquiry.queued` イベントを購読 → メール受信 → Webhookが即200を返してキューイング → Inngest がエージェントを駆動
 - 本番では https://app.inngest.com で app を作成し、`INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` を設定
 
-### SendGrid セットアップ (メール受信 + 送信)
+### Resend セットアップ (メール受信 + 送信)
 
-**Inbound Parse**
+メール送受信は [Resend](https://resend.com) を使用 (ADR-9 で SendGrid から移行)。RFC-5322 の Message-ID / In-Reply-To / References ベースのスレッディングはそのまま。送受信・イベントの抽象境界は `packages/email`。
 
-1. Domain Authentication で `reply.zeiro.jp` (または任意) を認証 — DKIM CNAME を DNS に追加
-2. Inbound Parse → 新規ホスト: `inquiry.zeiro.jp` → MX レコードを `mx.sendgrid.net` priority 10 に
-3. Webhook URL: `https://YOUR-NGROK.ngrok.io/api/inbound?secret=YOUR_INBOUND_SECRET` (`SENDGRID_INBOUND_WEBHOOK_SECRET` と一致させる)
-4. **「POST the raw, full MIME message」をオン** ← ISO-2022-JP の正常処理に必須
-5. Basic Auth + サイズ上限 (30MB)
+**ドメイン認証**
 
-**Mail Send (outbound replies)**
+1. Resend → Domains で `reply.zeiro.io` (または任意の送信ドメイン) を追加 → 表示された SPF / DKIM の DNS レコードを登録
+2. 送信時の From / Reply-To は事務所ごとの inbound アドレス (`inquiry-{slug}@reply.zeiro.io` — org 作成時に Clerk webhook が自動採番)
 
-1. Settings → API Keys → Create → Restricted Access → Mail Send のみ
-2. キーを `.env` の `SENDGRID_API_KEY` に設定
-3. `OUTBOUND_FROM_DOMAIN` は認証済みドメインを使用 (デフォルト `reply.zeiro.jp`)
+**Inbound (メール受信)**
 
-送信時のFromヘッダ: `"事務所名" <reply@reply.zeiro.jp>`、In-Reply-To/References を自動構築してメールクライアント側でスレッド表示される。
+1. Resend → Inbound で受信用ドメインの MX を設定 (Resend が MIME 解析を代行)
+2. Webhook URL: `https://YOUR-NGROK.ngrok.io/api/inbound` (Svix 署名で検証)
+3. シークレットを `.env` の `RESEND_INBOUND_WEBHOOK_SECRET` に設定
+4. 受信 → `parseResendInbound` が Resend の parsed-JSON を `IncomingMessage` に正規化 → Webhook が即200を返してキューイング
 
-**Event Webhook (delivered / bounce / spam通知)**
+**送信 (outbound replies)**
 
-1. Settings → Mail Settings → Event Webhook → Enable
-2. URL: `https://YOUR-NGROK.ngrok.io/api/webhooks/sendgrid-events`
-3. Events to be POSTed: 最低限 `delivered, bounce, dropped, spam_reports` を有効化
-4. **Signed Event Webhook を Enable** → 表示された **ECDSA Public Key** を `.env` の `SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY` に設定
-5. `delivered` を受信 → `draft.delivered` 監査ログ
-6. `bounce` / `dropped` / `spamreport` を受信 → 当該 inquiry を `escalated` に戻し、ドラフトに失敗状態をマーク
+1. Resend → API Keys → Create (Sending access)
+2. キーを `.env` の `RESEND_API_KEY` に設定
+3. 送信は `resend` SDK 経由 (`resend.emails.send`) — 自前の Message-ID / In-Reply-To / References ヘッダと冪等キー等の tags を付与してスレッド表示される
+
+**Event Webhook (sent / delivered / bounced / complained 通知)**
+
+1. Resend → Webhooks → 新規エンドポイント: `https://YOUR-NGROK.ngrok.io/api/webhooks/resend` (Svix 署名で検証)
+2. 署名シークレットを `.env` の `RESEND_EVENT_WEBHOOK_SECRET` に設定
+3. `email.delivered` を受信 → `draft.delivered` 監査ログ
+4. `email.bounced` / `email.complained` / `email.failed` を受信 → 当該 inquiry を `escalated` に戻し、ドラフトに失敗状態をマーク
+
+### ロールと権限 (RBAC)
+
+認可は `membership.appRole` で決まる (Clerk の org ロールは課金管理者の対応付けのみ)。4 ロール:
+
+| ロール | 日本語 | 権限 |
+| --- | --- | --- |
+| `owner` | 所長 | 全権限 (連携・メンバー管理・削除要求/RTBF・請求)。事務所に1名以上 |
+| `reviewer` | 税理士 | 問い合わせ対応・送信・ナレッジ編集・顧問先管理 |
+| `staff` | 補助者 | 下書きのみ。送信は `can_send` フラグ次第 (既定 off) |
+| `viewer` | 閲覧 | 閲覧のみ |
+
+直交するフラグ: `membership.can_send` (個別の送信許可) と `membership.client_scope` (`assigned` | `all`)。staff / viewer は §54 守秘義務の need-to-know により既定で担当顧問先のみ (`assigned`)。顧問先ごとの担当は `client_assignees` テーブル。
+
+- 判定: `@zeiro/core` の `can(actor, action)`
+- Server Action: `requireCan('<action>')` (`apps/web/lib/authz.ts`、拒否時 `ForbiddenError`)
+- ページ/ルート: `ctxCan(ctx, action)`
+- リポジトリ: 非管理者が到達する一覧/取得は `viewerScope(ctx)` で担当のみに絞り込む
+
+### freee 連携
+
+会計データの読み取り連携 (read-only)。
+
+- スコープは `read` のみ — 書き込みは一切行わない
+- OAuth は `prompt=select_company` で事業所を明示選択
+- 事業所紐付けは `client_integration_bindings` (顧問先↔freee 事業所)。`client_assignees` は担当者用で別物
+- エージェントの `lookup-freee-books` ツールが取引/取引先を取得 → `propose-draft` に `freeeFacts` として渡る → 下書きに `freee会計データ` として引用付きで反映
+- 読み取りは毎回 `integration.freee_data_accessed` で監査 (誰が・どの顧問先・スコープ・件数。取引内容は記録しない)
+- freee アプリストアの審査前アプリは **20 事業所** が上限 — スケール前に本番審査の通過が必要
 
 ### ナレッジ追加 (運用)
 
