@@ -90,10 +90,19 @@ export const proposeDraftTool = createTool({
       typeof clientId === 'string' ? getClient(firmId, clientId).catch(() => null) : null,
     ]);
 
+    const fs =
+      firm.settings && typeof firm.settings === 'object' && !Array.isArray(firm.settings)
+        ? (firm.settings as Record<string, unknown>)
+        : {};
+    const signature = typeof fs.signature === 'string' ? fs.signature : '';
+
     const subject = ctx?.requestContext?.get('subject');
     const body = ctx?.requestContext?.get('body');
     const header =
-      `事務所名: ${firm.name}\n` + (client ? `宛名(顧問先名): ${client.name}\n` : '') + '\n';
+      `事務所名: ${firm.name}\n` +
+      (signature ? `署名: ${signature}\n` : '') +
+      (client ? `宛名(顧問先名): ${client.name}\n` : '') +
+      '\n';
     const userMessage = `${header}${typeof subject === 'string' ? `件名: ${subject}\n\n` : ''}${
       typeof body === 'string' ? `問い合わせ本文:\n${body}\n\n` : ''
     }下書き作成への追加指示:\n${input.instructionForDrafter}`;
