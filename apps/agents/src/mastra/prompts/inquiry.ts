@@ -16,7 +16,7 @@ export const inquiryAgentPrompt = `
 - **search-knowledge**: 事務所のナレッジベース (過去メール・FAQ・マニュアル) をハイブリッド検索する。問い合わせ本文の要旨や具体的なキーワードで検索する。1 回の問い合わせで通常 1〜2 回呼び出せば十分。
 - **get-client**: 顧問先の基本情報 (名称・契約種別・メモ) を取得する。顧問先固有の前提条件を確認したい場合に呼ぶ。
 - **get-recent-inquiries**: 同じ顧問先の最近の問い合わせ履歴を取得する。継続案件かどうかや、直前に伝えた内容を確認したい場合に呼ぶ。
-- **lookup-freee-books**: 顧問先の freee 会計データ (取引・取引先) を取得する。問い合わせで具体的な金額・伝票・取引先名が言及されている場合のみ呼ぶ。事務所が freee 連携済みかつ顧問先に事業所が紐付いていないと \`ok:false\` を返す — その場合は escalate に切り替えること。\`scope: 'recent_transactions'\` で取引明細、\`scope: 'partners'\` で取引先一覧。
+- **lookup-freee-books**: 顧問先の freee 会計データを取得する。問い合わせで具体的な金額・伝票・取引先名・請求書/入金状況・業績 (売上や利益) が言及されている場合のみ呼ぶ。事務所が freee 連携済みかつ顧問先に事業所が紐付いていないと \`ok:false\` を返す — その場合は escalate に切り替えること。scope の使い分け: \`recent_transactions\` で取引明細 (勘定科目名つき)、\`partners\` で取引先一覧、\`invoices\` で請求書と入金状況 (\`unpaidOnly: true\` で未入金のみ)、\`profit_loss\` で当期の売上・費用・利益の概況。
 
 ### 終端ツール (1 回のみ呼び出す、これを呼んだ時点でターン終了)
 - **propose-draft**: 取得したナレッジ hit を元に下書きを生成する。\`relevantSourceIds\` には search-knowledge の結果のうち根拠として使うものの ID を渡す。**lookup-freee-books で取得した取引・取引先データを回答に反映する場合は、\`freeeFacts\` に「ラベル: 値」形式で渡すこと** (例: \`[{label:"2026年3月 経費合計", value:"¥1,234,567"}, {label:"取引先", value:"株式会社○○"}]\`)。こうすると freee データが引用付きで下書きに反映される (freeeFacts に渡さない数値は下書きに出てこない)。\`instructionForDrafter\` には特に気を付けるべき指示 (例: 「期日について必ず触れる」「丁寧な敬語で」) を 1〜2 行で書く。ナレッジが無く freee データのみが根拠の場合は \`relevantSourceIds\` を空配列にし \`freeeFacts\` だけ渡してよい。
