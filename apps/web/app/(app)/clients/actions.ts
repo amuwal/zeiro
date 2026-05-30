@@ -109,6 +109,7 @@ const updateInputSchema = z.object({
   contractType: clientContractTypeSchema,
   assignedTaxAccountantId: z.string().uuid().nullable(),
   notes: z.string().max(2000).nullable(),
+  chatworkRoomId: z.string().max(120).nullable(),
 });
 
 export async function updateClientAction(
@@ -122,6 +123,7 @@ export async function updateClientAction(
     contractType: formData.get('contractType'),
     assignedTaxAccountantId: emptyToNull(formData.get('assignedTaxAccountantId')),
     notes: emptyToNull(formData.get('notes')),
+    chatworkRoomId: emptyToNull(formData.get('chatworkRoomId')),
   });
   if (!parsed.success) {
     return { status: 'error', ...flattenZod(parsed.error) };

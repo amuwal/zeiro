@@ -81,6 +81,16 @@ export function ClientEditForm({ client, users }: Props) {
             defaultValue={client.notes ?? ''}
           />
         </div>
+
+        <div className="cl-field">
+          <label htmlFor={`cl-cw-${client.id}`}>Chatwork ルームID</label>
+          <input
+            id={`cl-cw-${client.id}`}
+            name="chatworkRoomId"
+            defaultValue={client.chatworkRoomId ?? ''}
+            placeholder="この顧問先の Chatwork ルーム (任意)"
+          />
+        </div>
       </div>
 
       <div className="cl-form-row">

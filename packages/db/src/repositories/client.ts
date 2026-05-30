@@ -174,6 +174,7 @@ export type ClientDetail = ClientListRow & {
   createdAt: string | null;
   createdBy: string | null;
   archivedBy: string | null;
+  chatworkRoomId: string | null;
 };
 
 export async function getClientDetail(
@@ -193,6 +194,7 @@ export async function getClientDetail(
       c.name,
       c.primary_email AS "primaryEmail",
       c.line_user_id AS "lineUserId",
+      c.chatwork_room_id AS "chatworkRoomId",
       c.contract_type AS "contractType",
       c.assigned_tax_accountant_id AS "assignedToId",
       u.name AS "assignedToName",

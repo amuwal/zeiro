@@ -11,6 +11,7 @@ import {
 } from '@zeiro/db';
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
+import { ChatworkChannelForm } from '@/components/settings/chatwork-channel-form';
 import { EmailInboundSection } from '@/components/settings/email-inbound-section';
 import { FreeeSection } from '@/components/settings/freee-section';
 import { InviteMemberForm } from '@/components/settings/invite-member-form';
@@ -21,6 +22,7 @@ import { TeamTree } from '@/components/settings/team-tree';
 import { TombstoneSection } from '@/components/settings/tombstone-section';
 import { WebChannelSection } from '@/components/settings/web-channel-section';
 import { ConfidentialityTrust } from '@/components/trust/confidentiality';
+import { parseChatworkConfig } from '@/lib/chatwork/parse';
 import { env } from '@/lib/env';
 import { requireFirmContext } from '@/lib/firm-context';
 import { asTier } from '@/lib/team';
@@ -53,6 +55,7 @@ export default async function SettingsPage({
     session,
     inboxCounts,
     freeeIntegration,
+    chatworkChannel,
   ] = await Promise.all([
     getFirmChannel(firmId, 'line'),
     getFirmChannel(firmId, 'web'),
@@ -67,6 +70,7 @@ export default async function SettingsPage({
     auth(),
     getInboxCounts(firmId),
     findIntegration(firmId, 'freee'),
+    getFirmChannel(firmId, 'chatwork'),
   ]);
   const canConfigureOAuth = Boolean(
     env.FREEE_CLIENT_ID && env.FREEE_CLIENT_SECRET && env.FREEE_REDIRECT_URI,
@@ -93,6 +97,8 @@ export default async function SettingsPage({
   const invitations =
     isOwner && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
   const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
+  const chatworkWebhookUrl = `${baseUrl}/api/channels/chatwork/${firmId}`;
+  const chatworkConfig = parseChatworkConfig(chatworkChannel?.config);
   const contactUrl = `${baseUrl}/contact/${firmId}`;
   const actorTier = asTier(actorMembership?.tier);
   void session; // keep the auth() side-effect; member identification now uses firmContext.userId
@@ -202,6 +208,78 @@ export default async function SettingsPage({
           </div>
         )}
       </section>
+
+      {isOwner && (
+        <section
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 14,
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <header>
+            <h2
+              style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, margin: 0 }}
+            >
+              Chatwork 連携
+            </h2>
+            <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>
+              顧問先ごとの Chatwork ルームのメッセージを問い合わせとして取り込み、AI
+              が下書きを生成します。各顧問先の「Chatwork ルームID」は顧問先の編集画面で設定します。
+            </p>
+          </header>
+
+          <details>
+            <summary style={{ cursor: 'pointer', color: 'var(--ink-2)' }}>セットアップ手順</summary>
+            <ol style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: 'var(--ink-2)' }}>
+              <li>Chatwork の API トークンを発行し、下のフォームに貼り付け</li>
+              <li>
+                Webhook 設定 (メッセージ作成) で下記 URL を登録し、発行された Webhook
+                トークンを貼り付け
+              </li>
+              <li>連携アカウントの ID を入力 (自分の投稿を取り込まないため)</li>
+              <li>各顧問先の編集画面で対応する Chatwork ルームID を設定</li>
+            </ol>
+          </details>
+
+          <div
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--line)',
+              borderRadius: 10,
+              padding: '12px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+              <span
+                style={{ fontSize: 11, color: 'var(--muted-2)', fontFamily: 'var(--font-mono)' }}
+              >
+                WEBHOOK URL
+              </span>
+              <code
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 12, overflowWrap: 'anywhere' }}
+              >
+                {chatworkWebhookUrl}
+              </code>
+            </div>
+            <CopyButton text={chatworkWebhookUrl} />
+          </div>
+
+          <ChatworkChannelForm
+            configured={Boolean(chatworkConfig)}
+            enabled={chatworkChannel?.enabled ?? false}
+            botAccountId={chatworkConfig?.botAccountId ?? ''}
+          />
+        </section>
+      )}
 
       <section className="team-section">
         <header className="team-section-head">

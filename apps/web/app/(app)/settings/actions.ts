@@ -3,6 +3,7 @@
 import { getFirmChannel, linkClientLineUserId, recordAudit, upsertFirmChannel } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { ctxCan } from '@/lib/authz';
+import { parseChatworkConfig } from '@/lib/chatwork/parse';
 import { type FirmContext, requireFirmContext } from '@/lib/firm-context';
 import { parseLineConfig } from '@/lib/line/parse';
 
@@ -45,6 +46,53 @@ export async function saveLineChannel(
       channelType: 'line',
       enabled,
       secretsRotated: Boolean(submittedSecret || submittedToken),
+    },
+  });
+
+  revalidatePath('/settings');
+  return { error: null, ok: true };
+}
+
+export type SaveChatworkState = { error: string | null; ok: boolean };
+
+export async function saveChatworkChannel(
+  _prev: SaveChatworkState,
+  formData: FormData,
+): Promise<SaveChatworkState> {
+  const guard = await guardChannelManage();
+  if (!guard.ok) return { error: guard.message, ok: false };
+  const { firmId, userId } = guard.ctx;
+
+  const submittedApiToken = readField(formData, 'apiToken');
+  const submittedWebhookToken = readField(formData, 'webhookToken');
+  const botAccountId = readField(formData, 'botAccountId') ?? '';
+  const enabled = formData.get('enabled') === 'on';
+
+  const existing = await getFirmChannel(firmId, 'chatwork');
+  const existingConfig = parseChatworkConfig(existing?.config);
+
+  const apiToken = submittedApiToken ?? existingConfig?.apiToken;
+  const webhookToken = submittedWebhookToken ?? existingConfig?.webhookToken;
+
+  if (!apiToken || !webhookToken) {
+    return { error: 'API トークンと Webhook トークンを入力してください', ok: false };
+  }
+
+  await upsertFirmChannel({
+    firmId,
+    channelType: 'chatwork',
+    config: { apiToken, webhookToken, botAccountId },
+    enabled,
+  });
+  await recordAudit({
+    firmId,
+    actorId: userId,
+    inquiryId: null,
+    action: 'channel.configured',
+    metadata: {
+      channelType: 'chatwork',
+      enabled,
+      secretsRotated: Boolean(submittedApiToken || submittedWebhookToken),
     },
   });
 

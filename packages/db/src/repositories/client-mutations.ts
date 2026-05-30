@@ -142,6 +142,7 @@ export type UpdateClientInput = {
   contractType?: ClientContractType;
   assignedTaxAccountantId?: string | null;
   notes?: string | null;
+  chatworkRoomId?: string | null;
 };
 
 export async function updateClient(
@@ -158,6 +159,7 @@ export async function updateClient(
         ? { assignedTaxAccountantId: patch.assignedTaxAccountantId }
         : {}),
       ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+      ...(patch.chatworkRoomId !== undefined ? { chatworkRoomId: patch.chatworkRoomId } : {}),
     },
   });
   if (patch.assignedTaxAccountantId !== undefined) {
