@@ -4,7 +4,7 @@
  * binding-test action. Run from repo root with env loaded:
  *   env $(grep -E '^(DATABASE_URL|FREEE_)' .env | xargs) pnpm --filter @zeiro/agents tsx scripts/freee/smoke-binding.ts <firmId> <clientId>
  */
-import { registerFreee, FreeeApiClient } from '@zeiro/integrations';
+import { FreeeApiClient, registerFreee } from '@zeiro/integrations';
 
 registerFreee({
   clientId: process.env.FREEE_CLIENT_ID ?? '',
