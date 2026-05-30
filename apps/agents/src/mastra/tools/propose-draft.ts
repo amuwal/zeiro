@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { TenantIsolationError } from '@zeiro/core/errors';
-import { getKnowledgeChunksByIds } from '@zeiro/db';
+import { getClient, getFirm, getKnowledgeChunksByIds } from '@zeiro/db';
 import { z } from 'zod';
 import { callDrafterWithCitations } from '../../lib/anthropic-draft';
 import { draftPrompt } from '../prompts/draft';
@@ -20,7 +20,9 @@ const inputSchema = z.object({
   instructionForDrafter: z
     .string()
     .min(1)
-    .describe('ドラフター LLM に渡す追加指示 (例: 「期日に必ず触れる」「丁寧な敬語で」)。1〜2 行。'),
+    .describe(
+      'ドラフター LLM に渡す追加指示 (例: 「期日に必ず触れる」「丁寧な敬語で」)。1〜2 行。',
+    ),
 });
 
 const outputSchema = z.object({
@@ -79,9 +81,20 @@ export const proposeDraftTool = createTool({
       throw new Error('propose-draft called with neither knowledge sources nor freee facts');
     }
 
+    // Real names for the greeting + signature — the drafter must never emit ○○
+    // placeholders on a reply a 税理士 will send. firm always resolves; client is
+    // null only for unmatched senders (which don't reach a normal draft).
+    const clientId = ctx?.requestContext?.get('clientId');
+    const [firm, client] = await Promise.all([
+      getFirm(firmId),
+      typeof clientId === 'string' ? getClient(firmId, clientId).catch(() => null) : null,
+    ]);
+
     const subject = ctx?.requestContext?.get('subject');
     const body = ctx?.requestContext?.get('body');
-    const userMessage = `${typeof subject === 'string' ? `件名: ${subject}\n\n` : ''}${
+    const header =
+      `事務所名: ${firm.name}\n` + (client ? `宛名(顧問先名): ${client.name}\n` : '') + '\n';
+    const userMessage = `${header}${typeof subject === 'string' ? `件名: ${subject}\n\n` : ''}${
       typeof body === 'string' ? `問い合わせ本文:\n${body}\n\n` : ''
     }下書き作成への追加指示:\n${input.instructionForDrafter}`;
 
