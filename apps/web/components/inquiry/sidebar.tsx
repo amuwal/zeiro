@@ -56,9 +56,9 @@ export function Sidebar({
     () => ({
       all: items.length,
       unread: items.filter((i) => i.unread).length,
-      draft: items.filter((i) => !i.unread).length,
-      escalated: items.filter((i) => i.confidence <= 0.7).length,
-      sent: items.filter((i) => i.lifecycle === 'resolved').length,
+      draft: items.filter((i) => i.status === 'drafted').length,
+      escalated: items.filter((i) => i.status === 'escalated').length,
+      sent: items.filter((i) => i.status === 'sent').length,
       byChannel: items.reduce(
         (acc, i) => {
           acc[i.channel] = (acc[i.channel] ?? 0) + 1;
@@ -73,7 +73,7 @@ export function Sidebar({
 
   const folders = [
     { id: 'all', label: '受信トレイ', icon: 'inbox' as const, count: counts.all },
-    { id: 'unread', label: '未対応', icon: 'alert' as const, count: counts.unread },
+    { id: 'unread', label: '未読', icon: 'alert' as const, count: counts.unread },
     { id: 'draft', label: '下書き済', icon: 'edit' as const, count: counts.draft },
     { id: 'escalated', label: '要レビュー', icon: 'flag' as const, count: counts.escalated },
     { id: 'sent', label: '送信済', icon: 'check' as const, count: counts.sent },
@@ -87,8 +87,6 @@ export function Sidebar({
   const lifecycles = [
     { id: 'all', label: 'すべての状態' },
     { id: 'open', label: '対応中' },
-    { id: 'awaiting_client', label: '返信待ち' },
-    { id: 'snoozed', label: '保留' },
     { id: 'resolved', label: '完了' },
   ];
   const categories = [
@@ -113,7 +111,9 @@ export function Sidebar({
               onClick={() => setFilter(it.id)}
               className={`side-item ${filter === it.id ? 'active' : ''}`}
             >
-              <span className="glyph"><Icon name={it.icon} size={14} /></span>
+              <span className="glyph">
+                <Icon name={it.icon} size={14} />
+              </span>
               <span>{it.label}</span>
               <span className="count">{it.count}</span>
             </button>
@@ -152,7 +152,10 @@ export function Sidebar({
               className={`side-item ${lifecycle === l.id ? 'active' : ''}`}
             >
               <span className="glyph">
-                <span className={`lifecycle-dot small ${l.id !== 'all' ? 'filled' : ''}`} data-state={l.id} />
+                <span
+                  className={`lifecycle-dot small ${l.id !== 'all' ? 'filled' : ''}`}
+                  data-state={l.id}
+                />
               </span>
               <span>{l.label}</span>
             </button>
@@ -179,15 +182,23 @@ export function Sidebar({
       </div>
 
       <div className="side-foot">
-        <div className="side-foot-head"><span>ESCALATION TODAY</span><span>↗ 32% target</span></div>
-        <div className="side-foot-rate">{escalationRate}<span className="pct">%</span></div>
+        <div className="side-foot-head">
+          <span>エスカレーション率</span>
+          <span>目標 32%</span>
+        </div>
+        <div className="side-foot-rate">
+          {escalationRate}
+          <span className="pct">%</span>
+        </div>
         <div className="side-foot-bar">
           <i style={{ width: `${escalationRate}%` }} />
           <span className="target" style={{ left: '32%' }} />
         </div>
         <div className="side-foot-meta">
-          <span>{counts.escalated} of {counts.all}</span>
-          <span>{escalationRate <= 37 ? 'WITHIN RANGE' : 'RECALIBRATE'}</span>
+          <span>
+            {counts.escalated} / {counts.all} 件
+          </span>
+          <span>{escalationRate <= 37 ? '適正範囲' : '要調整'}</span>
         </div>
       </div>
     </aside>

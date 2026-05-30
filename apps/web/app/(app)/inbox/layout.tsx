@@ -31,6 +31,7 @@ export default async function InboxLayout({ children }: { children: ReactNode })
       received: shortTime(i.receivedAt),
       urgent: triage.urgency === 'high',
       unread: !readIds.has(i.id),
+      status: i.status as InboxItemView['status'],
       category: catId,
       confidence,
       lifecycle: i.status === 'sent' ? ('resolved' as const) : ('open' as const),

@@ -18,6 +18,8 @@ export type InboxItemView = {
   category: 'deadline' | 'docs' | 'tax' | 'contract' | 'other';
   confidence: number;
   lifecycle: 'open' | 'awaiting_client' | 'snoozed' | 'resolved';
+  // Real inquiry status — drives the honest folder filters/counts.
+  status: 'pending' | 'drafted' | 'escalated' | 'sent' | 'rejected' | 'unmatched';
   turnCount?: number;
 };
 
@@ -43,7 +45,9 @@ function ConfidenceDots({ score }: { score: number }) {
   return (
     <span className={cls}>
       <span className="conf-dots">
-        {[0, 1, 2, 3].map((i) => <i key={i} className={i < filled ? 'on' : ''} />)}
+        {[0, 1, 2, 3].map((i) => (
+          <i key={i} className={i < filled ? 'on' : ''} />
+        ))}
       </span>
       {Math.round(score * 100)}
     </span>
@@ -84,9 +88,9 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
     const q = query.trim().toLowerCase();
     return items.filter((it) => {
       if (filter === 'unread' && !it.unread) return false;
-      if (filter === 'draft' && it.unread) return false;
-      if (filter === 'escalated' && it.confidence > 0.7) return false;
-      if (filter === 'sent' && it.lifecycle !== 'resolved') return false;
+      if (filter === 'draft' && it.status !== 'drafted') return false;
+      if (filter === 'escalated' && it.status !== 'escalated') return false;
+      if (filter === 'sent' && it.status !== 'sent') return false;
       if (channel !== 'all' && it.channel !== channel) return false;
       if (lifecycle !== 'all' && it.lifecycle !== lifecycle) return false;
       if (category !== 'all' && it.category !== category) return false;
@@ -104,7 +108,9 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
       setPill(null);
       return;
     }
-    const el = listRef.current.querySelector<HTMLElement>(`[data-inquiry-id="${CSS.escape(selectedId)}"]`);
+    const el = listRef.current.querySelector<HTMLElement>(
+      `[data-inquiry-id="${CSS.escape(selectedId)}"]`,
+    );
     if (!el) {
       setPill(null);
       return;
@@ -132,7 +138,11 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
         />
         <kbd>⌘K</kbd>
       </div>
-      <div className="inbox-list" key={`${filter}|${channel}|${lifecycle}|${category}`} ref={listRef}>
+      <div
+        className="inbox-list"
+        key={`${filter}|${channel}|${lifecycle}|${category}`}
+        ref={listRef}
+      >
         {pill && (
           <span
             className="inbox-pill"
@@ -143,7 +153,9 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
           <div
             key={inq.id}
             data-inquiry-id={inq.id}
-            style={{ animation: `inbox-item-in 420ms cubic-bezier(0.32,0.72,0,1) ${i * 28}ms both` }}
+            style={{
+              animation: `inbox-item-in 420ms cubic-bezier(0.32,0.72,0,1) ${i * 28}ms both`,
+            }}
           >
             <Link
               href={`/inbox/${inq.id}`}
@@ -153,7 +165,9 @@ export function InboxList({ items, state }: { items: InboxItemView[]; state: Fil
               data-cat={inq.category}
             >
               <div className="item-row1">
-                <span className="channel-mark" title={CHANNEL_JP[inq.channel]}>{CHANNEL_GLYPH[inq.channel]}</span>
+                <span className="channel-mark" title={CHANNEL_JP[inq.channel]}>
+                  {CHANNEL_GLYPH[inq.channel]}
+                </span>
                 <span className="company">{inq.company}</span>
                 {(inq.turnCount ?? 1) > 1 && <span className="turns-mark">{inq.turnCount}</span>}
                 {inq.urgent && <span className="urgent-tag">URGENT</span>}
