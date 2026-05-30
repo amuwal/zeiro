@@ -1,4 +1,5 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import type { ProviderId } from '@zeiro/core';
 import { getPrisma } from '../server';
 
 export type ClientIntegrationBindingRow = {
@@ -13,7 +14,7 @@ export type ClientIntegrationBindingRow = {
 export async function getBindingByClient(
   firmId: string,
   clientId: string,
-  provider: string,
+  provider: ProviderId,
 ): Promise<ClientIntegrationBindingRow | null> {
   const row = await getPrisma().clientIntegrationBinding.findFirst({
     where: {
@@ -26,7 +27,7 @@ export async function getBindingByClient(
 
 export async function listBindingsForFirm(
   firmId: string,
-  provider: string,
+  provider: ProviderId,
 ): Promise<Array<ClientIntegrationBindingRow & { clientName: string }>> {
   const rows = await getPrisma().clientIntegrationBinding.findMany({
     where: { integration: { firmId, provider } },
@@ -46,7 +47,7 @@ export async function listBindingsForFirm(
 export async function upsertBinding(input: {
   firmId: string;
   clientId: string;
-  provider: string;
+  provider: ProviderId;
   externalId: string;
   externalName?: string | null;
 }): Promise<ClientIntegrationBindingRow> {
@@ -77,7 +78,7 @@ export async function upsertBinding(input: {
 export async function deleteBinding(
   firmId: string,
   clientId: string,
-  provider: string,
+  provider: ProviderId,
 ): Promise<void> {
   const integration = await getPrisma().integration.findUnique({
     where: { firmId_provider: { firmId, provider } },

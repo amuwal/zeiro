@@ -1,39 +1,31 @@
+import type { ProviderId } from '@zeiro/core';
 import {
-  type IntegrationRow,
   findIntegration,
+  type IntegrationRow,
   markIntegrationStatus,
   updateIntegrationMetadata,
   updateIntegrationTokens,
   upsertIntegration,
 } from '@zeiro/db';
 import { decrypt, encrypt } from './encryption';
-import {
-  IntegrationNotConnectedError,
-  IntegrationRevokedError,
-  TokenRefreshError,
-} from './errors';
+import { IntegrationNotConnectedError, IntegrationRevokedError, TokenRefreshError } from './errors';
 import { generateCodeChallenge, generateCodeVerifier } from './state';
 import type { AdapterConfig, TokenSet } from './types';
 
 export abstract class BaseIntegrationAdapter {
-  abstract readonly provider: string;
+  abstract readonly provider: ProviderId;
   abstract readonly config: AdapterConfig;
   protected abstract readonly clientId: string;
   protected abstract readonly clientSecret: string;
   protected abstract readonly redirectUri: string;
 
-  abstract exchangeCodeForTokens(args: {
-    code: string;
-    codeVerifier?: string;
-  }): Promise<TokenSet>;
+  abstract exchangeCodeForTokens(args: { code: string; codeVerifier?: string }): Promise<TokenSet>;
 
   abstract refreshAccessToken(refreshToken: string): Promise<TokenSet>;
 
   // Override to fetch provider-side metadata (e.g. visible 事業所 list)
   // immediately after a successful connect / refresh.
-  protected async fetchConnectionMetadata(
-    _tokens: TokenSet,
-  ): Promise<Record<string, unknown>> {
+  protected async fetchConnectionMetadata(_tokens: TokenSet): Promise<Record<string, unknown>> {
     return {};
   }
 

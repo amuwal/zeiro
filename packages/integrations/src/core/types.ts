@@ -1,5 +1,7 @@
+import type { ProviderId } from '@zeiro/core';
+
 export type AdapterConfig = {
-  provider: string;
+  provider: ProviderId;
   authorizationEndpoint: string;
   tokenEndpoint: string;
   revocationEndpoint?: string;

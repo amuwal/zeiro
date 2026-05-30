@@ -1,3 +1,4 @@
+import { isProviderId, type ProviderId } from '@zeiro/core';
 import type { IntegrationRow } from '@zeiro/db';
 import { getAdapter } from './core/registry';
 import { decodeState, encodeState, generateNonce } from './core/state';
@@ -7,7 +8,7 @@ export type StartFlowResult = {
 };
 
 export async function startOAuthFlow(args: {
-  provider: string;
+  provider: ProviderId;
   firmId: string;
 }): Promise<StartFlowResult> {
   const adapter = getAdapter(args.provider);
@@ -29,6 +30,9 @@ export async function completeOAuthFlow(args: {
   state: string;
 }): Promise<IntegrationRow> {
   const parsed = decodeState(args.state);
+  if (!isProviderId(parsed.provider)) {
+    throw new Error(`unknown provider in oauth state: ${parsed.provider}`);
+  }
   const adapter = getAdapter(parsed.provider);
   const callbackArgs: { firmId: string; code: string; codeVerifier?: string } = {
     firmId: parsed.firmId,

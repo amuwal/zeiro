@@ -6,13 +6,19 @@ export class IntegrationError extends Error {
 }
 
 export class IntegrationNotConnectedError extends IntegrationError {
-  constructor(public readonly firmId: string, public readonly provider: string) {
+  constructor(
+    public readonly firmId: string,
+    public readonly provider: string,
+  ) {
     super(`no ${provider} integration for firm ${firmId}`);
   }
 }
 
 export class ClientBindingMissingError extends IntegrationError {
-  constructor(public readonly clientId: string, public readonly provider: string) {
+  constructor(
+    public readonly clientId: string,
+    public readonly provider: string,
+  ) {
     super(`client ${clientId} has no ${provider} binding`);
   }
 }
@@ -29,7 +35,10 @@ export class TokenRefreshError extends IntegrationError {
 }
 
 export class IntegrationRevokedError extends IntegrationError {
-  constructor(public readonly integrationId: string, public readonly provider: string) {
+  constructor(
+    public readonly integrationId: string,
+    public readonly provider: string,
+  ) {
     super(`${provider} integration ${integrationId} was revoked at the provider`);
   }
 }

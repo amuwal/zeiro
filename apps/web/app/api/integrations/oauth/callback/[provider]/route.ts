@@ -1,9 +1,9 @@
 import { recordAudit } from '@zeiro/db';
-import { completeOAuthFlow, registerFreee } from '@zeiro/integrations';
+import { completeOAuthFlow, registerIntegrations } from '@zeiro/integrations';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 
-ensureFreeeRegistered();
+registerIntegrations(env);
 
 export async function GET(
   request: Request,
@@ -55,14 +55,4 @@ function redirectToSettings(request: Request, params: Record<string, string>): R
   const url = new URL('/settings', request.url);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   return NextResponse.redirect(url);
-}
-
-function ensureFreeeRegistered(): void {
-  if (env.FREEE_CLIENT_ID && env.FREEE_CLIENT_SECRET && env.FREEE_REDIRECT_URI) {
-    registerFreee({
-      clientId: env.FREEE_CLIENT_ID,
-      clientSecret: env.FREEE_CLIENT_SECRET,
-      redirectUri: env.FREEE_REDIRECT_URI,
-    });
-  }
 }
