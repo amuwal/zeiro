@@ -12,6 +12,7 @@ const citationsArraySchema = z.array(citationSchema);
 const citationBlocksSchema = z.array(citationBlockSchema);
 
 type DraftInsert = {
+  firmId: string;
   inquiryId: string;
   subject: string;
   body: string;
@@ -33,6 +34,7 @@ export async function createDraft(input: DraftInsert): Promise<DraftWithCitation
       : {};
   const row = await getPrisma().draft.create({
     data: {
+      firmId: input.firmId,
       inquiryId: input.inquiryId,
       subject: input.subject,
       body: input.body,

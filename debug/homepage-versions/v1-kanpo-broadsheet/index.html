@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zeiro — 官報 / The Daily Ledger ｜ 税理士事務所のための、顧客対応AIエージェント</title>
+<meta name="description" content="受信 → 分類 → 事務所ナレッジで下書き → 税理士レビュー → 送信。本当に判断が必要な案件にだけ、集中できる。引用付きの下書きを、税理士法 第38条 守秘義務準拠で。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<style>
+/* ───────────────────────── TOKENS ───────────────────────── */
+:root{
+  --bg:#f2eee6; --bg-2:#ede8de; --surface:#fbf9f4; --surface-2:#f7f4ed; --paper:#ffffff;
+  --ink:#14110d; --ink-2:#3a352d; --ink-soft:#5a5248; --muted:#7a7268; --muted-2:#9a9286;
+  /* AA-safe label ink for any text < 18px (≈4.6:1 on --bg). --muted/--muted-2 are reserved
+     for decorative non-text (dot separators, swatches, hairline echoes). */
+  --label-ink:#5b554b;
+  --line:#e2dccf; --line-strong:#cfc8b8;
+  --accent:oklch(38% 0.045 150); --accent-ink:#15301b; --accent-soft:#d9eadc;
+  --accent-bright:#3b834e; --accent-glow:#5cb572; --positive:#236436; --urgent:#c13234;
+  --cat-deadline:#a06f30; --cat-docs:#2f6868; --cat-tax:#9a504b; --cat-contract:#594c7d; --cat-other:#9a9286;
+  --font-sans:"Inter Tight","Noto Sans JP",system-ui,sans-serif;
+  --font-jp:"Noto Sans JP","Inter Tight",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,monospace;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-press:cubic-bezier(0.65,0,0.35,1);
+  --margin:clamp(24px,7vw,120px);
+  --shadow-soft:0 1px 2px rgba(20,17,13,.04), 0 8px 24px -16px rgba(20,17,13,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-jp);
+  font-feature-settings:"palt","ss01"; line-height:1.85; overflow-x:hidden;
+}
+/* Hide the native cursor ONLY once the crosshair JS has successfully booted.
+   On any JS/CDN failure the page keeps a working native cursor. */
+.has-crosshair,.has-crosshair body,
+.has-crosshair a,.has-crosshair button,.has-crosshair .chip{cursor:none}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent-soft);color:var(--accent-ink)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* baseline rhythm helpers */
+.wrap{max-width:1480px;margin-inline:auto;padding-inline:var(--margin)}
+.mono{font-family:var(--font-mono);font-weight:500;letter-spacing:.18em;color:var(--label-ink);font-feature-settings:normal}
+.mono-up{font-family:var(--font-mono);font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--label-ink);font-size:.66rem;font-feature-settings:normal}
+.tnum{font-variant-numeric:tabular-nums lining-nums}
+
+/* hairline rules — full-bleed band separators that DRAW on arrival */
+.rule{height:1px;background:var(--line);transform:scaleX(0);transform-origin:left center;border:0;
+  transition:transform .6s var(--ease-press)}
+.rule--heavy{height:2px;background:var(--ink)}
+.rule.is-drawn{transform:scaleX(1)}
+.no-anim .rule{transform:scaleX(1)!important;transition:none}
+
+/* focus */
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+/* ───────────────────────── CURSOR (1px crosshair + folio readout) ───────────────────────── */
+#cross{position:fixed;inset:0;pointer-events:none;z-index:9000;mix-blend-mode:normal}
+#cross .v,#cross .h{position:absolute;background:var(--ink);opacity:.34}
+#cross .v{width:1px;height:18px;transform:translate(-50%,-50%)}
+#cross .h{height:1px;width:18px;transform:translate(-50%,-50%)}
+#cross .folio{position:absolute;font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:var(--accent);transform:translate(14px,8px);white-space:nowrap;text-transform:uppercase}
+@media (pointer:coarse){ #cross{display:none} }
+
+/* ───────────────────────── MASTHEAD ───────────────────────── */
+.masthead{position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:saturate(1.1)}
+.masthead__top{height:1px;background:var(--ink);transform:scaleX(0);transform-origin:left center;
+  transition:transform .6s var(--ease-out)}
+.masthead__top.is-drawn{transform:scaleX(1)}
+.no-anim .masthead__top{transform:scaleX(1);transition:none}
+.folio-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:14px 0 12px}
+.folio-row .tagline{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;color:var(--label-ink);font-feature-settings:"palt";max-width:30ch;line-height:1.5}
+.wordmark{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.5rem,2.4vw,2rem);letter-spacing:-.02em;text-align:center;color:var(--ink);line-height:1}
+.dateline{justify-self:end;text-align:right;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.08em;color:var(--ink-2);font-feature-settings:"palt";line-height:1.5}
+.dateline b{color:var(--accent);font-weight:600}
+.masthead__heavy{height:2px;background:var(--ink)}
+
+/* mobile nav button */
+.navtoggle{display:none;position:absolute;right:var(--margin);top:10px;z-index:210;background:none;border:1px solid var(--line-strong);border-radius:6px;padding:7px 11px;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.16em;color:var(--ink)}
+.navsheet{position:fixed;inset:0;background:var(--bg);z-index:205;transform:translateY(-100%);transition:transform .5s var(--ease-out);display:flex;flex-direction:column;justify-content:center;padding:var(--margin);gap:4px}
+.navsheet.open{transform:translateY(0)}
+.navsheet a{font-family:var(--font-sans);font-weight:600;font-size:clamp(1.4rem,7vw,2.4rem);padding:10px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.navsheet a span{font-family:var(--font-mono);font-size:.7rem;color:var(--label-ink);letter-spacing:.1em}
+
+/* desktop section-jump strip (right of masthead, subtle) */
+.subnav{display:flex;gap:22px;justify-content:flex-end;padding:7px 0;border-bottom:1px solid var(--line)}
+.subnav a{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;color:var(--label-ink);text-transform:uppercase;position:relative;padding-bottom:2px;transition:color .25s var(--ease-out)}
+.subnav a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:0;background:var(--accent);transition:width .3s var(--ease-out)}
+.subnav a:hover,.subnav a:focus-visible{color:var(--ink)}
+.subnav a:hover::after,.subnav a:focus-visible::after{width:100%}
+
+/* ───────────────────────── HERO FRONT PAGE 7/5 ───────────────────────── */
+.hero{padding-top:clamp(40px,6vw,72px);padding-bottom:clamp(40px,5vw,64px)}
+.hero__grid{display:grid;grid-template-columns:7fr 5fr;gap:0}
+.hero__left{padding-right:clamp(28px,4vw,64px)}
+.hero__right{padding-left:clamp(28px,4vw,64px);border-left:1px solid var(--line-strong);position:relative}
+.kicker{display:flex;align-items:center;gap:14px;margin-bottom:clamp(18px,2.4vw,30px)}
+.kicker .tag{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.26em;text-transform:uppercase;color:var(--accent)}
+.kicker .meta{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;color:var(--label-ink)}
+.kicker .flex{flex:1;height:1px;background:var(--line)}
+.headline{
+  font-family:var(--font-sans);font-weight:700;
+  font-size:clamp(2.4rem,6vw,5.5rem);line-height:1.06;letter-spacing:-.01em;
+  font-feature-settings:"palt","ss01";color:var(--ink);
+}
+.headline .clip{display:block;overflow:hidden;padding-bottom:.02em}
+.headline .clip > span{display:block;will-change:transform;transform:translateY(0);
+  transition:transform .9s var(--ease-out)}
+.headline .clip:nth-child(2) > span{transition-delay:.09s}
+.headline .clip:nth-child(3) > span{transition-delay:.18s}
+/* armed = pre-reveal hidden state, removed on next frame to play the upward wipe.
+   default (un-armed) is fully visible, so content NEVER depends on JS firing. */
+.headline.armed .clip > span{transform:translateY(106%);transition:none}
+.no-anim .headline .clip > span{transform:translateY(0)!important;transition:none}
+.headline em{font-style:normal;color:var(--accent)}
+.hero__credit{margin-top:clamp(30px,4vw,50px);padding-top:14px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;align-items:baseline}
+.hero__credit .mono-up{font-size:.58rem;letter-spacing:.16em}
+.standfirst{
+  font-family:var(--font-jp);font-weight:500;
+  font-size:clamp(1.05rem,1.6vw,1.4rem);line-height:1.7;color:var(--ink-2);
+  text-align:justify;text-wrap:balance;font-feature-settings:"palt";
+  -webkit-hyphens:auto;hyphens:auto;
+}
+.standfirst .arrow{color:var(--accent);font-family:var(--font-mono);font-weight:500}
+/* the canonical signature line, set deliberately as a coda — not buried mid-paragraph */
+.standfirst-coda{
+  margin-top:clamp(16px,1.8vw,22px);font-family:var(--font-jp);font-weight:600;
+  font-size:clamp(1.12rem,1.7vw,1.5rem);line-height:1.55;color:var(--ink);
+  letter-spacing:-.005em;font-feature-settings:"palt","ss01";text-align:start;
+}
+.standfirst-coda em{font-style:normal;color:var(--accent)}
+/* stat-ear price box */
+.stat-ear{margin-top:clamp(28px,3.5vw,44px);border:1px solid var(--ink);padding:16px 18px 14px;max-width:340px;background:var(--surface)}
+.stat-ear .lbl{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--label-ink);display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:10px}
+.stat-ear .row{display:flex;align-items:baseline;gap:10px;justify-content:space-between}
+.stat-ear .big{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.6rem,2.6vw,2.3rem);letter-spacing:-.01em;color:var(--ink);line-height:1}
+.stat-ear .arrowto{font-family:var(--font-mono);color:var(--ink-soft);font-size:1.1rem}
+.stat-ear .delta{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.6rem,2.6vw,2.3rem);color:var(--accent);letter-spacing:-.02em}
+.stat-ear .big .unit{font-size:.5em;color:var(--label-ink);font-weight:500}
+.stat-ear .sub{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.1em;color:var(--label-ink);margin-top:8px}
+
+/* ───────────────────────── SECTION SCAFFOLD ───────────────────────── */
+.band{padding-block:clamp(56px,7vw,108px)}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:clamp(28px,4vw,52px);flex-wrap:wrap}
+.sec-head h2{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.7rem,3.4vw,3rem);letter-spacing:-.01em;line-height:1.1;color:var(--ink);font-feature-settings:"palt","ss01"}
+.sec-head .eyebrow{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:block}
+.sec-head .col-meta{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.1em;color:var(--label-ink);text-align:right;max-width:24ch;line-height:1.6}
+
+/* ───────────────────────── THE PLATE ───────────────────────── */
+.plate-grid{display:grid;grid-template-columns:5fr 7fr;gap:0;border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
+.plate-src{padding:clamp(20px,2.4vw,32px) clamp(22px,2.6vw,36px);border-right:1px solid var(--line-strong);background:var(--surface);position:relative}
+.plate-src .stamp{position:absolute;top:14px;right:16px;font-family:var(--font-mono);font-size:.56rem;letter-spacing:.18em;color:var(--cat-tax);border:1px solid var(--cat-tax);border-radius:4px;padding:3px 7px;text-transform:uppercase}
+.plate-src .hdr{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;color:var(--label-ink);text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.mailmeta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.82rem;margin-bottom:16px}
+.mailmeta dt{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;color:var(--label-ink);padding-top:3px}
+.mailmeta dd{color:var(--ink-2)}
+.mailmeta dd b{color:var(--ink);font-weight:600}
+.mailbody{font-size:.92rem;line-height:1.95;color:var(--ink-2);font-feature-settings:"palt"}
+.mailbody .hl{transition:background .3s var(--ease-out),color .3s;border-radius:2px;padding:0 1px}
+.mailbody .hl.lit{background:var(--accent-soft);color:var(--accent-ink);box-shadow:inset 0 -1px 0 var(--accent)}
+
+.plate-out{background:var(--paper);padding:clamp(20px,2.4vw,32px) clamp(22px,2.6vw,36px);position:relative;display:flex;flex-direction:column}
+.plate-out .hdr{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;color:var(--label-ink);text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.plate-out .hdr .live{display:flex;align-items:center;gap:7px;color:var(--accent)}
+.plate-out .hdr .live .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-glow);box-shadow:0 0 0 0 var(--accent-glow);animation:pulse 1.8s var(--ease-out) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,181,114,.5)}70%{box-shadow:0 0 0 7px rgba(92,181,114,0)}100%{box-shadow:0 0 0 0 rgba(92,181,114,0)}}
+.draft-text{font-family:var(--font-jp);font-size:.96rem;line-height:2;color:var(--ink);font-feature-settings:"palt";min-height:11.5em;flex:1}
+.draft-text .ph{position:relative}
+.draft-text .ph.lit{background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent);border-radius:2px}
+.caret{display:inline-block;width:.5em;height:1.05em;background:var(--accent);vertical-align:-.16em;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.caret.done{animation:none;opacity:0}
+
+/* footnote rail */
+.foot-rail{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);position:relative}
+.foot-rail .rail-lbl{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--label-ink);margin-bottom:10px}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{
+  font-family:var(--font-mono);font-size:.6rem;letter-spacing:.04em;color:var(--ink-2);
+  border:1px solid var(--accent);border-radius:5px;padding:5px 9px;background:var(--surface);
+  display:inline-flex;align-items:baseline;gap:7px;
+  opacity:0;transform:translateY(4px) scale(.985);transition:transform .14s var(--ease-press),box-shadow .2s,background .2s;
+}
+.chip.in{opacity:1;transform:translateY(0) scale(1)}
+.no-anim .chip{opacity:1;transform:none}
+.chip .code{color:var(--accent);font-weight:600}
+.chip:hover,.chip.active{background:var(--accent-soft);box-shadow:var(--shadow-soft)}
+.chip .src{color:var(--label-ink)}
+.leader{position:absolute;height:1px;background:var(--accent);opacity:0;transform-origin:left;pointer-events:none}
+.leader.show{opacity:.55}
+
+/* ───────────────────────── THE PROCESS (5 ruled step-articles) ───────────────────────── */
+.process-wrap{position:relative}
+/* a faint accent rail down the left margin; the pulse physically travels it */
+.process-rail{position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--line);overflow:visible;pointer-events:none}
+.process-rail .ink{position:absolute;left:0;top:0;width:1px;height:0;background:var(--accent);opacity:.35;transition:height .25s var(--ease-out)}
+.process-pulse{position:absolute;left:-1.5px;top:0;width:4px;height:14px;border-radius:3px;background:var(--accent);box-shadow:0 0 12px 2px rgba(92,181,114,.55);opacity:0;will-change:transform}
+.process-pulse.on{opacity:1}
+.no-anim .process-rail,.no-anim .process-pulse{display:none}
+.step{display:grid;grid-template-columns:auto 1fr auto;gap:clamp(16px,3vw,48px);align-items:baseline;padding:clamp(20px,2.6vw,34px) 0 clamp(20px,2.6vw,34px) clamp(20px,3vw,40px);border-top:1px solid var(--line);position:relative;transition:background .4s var(--ease-out)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .folio{font-family:var(--font-sans);font-weight:700;font-size:clamp(2.2rem,5vw,4.4rem);letter-spacing:-.02em;color:var(--line-strong);line-height:.9;transition:color .5s var(--ease-out);font-variant-numeric:tabular-nums}
+.step.active .folio{color:var(--accent)}
+.step .body h3{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.3rem,2.4vw,2rem);letter-spacing:-.01em;color:var(--ink);margin-bottom:6px;font-feature-settings:"palt"}
+.step .body .sub{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;color:var(--label-ink);text-transform:uppercase;margin-bottom:8px}
+.step .body p{font-size:.92rem;color:var(--ink-2);max-width:46ch;line-height:1.8}
+.step .meta{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;color:var(--label-ink);text-align:right;white-space:nowrap}
+.stack{display:flex;gap:10px;flex-wrap:wrap;margin-top:clamp(20px,2.5vw,32px)}
+.stack .pill{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;color:var(--ink-2);border:1px solid var(--line-strong);border-radius:999px;padding:5px 12px}
+
+/* ───────────────────────── THE NUMBERS ───────────────────────── */
+.num-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-strong);border:1px solid var(--line-strong)}
+.num-card{background:var(--surface);padding:clamp(22px,2.6vw,34px)}
+.num-card .ttl{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--label-ink);margin-bottom:18px;display:flex;justify-content:space-between}
+.donut-row{display:flex;gap:clamp(18px,3vw,40px);align-items:center;flex-wrap:wrap}
+.donut-row .big{font-family:var(--font-sans);font-weight:700;font-size:clamp(2.2rem,4vw,3.4rem);letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.donut-row .biglbl{font-family:var(--font-mono);font-size:.62rem;color:var(--label-ink);letter-spacing:.1em;margin-top:6px}
+.legend{display:flex;flex-direction:column;gap:9px}
+.legend .li{display:flex;align-items:center;gap:11px;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.04em;color:var(--ink-2)}
+.legend .sw{width:18px;height:8px;display:inline-block;flex:none}
+.legend .v{margin-left:auto;color:var(--ink);font-weight:500}
+.legend .legend-note{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.08em;color:var(--label-ink);margin-top:4px;padding-top:8px;border-top:1px solid var(--line)}
+.bar-line{margin:14px 0}
+.bar-line .lbl{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.08em;color:var(--label-ink);margin-bottom:6px}
+.bar-line .lbl .val{color:var(--ink);font-weight:600}
+.track{height:8px;background:var(--bg-2);border:1px solid var(--line);position:relative;overflow:hidden}
+.track .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--line-strong)}
+.track .fill.accent{background:var(--accent)}
+.delta-97{font-family:var(--font-sans);font-weight:700;font-size:clamp(2.6rem,5vw,3.8rem);color:var(--accent);letter-spacing:-.03em;line-height:1}
+.delta-cap{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.12em;color:var(--label-ink);text-align:right}
+.kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-strong);border:1px solid var(--line-strong);border-top:0}
+.kpi-cell{background:var(--surface-2);padding:clamp(20px,2.4vw,30px)}
+.kpi-cell .tag{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--label-ink)}
+.kpi-cell .n{font-family:var(--font-sans);font-weight:700;font-size:clamp(2rem,3.6vw,3rem);letter-spacing:-.02em;color:var(--ink);margin-top:14px;line-height:1}
+.kpi-cell .n .u{font-size:.46em;color:var(--label-ink);font-weight:500;margin-left:3px}
+.kpi-cell .jp{font-size:.78rem;color:var(--ink-2);margin-top:8px}
+
+/* ───────────────────────── FEATURE COLUMNS (news items) ───────────────────────── */
+.legend-strip{display:flex;gap:clamp(14px,2.6vw,34px);flex-wrap:wrap;padding:clamp(16px,2vw,22px) 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:clamp(36px,5vw,64px)}
+.legend-strip .item{display:flex;align-items:center;gap:10px}
+.legend-strip .sw{width:22px;height:8px;flex:none}
+.legend-strip .lbl{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;color:var(--ink-2)}
+.legend-strip .en{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.14em;color:var(--label-ink);text-transform:uppercase}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.col{padding:0 clamp(20px,2.4vw,40px);border-left:1px solid var(--line-strong)}
+.col:first-child{padding-left:0;border-left:0}
+.col .sectag{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;color:var(--accent);margin-bottom:14px}
+.col h3{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.2rem,1.9vw,1.55rem);line-height:1.25;letter-spacing:-.01em;color:var(--ink);margin-bottom:14px;font-feature-settings:"palt"}
+.col p{font-size:.9rem;line-height:1.85;color:var(--ink-2);margin-bottom:16px;font-feature-settings:"palt"}
+.col .fnote{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.04em;color:var(--label-ink);padding-left:18px;text-indent:-18px;border-top:1px solid var(--line);padding-top:12px;line-height:1.7}
+.col .fnote .mark{color:var(--accent);font-weight:600}
+
+/* ───────────────────────── TRUST BACKPAGE (ink band) ───────────────────────── */
+.backpage{background:var(--ink);color:var(--surface);position:relative;overflow:hidden}
+.backpage .wrap{position:relative;z-index:2}
+.backpage .sec-head h2{color:var(--surface)}
+.backpage .sec-head .eyebrow{color:var(--accent-glow)}
+.backpage .sec-head .col-meta{color:var(--muted-2)}
+.bp-grid{display:grid;grid-template-columns:5fr 7fr;gap:clamp(28px,4vw,60px);align-items:start}
+.bp-list{list-style:none;display:flex;flex-direction:column;gap:0}
+.bp-list li{padding:18px 0;border-top:1px solid rgba(226,220,207,.14);display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline}
+.bp-list li:last-child{border-bottom:1px solid rgba(226,220,207,.14)}
+.bp-list .no{font-family:var(--font-mono);font-size:.66rem;color:var(--accent-glow);letter-spacing:.1em}
+.bp-list .t{font-family:var(--font-sans);font-weight:600;font-size:clamp(1rem,1.5vw,1.2rem);color:var(--surface)}
+.bp-list .d{font-size:.82rem;color:var(--muted-2);margin-top:4px;line-height:1.7}
+.constellation{position:relative;border:1px solid rgba(226,220,207,.14);height:clamp(360px,44vw,520px);background:radial-gradient(120% 120% at 50% 50%, rgba(92,181,114,.05), transparent 60%);overflow:hidden}
+/* poster sits underneath as a guaranteed base; the live canvas paints on top.
+   If the canvas ever fails to paint (e.g. throttled rAF), the concept still shows. */
+.const-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5;filter:saturate(.85) brightness(.9)}
+.constellation canvas{display:block;width:100%;height:100%;position:relative;z-index:1}
+
+/* ───────────────────────── THE OFFER ───────────────────────── */
+.offer{display:grid;grid-template-columns:1fr auto;gap:clamp(28px,4vw,60px);align-items:end}
+.offer h2{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.9rem,4vw,3.4rem);letter-spacing:-.015em;line-height:1.12;color:var(--ink);font-feature-settings:"palt","ss01"}
+.offer .sub{font-size:.95rem;color:var(--ink-2);margin-top:18px;max-width:42ch;line-height:1.8}
+.offer-card{border:1px solid var(--ink);background:var(--surface);padding:clamp(22px,2.6vw,32px);min-width:min(340px,80vw)}
+.offer-card .hdr{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--label-ink);border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px;display:flex;justify-content:space-between}
+.btn{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-sans);font-weight:600;font-size:1rem;padding:14px 18px;border-radius:8px;transition:transform .18s var(--ease-out),background .2s;will-change:transform}
+.btn .ar{font-family:var(--font-mono);font-size:.8rem}
+.btn-primary{background:var(--ink);color:var(--bg);margin-bottom:10px}
+.btn-primary:hover,.btn-primary:focus-visible{background:var(--accent-ink)}
+.btn-ghost{background:none;color:var(--ink);border:1px solid var(--line-strong)}
+.btn-ghost:hover,.btn-ghost:focus-visible{border-color:var(--ink)}
+.offer-card .en{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;color:var(--label-ink);text-align:center;margin-top:14px;text-transform:uppercase}
+.offer-card .en a{color:var(--accent);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+
+/* ───────────────────────── COLOPHON ───────────────────────── */
+.colophon{padding-block:clamp(36px,4vw,56px)}
+.colo-line{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;color:var(--label-ink);text-transform:uppercase;padding-block:clamp(20px,3vw,32px)}
+.colo-line .dot{color:var(--line-strong)}
+.colo-folio{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;color:var(--label-ink);padding-top:14px}
+.colo-folio .mark{font-family:var(--font-sans);font-weight:700;letter-spacing:-.01em;color:var(--ink);font-size:.9rem}
+
+/* generic reveal — transform + opacity, but opacity is a SECONDARY cue.
+   The .armed-style risk (frozen transition leaving content invisible) is avoided
+   by keeping reveals subtle; IO toggles .in which settles to the resting state. */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.reveal.in{opacity:1;transform:translateY(0)}
+.no-anim .reveal{opacity:1!important;transform:none!important;transition:none}
+/* Safety net: if motion/JS settles but a transition is interrupted, never trap
+   content at 0 — once .in is present the resting opacity is 1. */
+.reveal.in{opacity:1}
+
+/* ───────────────────────── RESPONSIVE ───────────────────────── */
+/* CJK justify opens ugly gaps on a narrow measure — set ragged-right below desktop */
+@media (max-width:1024px){
+  .standfirst{text-align:start;text-wrap:pretty}
+}
+@media (max-width:1080px){
+  .cols{grid-template-columns:1fr 1fr}
+}
+/* intermediate band: collapse the asymmetric front page + plate before columns get cramped */
+@media (max-width:960px){
+  .hero__grid{grid-template-columns:1fr}
+  .hero__right{padding-left:0;border-left:0;border-top:1px solid var(--line-strong);margin-top:clamp(24px,4vw,40px);padding-top:clamp(24px,4vw,40px)}
+  .hero__left{padding-right:0}
+  .plate-grid{grid-template-columns:1fr}
+  .plate-src{border-right:0;border-bottom:1px solid var(--line-strong)}
+  .stat-ear{max-width:none}
+  .stat-ear .row{flex-wrap:wrap;row-gap:6px}
+  .stat-ear .delta{flex-basis:100%;text-align:right;margin-top:2px}
+}
+@media (max-width:860px){
+  .navtoggle{display:block}
+  .subnav{display:none}
+  .folio-row{grid-template-columns:1fr;text-align:left;gap:6px;padding:12px 0 10px}
+  .folio-row .tagline{order:3;font-size:.58rem}
+  .wordmark{text-align:left;order:1}
+  .dateline{justify-self:start;text-align:left;order:2}
+  .hero__grid{grid-template-columns:1fr}
+  .hero__right{padding-left:0;border-left:0;border-top:1px solid var(--line-strong);margin-top:32px;padding-top:32px}
+  .hero__left{padding-right:0}
+  .plate-grid{grid-template-columns:1fr}
+  .plate-src{border-right:0;border-bottom:1px solid var(--line-strong)}
+  .num-grid{grid-template-columns:1fr}
+  .cols{grid-template-columns:1fr}
+  .col{padding:24px 0;border-left:0;border-top:1px solid var(--line-strong)}
+  .col:first-child{border-top:0}
+  .bp-grid{grid-template-columns:1fr}
+  .offer{grid-template-columns:1fr}
+  .kpi-strip{grid-template-columns:1fr}
+  .step{grid-template-columns:auto 1fr;gap:14px 20px}
+  .step .meta{grid-column:1/-1;text-align:left}
+}
+@media (max-width:420px){
+  .headline{font-size:2.2rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .reveal{opacity:1;transform:none}
+  .rule,.masthead__top{transform:scaleX(1)!important}
+  .headline .clip > span{transform:none}
+  .chip{opacity:1;transform:none}
+  #cross{display:none}
+  body{cursor:auto}
+  .has-crosshair,.has-crosshair body{cursor:auto}
+  .caret{display:none}
+  .process-rail,.process-pulse{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- 1px crosshair cursor with folio readout -->
+<div id="cross" aria-hidden="true"><span class="v"></span><span class="h"></span><span class="folio">§00</span></div>
+
+<!-- ───────────────────────── MASTHEAD ───────────────────────── -->
+<header class="masthead" role="banner">
+  <div class="masthead__top" id="topRule"></div>
+  <button class="navtoggle" id="navtoggle" aria-expanded="false" aria-controls="navsheet">目次 / MENU</button>
+  <div class="wrap">
+    <div class="folio-row">
+      <p class="tagline">税理士事務所のための、<br>顧客対応AIエージェント</p>
+      <a href="#top" class="wordmark" aria-label="Zeiro ホーム">Zeiro</a>
+      <p class="dateline" id="dateline">読み込み中… · <b>第38条準拠版</b></p>
+    </div>
+  </div>
+  <div class="masthead__heavy"></div>
+  <div class="wrap">
+    <nav class="subnav" aria-label="紙面ナビゲーション">
+      <a href="#plate">設版 / The Plate</a>
+      <a href="#process">工程 / Process</a>
+      <a href="#numbers">数字 / Numbers</a>
+      <a href="#columns">社説 / Columns</a>
+      <a href="#trust">守秘 / §38</a>
+      <a href="#offer">前付 / Offer</a>
+    </nav>
+  </div>
+</header>
+
+<!-- mobile nav sheet -->
+<nav class="navsheet" id="navsheet" aria-label="モバイルナビゲーション">
+  <a href="#plate" data-nav>設版<span>THE PLATE</span></a>
+  <a href="#process" data-nav>工程<span>THE PROCESS</span></a>
+  <a href="#numbers" data-nav>数字<span>THE NUMBERS</span></a>
+  <a href="#columns" data-nav>社説<span>COLUMNS</span></a>
+  <a href="#trust" data-nav>守秘義務<span>§38</span></a>
+  <a href="#offer" data-nav>前付け<span>THE OFFER</span></a>
+</nav>
+
+<main id="top">
+
+<!-- ───────────────────────── HERO FRONT PAGE ───────────────────────── -->
+<section class="hero wrap" data-folio="§01" aria-labelledby="hero-h">
+  <div class="hero__grid">
+    <div class="hero__left">
+      <div class="kicker">
+        <span class="tag">第一面 · FRONT PAGE</span>
+        <span class="flex" aria-hidden="true"></span>
+        <span class="meta tnum">VOL.01 ／ NO.38</span>
+      </div>
+      <h1 class="headline" id="hero-h">
+        <span class="clip"><span>顧問先対応の時間を、</span></span>
+        <span class="clip"><span>税理士の<em>判断</em>に</span></span>
+        <span class="clip"><span>戻す。</span></span>
+      </h1>
+      <div class="hero__credit">
+        <span class="mono-up">編集 ／ ZEIRO.AGENT</span>
+        <span class="mono-up">分野 ／ 税理士事務所 顧客対応</span>
+        <span class="mono-up">面 ／ 1 OF 8</span>
+      </div>
+    </div>
+    <div class="hero__right">
+      <p class="standfirst">
+        <span class="arrow">受信 →</span> 分類 <span class="arrow">→</span> 事務所ナレッジで下書き <span class="arrow">→</span> 税理士レビュー <span class="arrow">→</span> 送信。本当に判断が必要な案件にだけ、集中できる。
+      </p>
+      <p class="standfirst-coda">問い合わせは<em>AI</em>が下書きする。判断は、<em>税理士</em>がする。</p>
+      <div class="stat-ear" aria-label="平均応答時間の短縮">
+        <div class="lbl"><span>平均応答 ／ AVG. RESPONSE</span><span class="tnum">直近 38 日</span></div>
+        <div class="row">
+          <div>
+            <div class="big tnum">14.2<span class="unit">分</span></div>
+          </div>
+          <span class="arrowto" aria-hidden="true">→</span>
+          <div>
+            <div class="big tnum">24<span class="unit">秒</span></div>
+          </div>
+          <div class="delta tnum">−97%</div>
+        </div>
+        <div class="sub">所要時間 ／ TIME TO FIRST REPLY</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule rule--heavy" data-rule /></div>
+
+<!-- ───────────────────────── THE PLATE ───────────────────────── -->
+<section class="band wrap" id="plate" data-folio="§02" aria-labelledby="plate-h">
+  <div class="sec-head reveal">
+    <div>
+      <span class="eyebrow">設版 · SETTING THE REPLY</span>
+      <h2 id="plate-h">根拠を引きながら、書く。</h2>
+    </div>
+    <p class="col-meta">出典付きの下書きが、白紙の上で組まれていく。AIが下書きする。判断は、税理士がする。</p>
+  </div>
+
+  <div class="plate-grid reveal">
+    <!-- source email -->
+    <article class="plate-src" aria-label="受信した顧問先メール">
+      <span class="stamp">税務質問</span>
+      <div class="hdr">受信 ／ INBOUND · 09:14</div>
+      <dl class="mailmeta">
+        <dt>FROM</dt><dd><b>田中商事 株式会社</b> 経理部 田中</dd>
+        <dt>SUBJ</dt><dd>源泉徴収票の再発行のお願い</dd>
+        <dt>ID</dt><dd class="tnum">MSG-2026-0530-014</dd>
+      </dl>
+      <p class="mailbody">
+        いつもお世話になっております。田中商事の田中でございます。<br>
+        先般お送りいただいた<span class="hl" data-phrase="genzen">源泉徴収票</span>を社内で紛失してしまい、再発行をお願いできればと存じます。あわせて、<span class="hl" data-phrase="kyuyo">令和5年分の給与支払報告書</span>の控えもご確認いただけますと幸いです。お忙しいところ恐縮ですが、何卒よろしくお願いいたします。
+      </p>
+    </article>
+
+    <!-- the live plate -->
+    <article class="plate-out" aria-label="Zeiro が生成する下書き返信">
+      <div class="hdr">
+        <span>下書き ／ ZEIRO.AGENT.DRAFT/v1</span>
+        <span class="live"><span class="dot" aria-hidden="true"></span>組版中 LIVE</span>
+      </div>
+      <!-- The animated node is presentation-only; the full reply is read statically below. -->
+      <div class="draft-text" id="draftText" aria-hidden="true"></div>
+      <p class="sr-only">Zeiro が生成した下書き返信：田中様　お世話になっております。Zeiro 経由でご返信申し上げます。ご依頼の源泉徴収票の再発行につきまして、本日中に PDF にてお送りいたします。なお、再発行の根拠資料として、令和5年分の給与支払報告書を参照しております。ご不明点がございましたらお知らせください。引用元：S-08 顧問契約書 §4.2、K-21 国税庁 質疑応答 No.4117、C-12 田中様 過去メール 2024-09-18。</p>
+      <div class="foot-rail" id="footRail">
+        <div class="rail-lbl">脚注 ／ 引用元 · GROUNDED CITATIONS</div>
+        <div class="chips" id="chips">
+          <button class="chip" tabindex="-1" data-phrase="contract" data-leader="kyuyo"><span class="code">S-08</span> 顧問契約書 §4.2 <span class="src">internal</span></button>
+          <button class="chip" tabindex="-1" data-phrase="nta" data-leader="genzen"><span class="code">K-21</span> 国税庁 質疑応答 No.4117 <span class="src">gov.jp</span></button>
+          <button class="chip" tabindex="-1" data-phrase="past" data-leader="kyuyo"><span class="code">C-12</span> 田中様 過去メール 2024-09-18 <span class="src">history</span></button>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule" data-rule /></div>
+
+<!-- ───────────────────────── THE PROCESS ───────────────────────── -->
+<section class="band wrap" id="process" data-folio="§03" aria-labelledby="proc-h">
+  <div class="sec-head reveal">
+    <div>
+      <span class="eyebrow">工程 · THE PROCESS</span>
+      <h2 id="proc-h">受信から下書きまで、5つの工程。</h2>
+    </div>
+    <p class="col-meta">スクロールで、緑のパルスが受信から レビューへと工程を下っていく。</p>
+  </div>
+
+  <div class="process-wrap" id="processWrap">
+    <div class="process-rail" aria-hidden="true"><span class="ink" id="railInk"></span></div>
+    <div class="process-pulse" id="processPulse" aria-hidden="true"></div>
+    <article class="step" data-step="0">
+      <div class="folio tnum">01</div>
+      <div class="body">
+        <div class="sub">INBOX · 受信</div>
+        <h3>受信</h3>
+        <p>顧問先からの問い合わせメールを受信。My Number は受信時に自動マスクし、ログに残さない。</p>
+      </div>
+      <div class="meta">142 件<br>未読 / day</div>
+    </article>
+    <article class="step" data-step="1">
+      <div class="folio tnum">02</div>
+      <div class="body">
+        <div class="sub">CLASSIFY · トリアージ</div>
+        <h3>分類</h3>
+        <p>5カテゴリへトリアージ。期日・書類・税務・顧問契約・その他に振り分け、緊急度を判定する。</p>
+      </div>
+      <div class="meta">Gemini<br>Flash</div>
+    </article>
+    <article class="step" data-step="2">
+      <div class="folio tnum">03</div>
+      <div class="body">
+        <div class="sub">RETRIEVE · ナレッジ検索</div>
+        <h3>検索</h3>
+        <p>事務所ナレッジを横断検索。過去回答・所内FAQ・規程・契約書を6ソースから引く。</p>
+      </div>
+      <div class="meta">RAG · 6 src<br>pgvector</div>
+    </article>
+    <article class="step" data-step="3">
+      <div class="folio tnum">04</div>
+      <div class="body">
+        <div class="sub">DRAFT · 下書き生成</div>
+        <h3>下書き生成</h3>
+        <p>引用元を明示した一次回答を生成。法令・税率はナレッジに無い限り生成しない。</p>
+      </div>
+      <div class="meta">Claude<br>引用付き</div>
+    </article>
+    <article class="step" data-step="4">
+      <div class="folio tnum">05</div>
+      <div class="body">
+        <div class="sub">APPROVE · レビュー＆送信</div>
+        <h3>レビュー＆送信</h3>
+        <p>税理士が2〜3分でレビューし送信。判断が必要な案件のみ手元に届く。送信は全件監査ログに記録。</p>
+      </div>
+      <div class="meta">人が承認<br>して送信</div>
+    </article>
+  </div>
+
+  <div class="stack reveal">
+    <span class="pill">Mastra</span>
+    <span class="pill">Claude</span>
+    <span class="pill">Gemini Flash</span>
+    <span class="pill">pgvector</span>
+    <span class="pill">SendGrid</span>
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule" data-rule /></div>
+
+<!-- ───────────────────────── THE NUMBERS ───────────────────────── -->
+<section class="band wrap" id="numbers" data-folio="§04" aria-labelledby="num-h">
+  <div class="sec-head reveal">
+    <div>
+      <span class="eyebrow">数字 · THE NUMBERS</span>
+      <h2 id="num-h">数字で見る、Zeiro。</h2>
+    </div>
+    <p class="col-meta">1 事務所あたりの平均値・直近 38 日。数字は到達時にカウントアップする。</p>
+  </div>
+
+  <div class="num-grid reveal" id="numGrid">
+    <!-- donut card -->
+    <div class="num-card">
+      <div class="ttl"><span>返信件数 ／ REPLIES / MO</span><span class="tnum">月次</span></div>
+      <div class="donut-row">
+        <svg viewBox="0 0 120 120" width="150" height="150" id="donut" role="img" aria-label="カテゴリ別 返信件数 ドーナツ図">
+          <circle cx="60" cy="60" r="48" fill="none" stroke="var(--line)" stroke-width="13"/>
+          <g id="donutArcs" fill="none" stroke-width="13" transform="rotate(-90 60 60)" stroke-linecap="butt"></g>
+          <text x="60" y="58" text-anchor="middle" font-family="var(--font-sans)" font-weight="700" font-size="22" fill="var(--ink)" class="tnum" id="donutTotal">0</text>
+          <text x="60" y="74" text-anchor="middle" font-family="var(--font-mono)" font-size="7.5" letter-spacing="1.4" fill="var(--ink-2)">件 / 月</text>
+        </svg>
+        <div class="legend" id="catLegend">
+          <div class="li"><span class="sw" style="background:var(--cat-tax)"></span>税務 <span class="v tnum" data-cat="512">0</span></div>
+          <div class="li"><span class="sw" style="background:var(--cat-docs)"></span>書類 <span class="v tnum" data-cat="388">0</span></div>
+          <div class="li"><span class="sw" style="background:var(--cat-deadline)"></span>期日 <span class="v tnum" data-cat="221">0</span></div>
+          <div class="li"><span class="sw" style="background:var(--cat-contract)"></span>顧問契約 <span class="v tnum" data-cat="126">0</span></div>
+          <div class="legend-note">※ その他は別掲</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- per message + sparkline card -->
+    <div class="num-card">
+      <div class="ttl"><span>1通あたり ／ PER MESSAGE</span><span class="tnum">所要時間</span></div>
+      <div class="bar-line">
+        <div class="lbl"><span>従来</span><span class="val tnum">14.2 分</span></div>
+        <div class="track"><div class="fill" data-fill="100"></div></div>
+      </div>
+      <div class="bar-line">
+        <div class="lbl"><span>Zeiro</span><span class="val tnum">24 秒</span></div>
+        <div class="track"><div class="fill accent" data-fill="3"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px">
+        <div>
+          <div class="ttl" style="margin-bottom:8px"><span>週次 未読推移 ／ UNREAD</span></div>
+          <svg width="220" height="64" viewBox="0 0 220 64" id="spark" role="img" aria-label="週次 未読件数 推移 スパークライン">
+            <polyline id="sparkPath" fill="none" stroke="var(--ink-2)" stroke-width="1.5"
+              points="0,12 36,20 73,18 110,30 146,40 183,50 220,58"
+              stroke-dasharray="320" stroke-dashoffset="320"/>
+            <circle id="sparkDot" cx="220" cy="58" r="3" fill="var(--accent)" opacity="0"/>
+          </svg>
+        </div>
+        <div style="text-align:right">
+          <div class="delta-97 tnum">−97<span style="font-size:.5em">%</span></div>
+          <div class="delta-cap">所要時間</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-strip reveal">
+    <div class="kpi-cell">
+      <div class="tag">AUTO-DRAFTED ／ 月</div>
+      <div class="n tnum" data-count="1247" data-comma="1">0<span class="u">件</span></div>
+      <div class="jp">の返信を下書き</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="tag">HOURS SAVED ／ 年</div>
+      <div class="n tnum" data-count="738">0<span class="u">h/年</span></div>
+      <div class="jp">取り戻す時間</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="tag">REVIEW NEEDED ／ 案件</div>
+      <div class="n tnum" data-count="32" data-prefix="" data-suffix-pct="1">0<span class="u">%</span></div>
+      <div class="jp">100% → 約32%（HITL平均）</div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="rule" data-rule /></div>
+
+<!-- ───────────────────────── FEATURE COLUMNS ───────────────────────── -->
+<section class="band wrap" id="columns" data-folio="§05" aria-labelledby="col-h">
+  <div class="sec-head reveal">
+    <div>
+      <span class="eyebrow">社説 · FEATURE COLUMNS</span>
+      <h2 id="col-h">下書きには、必ず根拠を。</h2>
+    </div>
+    <p class="col-meta">アイコンの羅列ではなく、署名記事として読む3本の柱。</p>
+  </div>
+
+  <!-- category legend strip -->
+  <div class="legend-strip reveal" aria-label="分類カテゴリの凡例">
+    <div class="item"><span class="sw" style="background:var(--cat-deadline)"></span><span class="lbl">期日</span><span class="en">DEADLINE</span></div>
+    <div class="item"><span class="sw" style="background:var(--cat-docs)"></span><span class="lbl">書類</span><span class="en">DOCS</span></div>
+    <div class="item"><span class="sw" style="background:var(--cat-tax)"></span><span class="lbl">税務</span><span class="en">TAX</span></div>
+    <div class="item"><span class="sw" style="background:var(--cat-contract)"></span><span class="lbl">顧問契約</span><span class="en">CONTRACT</span></div>
+    <div class="item"><span class="sw" style="background:var(--cat-other)"></span><span class="lbl">その他</span><span class="en">OTHER</span></div>
+  </div>
+
+  <div class="cols">
+    <article class="col reveal" data-stagger="0">
+      <div class="sectag">■ ナレッジRAG</div>
+      <h3>事務所ナレッジを情報源に、引用元まで明示する。</h3>
+      <p>過去の回答・所内FAQ・業務マニュアル・規程を横断検索し、その事務所だけの文脈で下書きを組む。生成された一文には、どの文書のどの条項を引いたかが必ず添えられる。汎用知識ではなく、貴所の前例で答える。</p>
+      <p class="fnote"><span class="mark">†</span> 引用例：S-08 顧問契約書 §4.2 ／ K-21 国税庁 質疑応答 No.4117 ／ C-12 過去メール。下書きは引用なしには成立しない。</p>
+    </article>
+    <article class="col reveal" data-stagger="1">
+      <div class="sectag">■ エスカレーション</div>
+      <h3>税務判断が要る問いは、税理士へ必ず回す。</h3>
+      <p>信頼度が 0.75 を下回る、あるいは「至急」「クレーム」「税務調査」を含む案件は、自動送信せず税理士レビューを必須化する。目標エスカレーション率は約32%。残りの定型対応だけが、2〜3分のレビューに圧縮される。</p>
+      <p class="fnote"><span class="mark">†</span> 閾値：confidence &lt; 0.75 ／ レビュー必要案件 100% → 約32%（業界HITL平均）。</p>
+    </article>
+    <article class="col reveal" data-stagger="2">
+      <div class="sectag">■ ハルシネーション防止</div>
+      <h3>法令・税率は、根拠が無ければ書かない。</h3>
+      <p>数値や条文は、ナレッジに該当する出典が存在しない限り生成しない設計。「それらしい」回答よりも「引けない」事実を選ぶ。誰が・いつ・どのモデルで・どの引用に基づいて送ったかは、全件が監査ログに残る。</p>
+      <p class="fnote"><span class="mark">†</span> 記録項目：actor ／ timestamp ／ model ／ citations。送信・却下の全件を保存。</p>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<!-- ───────────────────────── TRUST BACKPAGE (ink band) ───────────────────────── -->
+<section class="backpage band" id="trust" data-folio="§06" aria-labelledby="trust-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <span class="eyebrow">守秘義務 · 税理士法 第38条</span>
+        <h2 id="trust-h">裏面に、法の約束を。</h2>
+      </div>
+      <p class="col-meta">守秘義務は機能ではなく前提。データは jp-tokyo に留まり、学習には使わない。</p>
+    </div>
+
+    <div class="bp-grid">
+      <ul class="bp-list reveal">
+        <li>
+          <span class="no tnum">01</span>
+          <div><div class="t">My Number は受信時にマスク</div><div class="d">マイナンバーは永続化前・LLM呼び出し前にマスクし、原文を残さない。</div></div>
+        </li>
+        <li>
+          <span class="no tnum">02</span>
+          <div><div class="t">jp-tokyo データレジデンシー</div><div class="d">保管・処理は東京リージョンに固定。国外へ持ち出さない。</div></div>
+        </li>
+        <li>
+          <span class="no tnum">03</span>
+          <div><div class="t">学習しないLLM契約</div><div class="d">入力を学習に使わない契約を結んだモデルのみを利用する。</div></div>
+        </li>
+        <li>
+          <span class="no tnum">04</span>
+          <div><div class="t">監査ログ全件</div><div class="d">誰が・いつ・どのモデルで・どの引用に基づき送ったかを全件記録。</div></div>
+        </li>
+      </ul>
+
+      <!-- LIVE constellation -->
+      <figure class="constellation reveal" aria-label="ナレッジ引用のコンステレーション">
+        <canvas id="constCanvas"></canvas>
+        <img class="const-poster" id="constPoster" src="../assets/still/KnowledgeConstellation.png" loading="lazy" decoding="async" width="1280" height="720" alt="下書きを取り囲む引用元のコンステレーション図：国税庁質疑応答 K-21、過去メール C-12、顧問契約書 S-08、業務ガイドライン G-03、電子帳簿保存法 L-04" />
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── THE OFFER ───────────────────────── -->
+<section class="band wrap" id="offer" data-folio="§07" aria-labelledby="offer-h">
+  <div class="wrap" style="padding:0">
+    <div class="offer reveal">
+      <div>
+        <span class="eyebrow" style="font-family:var(--font-mono);font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:block">前付け · THE OFFER</span>
+        <h2 id="offer-h">定型的な顧問先対応を、<br>2〜3分のレビューに。</h2>
+        <p class="sub">顧問100社・月10件想定で、月間 約200時間の削減。導入の流れと料金は、資料でご確認いただけます。</p>
+      </div>
+      <div class="offer-card" id="offerCard">
+        <div class="hdr"><span>購読のご案内</span><span class="tnum">NO.38</span></div>
+        <a class="btn btn-primary" id="magBtn" href="#"><span>デモを見る</span><span class="ar">→</span></a>
+        <a class="btn btn-ghost" href="#"><span>資料を請求する</span><span class="ar">↓</span></a>
+        <div class="en">SECONDARY · <a href="#">Book a demo →</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── COLOPHON ───────────────────────── -->
+<footer class="colophon wrap" data-folio="§08" role="contentinfo">
+  <hr class="rule" data-rule />
+  <div class="colo-line">
+    <span>税理士法 第38条 守秘義務準拠</span><span class="dot">·</span>
+    <span>データ保管 jp-tokyo</span><span class="dot">·</span>
+    <span>学習しないLLM契約</span><span class="dot">·</span>
+    <span>監査ログ全件記録</span>
+  </div>
+  <div class="colo-folio">
+    <span class="mark">Zeiro</span>
+    <span class="tnum">官報 ／ THE DAILY LEDGER · 第38号 · 2026</span>
+    <span>© ZEIRO.AGENT</span>
+  </div>
+  <hr class="rule" data-rule style="margin-top:14px" />
+</footer>
+
+<!-- ───────────────────────── SCRIPTS ───────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (RM) document.documentElement.classList.add("no-anim");
+  const hasGSAP = window.gsap && window.ScrollTrigger;
+  if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
+
+  /* ── live dateline ── */
+  (function(){
+    const el = document.getElementById("dateline");
+    const d = new Date(); // LIVE dateline — renders the real current date
+    const days = ["日","月","火","水","木","金","土"];
+    const str = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${days[d.getDay()]}曜日`;
+    el.innerHTML = `${str} · <b>第38条準拠版</b>`;
+  })();
+
+  /* ── Lenis smooth scroll, driven by GSAP's ticker (avoids ticker stall) ── */
+  let lenis=null;
+  if (window.Lenis && !RM){
+    lenis = new Lenis({ duration:1.1, easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)), smoothWheel:true });
+    if (hasGSAP){
+      lenis.on("scroll", ScrollTrigger.update);
+      gsap.ticker.add((time)=> lenis.raf(time*1000));
+      gsap.ticker.lagSmoothing(0);
+    } else {
+      const raf=(t)=>{ lenis.raf(t); requestAnimationFrame(raf); };
+      requestAnimationFrame(raf);
+    }
+  }
+  // anchor jumps via lenis
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener("click",e=>{
+      const id=a.getAttribute("href"); if(id==="#"||id.length<2)return;
+      const t=document.querySelector(id); if(!t)return;
+      e.preventDefault();
+      closeNav();
+      if(lenis) lenis.scrollTo(t,{offset:-90,duration:1.2});
+      else t.scrollIntoView({behavior:RM?"auto":"smooth"});
+    });
+  });
+
+  /* ── mobile nav ── */
+  const navtoggle=document.getElementById("navtoggle");
+  const navsheet=document.getElementById("navsheet");
+  function closeNav(){ navsheet.classList.remove("open"); navtoggle.setAttribute("aria-expanded","false"); }
+  navtoggle.addEventListener("click",()=>{
+    const open=navsheet.classList.toggle("open");
+    navtoggle.setAttribute("aria-expanded",String(open));
+  });
+
+  /* ── crosshair cursor + folio readout ── */
+  (function(){
+    if (RM || matchMedia("(pointer:coarse)").matches) return;
+    const cross=document.getElementById("cross");
+    if(!cross) return;
+    const v=cross.querySelector(".v"), h=cross.querySelector(".h"), folio=cross.querySelector(".folio");
+    // Only now hide the native cursor — guarantees a usable cursor if this never runs.
+    document.documentElement.classList.add("has-crosshair");
+    let tx=innerWidth/2, ty=innerHeight/2, cx=tx, cy=ty;
+    addEventListener("mousemove",e=>{ tx=e.clientX; ty=e.clientY; }, {passive:true});
+    function tick(){
+      cx+=(tx-cx)*0.35; cy+=(ty-cy)*0.35;
+      v.style.left=h.style.left=cx+"px"; v.style.top=h.style.top=cy+"px";
+      folio.style.left=cx+"px"; folio.style.top=cy+"px";
+      // determine which section the cursor sits over
+      const el=document.elementFromPoint(cx,cy);
+      const sec=el&&el.closest?el.closest("[data-folio]"):null;
+      folio.textContent = sec ? sec.getAttribute("data-folio") : "§00";
+      requestAnimationFrame(tick);
+    }
+    tick();
+    // grow crosshair over interactive
+    addEventListener("mouseover",e=>{
+      const t=e.target.closest("a,button,.chip");
+      const s=t?22:18;
+      v.style.height=s+"px"; h.style.width=s+"px";
+      v.style.opacity=h.style.opacity=t?".7":".34";
+    });
+  })();
+
+  /* ── masthead top rule draw on load (CSS transition; rAF-independent) ── */
+  (function(){
+    const top=document.getElementById("topRule");
+    if(RM){ top.classList.add("is-drawn"); return; }
+    setTimeout(()=>top.classList.add("is-drawn"),120);
+  })();
+
+  /* ── headline clip wipe upward — pure CSS transition, GSAP-independent ──
+     Deferred until fonts are ready so the wipe plays against final display
+     metrics, not a fallback face that would reflow mid-animation. */
+  (function(){
+    if(RM) return;
+    const hl=document.querySelector(".headline");
+    if(!hl) return;
+    hl.classList.add("armed");           // hide instantly (no transition)
+    const fire=()=>requestAnimationFrame(()=>hl.classList.remove("armed")); // un-arm → CSS wipes upward
+    if(document.fonts && document.fonts.ready){
+      let done=false;
+      const go=()=>{ if(!done){ done=true; fire(); } };
+      document.fonts.ready.then(go);
+      setTimeout(go,900); // hard cap so the headline never stays hidden if fonts hang
+    } else {
+      setTimeout(fire,60);
+    }
+  })();
+
+  /* ── reveals + hairline rule-draws via IntersectionObserver (no rAF needed) ──
+     Content is default-visible if JS/observer never runs; this only enhances. */
+  (function(){
+    if(RM){
+      document.querySelectorAll("[data-rule]").forEach(r=>r.classList.add("is-drawn"));
+      document.querySelectorAll(".reveal").forEach(el=>el.classList.add("in"));
+      return;
+    }
+    if(!("IntersectionObserver" in window)){
+      document.querySelectorAll("[data-rule]").forEach(r=>r.classList.add("is-drawn"));
+      document.querySelectorAll(".reveal").forEach(el=>el.classList.add("in"));
+      return;
+    }
+    const io=new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(!e.isIntersecting) return;
+        const t=e.target;
+        if(t.hasAttribute("data-rule")){ t.classList.add("is-drawn"); }
+        else {
+          const stag=t.hasAttribute("data-stagger")?+t.getAttribute("data-stagger"):0;
+          if(stag) t.style.transitionDelay=(stag*0.06)+"s";
+          t.classList.add("in");
+        }
+        io.unobserve(t);
+      });
+    },{rootMargin:"0px 0px -8% 0px",threshold:0.05});
+    document.querySelectorAll("[data-rule]").forEach(r=>io.observe(r));
+    document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+  })();
+
+  /* ───────────────────────── THE PLATE — typeset reply ───────────────────────── */
+  (function(){
+    const target=document.getElementById("draftText");
+    const chips=Array.from(document.querySelectorAll("#chips .chip"));
+    // segments: text with optional phrase id (for citation highlight binding)
+    const segs=[
+      {t:"田中様　お世話になっております。"},
+      {t:"Zeiro 経由でご返信申し上げます。"},
+      {t:"ご依頼の"},
+      {t:"源泉徴収票の再発行",p:"genzen"},
+      {t:"につきまして、本日中に PDF にてお送りいたします。"},
+      {t:"なお、再発行の根拠資料として、"},
+      {t:"令和5年分の給与支払報告書",p:"kyuyo"},
+      {t:"を参照しております。"},
+      {t:"ご不明点がございましたらお知らせください。"}
+    ];
+    // citation chip reveal is keyed to phrases being typed
+    const phraseDoneTriggers={ genzen:["nta"], kyuyo:["contract","past"] };
+
+    // The chip currently lit (hover/focus); used to re-aim its leader on reflow.
+    let activeChip=null;
+    // a chip is keyboard-focusable only once it has visibly slid in
+    function revealChip(c){ c.classList.add("in"); c.removeAttribute("tabindex"); }
+
+    function buildStatic(){
+      target.innerHTML="";
+      segs.forEach(s=>{
+        const span=document.createElement("span");
+        if(s.p){ span.className="ph"; span.dataset.phrase=s.p; }
+        span.textContent=s.t;
+        target.appendChild(span);
+      });
+      chips.forEach(revealChip);
+    }
+
+    function typeRun(){
+      target.innerHTML="";
+      let si=0, ci=0, cur=null;
+      const caret=document.createElement("span"); caret.className="caret";
+      target.appendChild(caret);
+      function step(){
+        if(si>=segs.length){ caret.classList.add("done"); return; }
+        const s=segs[si];
+        if(ci===0){
+          cur=document.createElement("span");
+          if(s.p){ cur.className="ph"; cur.dataset.phrase=s.p; }
+          target.insertBefore(cur,caret);
+        }
+        cur.textContent=s.t.slice(0,ci+1);
+        ci++;
+        if(ci>=s.t.length){
+          // finished a segment — fire citation chip(s) if this phrase grounds them
+          if(s.p && phraseDoneTriggers[s.p]){
+            phraseDoneTriggers[s.p].forEach((dp,k)=>{
+              const chip=chips.find(c=>c.getAttribute("data-phrase")===dp);
+              if(chip) setTimeout(()=>revealChip(chip),120*(k+1));
+            });
+          }
+          si++; ci=0;
+        }
+        setTimeout(step, 28 + Math.random()*22);
+      }
+      step();
+    }
+
+    if(RM){ buildStatic(); return; }
+
+    /* trigger typing via IntersectionObserver — fires even if rAF is throttled */
+    let played=false;
+    const plate=document.getElementById("plate");
+    if("IntersectionObserver" in window){
+      const pio=new IntersectionObserver((es)=>{
+        es.forEach(e=>{ if(e.isIntersecting && !played){ played=true; typeRun(); pio.disconnect(); } });
+      },{threshold:0.28});
+      pio.observe(plate);
+    } else { typeRun(); }
+
+    /* chip hover ↔ phrase highlight + leader line */
+    chips.forEach(chip=>{
+      function on(){
+        const pid=chip.getAttribute("data-leader");
+        const phrase=target.querySelector(`.ph[data-phrase="${pid}"]`);
+        // Typing may not have produced the phrase node yet — light what we can,
+        // skip the leader, and bail without throwing.
+        const srcPid = pid==="genzen"?"genzen":"kyuyo";
+        const srcPhrase=document.querySelector(`.mailbody .hl[data-phrase="${srcPid}"]`);
+        if(srcPhrase) srcPhrase.classList.add("lit");
+        chip.classList.add("active");
+        activeChip=chip;
+        if(!phrase) return;
+        phrase.classList.add("lit");
+        drawLeader(chip,phrase);
+      }
+      function off(){
+        activeChip=null;
+        target.querySelectorAll(".ph.lit").forEach(p=>p.classList.remove("lit"));
+        document.querySelectorAll(".mailbody .hl.lit").forEach(p=>p.classList.remove("lit"));
+        chip.classList.remove("active");
+        document.querySelectorAll(".leader.show").forEach(l=>l.classList.remove("show"));
+      }
+      chip.addEventListener("mouseenter",on);
+      chip.addEventListener("mouseleave",off);
+      chip.addEventListener("focus",on);
+      chip.addEventListener("blur",off);
+    });
+
+    /* Re-aim the active leader whenever geometry can shift: window resize,
+       smooth-scroll (Lenis) and font swap all move the cited phrase. */
+    function reaim(){
+      if(!activeChip) return;
+      const pid=activeChip.getAttribute("data-leader");
+      const phrase=target.querySelector(`.ph[data-phrase="${pid}"]`);
+      if(phrase) drawLeader(activeChip,phrase);
+    }
+    let raf2=0;
+    function scheduleReaim(){ if(raf2) return; raf2=requestAnimationFrame(()=>{ raf2=0; reaim(); }); }
+    addEventListener("resize",scheduleReaim,{passive:true});
+    if(lenis) lenis.on("scroll",scheduleReaim);
+    else addEventListener("scroll",scheduleReaim,{passive:true});
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleReaim);
+
+    function drawLeader(chip,phrase){
+      if(!phrase) return;
+      const rail=document.getElementById("footRail");
+      let ld=rail.querySelector(`.leader[data-for="${chip.getAttribute("data-phrase")}"]`);
+      if(!ld){ ld=document.createElement("div"); ld.className="leader"; ld.dataset.for=chip.getAttribute("data-phrase"); rail.appendChild(ld); }
+      const railRect=rail.getBoundingClientRect();
+      const pRect=phrase.getBoundingClientRect();
+      const cRect=chip.getBoundingClientRect();
+      const x1=cRect.left - railRect.left + cRect.width/2;
+      const y1=cRect.top - railRect.top;
+      const x2=pRect.left - railRect.left + pRect.width/2;
+      const y2=pRect.top - railRect.top + pRect.height;
+      const dx=x2-x1, dy=y2-y1;
+      const len=Math.hypot(dx,dy);
+      const ang=Math.atan2(dy,dx)*180/Math.PI;
+      ld.style.width=len+"px";
+      ld.style.left=x1+"px";
+      ld.style.top=y1+"px";
+      ld.style.transform=`rotate(${ang}deg)`;
+      ld.classList.add("show");
+    }
+  })();
+
+  /* ───────────────────────── THE PROCESS — scrubbed travelling pulse ───────────────────────── */
+  (function(){
+    const wrap=document.getElementById("processWrap");
+    const steps=Array.from(document.querySelectorAll(".step"));
+    if(!wrap||!steps.length) return;
+    if(RM){ steps.forEach(s=>s.classList.add("active")); return; }
+
+    const pulse=document.getElementById("processPulse");
+    const railInk=document.getElementById("railInk");
+
+    // Y of a step's visual centre, relative to the wrap (the rail's coordinate space).
+    function stepY(i){
+      const s=steps[i];
+      return s.offsetTop + Math.min(s.offsetHeight/2, 28);
+    }
+    // place the pulse + grow the ink rail down to the active step
+    let moveTo=null;
+    if(hasGSAP && typeof gsap.quickTo==="function"){
+      moveTo=gsap.quickTo(pulse,"y",{duration:0.45,ease:"power3.out"});
+    }
+    function setActive(idx){
+      steps.forEach((s,i)=> s.classList.toggle("active", i===idx));
+      const y=stepY(idx);
+      if(moveTo) moveTo(y); else pulse.style.transform=`translateY(${y}px)`;
+      pulse.classList.add("on");
+      railInk.style.height=y+"px";
+    }
+
+    // Light + park the pulse on step 1 the moment the band enters (rAF-independent).
+    let started=false;
+    if("IntersectionObserver" in window){
+      const sio=new IntersectionObserver((es)=>{
+        es.forEach(e=>{ if(e.isIntersecting && !started){ started=true; setActive(0); } });
+      },{threshold:0.15});
+      sio.observe(wrap);
+    } else { started=true; setActive(0); }
+
+    // GSAP scrub advances the pulse 受信→分類→検索→下書き→レビュー as you scroll.
+    if(hasGSAP){
+      ScrollTrigger.create({
+        trigger:wrap, start:"top 70%", end:"bottom 55%", scrub:0.6,
+        onUpdate:self=>{
+          const idx=Math.min(steps.length-1, Math.floor(self.progress*steps.length));
+          started=true; setActive(idx);
+        }
+      });
+      // keep geometry honest across resize/font reflow
+      ScrollTrigger.addEventListener("refreshInit",()=>{ if(started){
+        const idx=steps.findIndex(s=>s.classList.contains("active"));
+        if(idx>=0) setActive(idx);
+      }});
+    }
+    addEventListener("resize",()=>{ if(started){
+      const idx=Math.max(0,steps.findIndex(s=>s.classList.contains("active")));
+      setActive(idx);
+    }},{passive:true});
+  })();
+
+  /* ───────────────────────── THE NUMBERS — count-ups + charts ───────────────────────── */
+  (function(){
+    const grid=document.getElementById("numGrid");
+    /* timer-based tween — advances even when rAF is throttled; always lands on `to` */
+    function tween(dur,onStep){
+      const t0=performance.now();
+      const id=setInterval(()=>{
+        const p=Math.min(1,(performance.now()-t0)/dur);
+        onStep(1-Math.pow(1-p,3),p);
+        if(p>=1) clearInterval(id);
+      },16);
+      onStep(0,0);
+    }
+    function countUp(el,to,opts){
+      opts=opts||{};
+      tween(1100,(e)=>{
+        const v=Math.round(to*e);
+        el.firstChild.textContent=(opts.prefix||"")+(opts.comma?v.toLocaleString("en-US"):String(v));
+      });
+    }
+    function runKPIs(){
+      document.querySelectorAll(".kpi-cell .n").forEach(el=>{
+        const to=+el.getAttribute("data-count");
+        const comma=el.hasAttribute("data-comma");
+        if(RM){ el.firstChild.textContent= comma?to.toLocaleString("en-US"):String(to); return; }
+        el.firstChild.textContent="0";
+        countUp(el,to,{comma});
+      });
+    }
+    // donut
+    const catVals=[{c:"var(--cat-tax)",v:512},{c:"var(--cat-docs)",v:388},{c:"var(--cat-deadline)",v:221},{c:"var(--cat-contract)",v:126}];
+    const total=catVals.reduce((a,b)=>a+b.v,0);
+    const arcsG=document.getElementById("donutArcs");
+    const R=48, C=2*Math.PI*R;
+    function buildDonut(animate){
+      arcsG.innerHTML="";
+      let offset=0;
+      catVals.forEach((seg,i)=>{
+        const frac=seg.v/total;
+        const len=frac*C;
+        const circle=document.createElementNS("http://www.w3.org/2000/svg","circle");
+        circle.setAttribute("cx","60");circle.setAttribute("cy","60");circle.setAttribute("r",R);
+        circle.setAttribute("stroke",seg.c);
+        circle.setAttribute("stroke-dashoffset", -offset);
+        // final geometry is set immediately → donut is always correct, even if timers stall
+        circle.setAttribute("stroke-dasharray",`${len} ${C-len}`);
+        if(animate){
+          // sweep-in: start collapsed, then transition to final on next tick
+          circle.style.transition="stroke-dasharray .9s cubic-bezier(0.65,0,0.35,1)";
+          circle.setAttribute("stroke-dasharray",`0 ${C}`);
+          setTimeout(()=>{ circle.setAttribute("stroke-dasharray",`${len} ${C-len}`); }, 120+150*i);
+        }
+        arcsG.appendChild(circle);
+        offset+=len;
+      });
+      // total count + legend count
+      const totalEl=document.getElementById("donutTotal");
+      if(RM){ totalEl.textContent=total.toLocaleString("en-US"); }
+      else tween(1100,(e)=>{ totalEl.textContent=Math.round(total*e).toLocaleString("en-US"); });
+      document.querySelectorAll(".legend .v").forEach(v=>{
+        const to=+v.getAttribute("data-cat");
+        if(RM){ v.textContent=to; return; }
+        tween(1000,(e)=>{ v.textContent=Math.round(to*e); });
+      });
+    }
+    function runBars(){
+      document.querySelectorAll(".track .fill").forEach(f=>{
+        const w=+f.getAttribute("data-fill");
+        if(RM){ f.style.width=w+"%"; return; }
+        f.style.transition="width 1s cubic-bezier(0.65,0,0.35,1)";
+        setTimeout(()=>{ f.style.width=w+"%"; },20);
+      });
+    }
+    function runSpark(){
+      const path=document.getElementById("sparkPath");
+      const dot=document.getElementById("sparkDot");
+      if(RM){ path.style.strokeDashoffset="0"; dot.setAttribute("opacity","1"); return; }
+      path.style.transition="stroke-dashoffset 1.3s cubic-bezier(0.65,0,0.35,1)";
+      setTimeout(()=>{ path.style.strokeDashoffset="0"; },20);
+      setTimeout(()=>{ dot.style.transition="opacity .4s"; dot.setAttribute("opacity","1"); },1100);
+    }
+
+    let done=false;
+    function fire(){ if(done)return; done=true; buildDonut(!RM); runBars(); runSpark(); runKPIs(); }
+    if(RM){ fire(); return; }
+    if("IntersectionObserver" in window){
+      new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){fire();o.disconnect();}})},{threshold:.25}).observe(grid);
+    } else { fire(); }
+  })();
+
+  /* ───────────────────────── KNOWLEDGE CONSTELLATION (canvas) ───────────────────────── */
+  (function(){
+    const canvas=document.getElementById("constCanvas");
+    const poster=document.getElementById("constPoster");
+    const fig=canvas.closest(".constellation");
+    if(RM){ poster.style.opacity="1"; canvas.style.display="none"; return; }
+    const ctx=canvas.getContext("2d");
+    const DPR=Math.min(2,window.devicePixelRatio||1);
+    let W=0,H=0, hasPainted=false;
+    const nodes=[
+      {label:"国税庁 質疑応答",code:"K-21",kind:"gov.jp",a:-0.55,r:0.86},
+      {label:"過去メール",code:"C-12",kind:"history",a:0.42,r:0.92},
+      {label:"顧問契約書",code:"S-08",kind:"internal",a:-2.55,r:0.84},
+      {label:"業務ガイドライン",code:"G-03",kind:"internal",a:2.85,r:0.78},
+      {label:"電子帳簿保存法",code:"L-04",kind:"law",a:1.45,r:0.95}
+    ];
+    function resize(){
+      const r=fig.getBoundingClientRect();
+      W=r.width; H=r.height;
+      canvas.width=W*DPR; canvas.height=H*DPR;
+      canvas.style.width=W+"px"; canvas.style.height=H+"px";
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+    }
+    resize();
+    let ro=new ResizeObserver(resize); ro.observe(fig);
+    // mouse parallax (≤6°)
+    let mx=0,my=0,tmx=0,tmy=0;
+    fig.addEventListener("mousemove",e=>{
+      const r=fig.getBoundingClientRect();
+      tmx=((e.clientX-r.left)/r.width-0.5)*2;
+      tmy=((e.clientY-r.top)/r.height-0.5)*2;
+    });
+    fig.addEventListener("mouseleave",()=>{tmx=0;tmy=0;});
+    let running=false, raf=0, t0=performance.now();
+    function draw(now){
+      const time=((now||performance.now())-t0)/1000;
+      mx+=(tmx-mx)*0.06; my+=(tmy-my)*0.06;
+      ctx.clearRect(0,0,W,H);
+      const cx=W/2, cy=H/2;
+      const baseR=Math.min(W,H)*0.34;
+      // concentric rings (faint)
+      ctx.strokeStyle="rgba(226,220,207,0.12)";
+      ctx.lineWidth=1;
+      [0.5,0.78,1.05].forEach(k=>{ ctx.beginPath(); ctx.arc(cx,cy,baseR*k,0,Math.PI*2); ctx.stroke(); });
+      // compute node positions with calm breathing + parallax
+      const px=mx*6*(Math.PI/180)*40, py=my*6*(Math.PI/180)*40;
+      const pos=nodes.map((n,i)=>{
+        const breath=Math.sin(time*0.5+i*1.3)*0.04;
+        const r=baseR*(n.r+breath)*1.18;
+        return { x:cx+Math.cos(n.a)*r + px*(0.4+i*0.08), y:cy+Math.sin(n.a)*r + py*(0.4+i*0.08), n };
+      });
+      // tethers
+      pos.forEach(p=>{
+        ctx.beginPath();
+        ctx.moveTo(cx+px*0.2,cy+py*0.2); ctx.lineTo(p.x,p.y);
+        ctx.strokeStyle="rgba(92,181,114,0.4)";
+        ctx.setLineDash([2,4]); ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+      });
+      // central "下書き" core
+      const coreGlow=ctx.createRadialGradient(cx+px*0.2,cy+py*0.2,2,cx+px*0.2,cy+py*0.2,baseR*0.55);
+      coreGlow.addColorStop(0,"rgba(92,181,114,0.26)");
+      coreGlow.addColorStop(1,"rgba(92,181,114,0)");
+      ctx.fillStyle=coreGlow;
+      ctx.beginPath(); ctx.arc(cx+px*0.2,cy+py*0.2,baseR*0.55,0,Math.PI*2); ctx.fill();
+      // core box
+      ctx.save();
+      ctx.translate(cx+px*0.2,cy+py*0.2);
+      const cw=Math.min(120,W*0.22), ch=44;
+      ctx.fillStyle="rgba(34,29,22,0.96)";
+      ctx.strokeStyle="rgba(92,181,114,0.8)"; ctx.lineWidth=1;
+      roundRect(ctx,-cw/2,-ch/2,cw,ch,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle="#f2eee6"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.font="600 15px 'Noto Sans JP',sans-serif";
+      ctx.fillText("下書き",0,-4);
+      ctx.fillStyle="#5cb572"; ctx.font="500 7px 'JetBrains Mono',monospace";
+      ctx.fillText("ZEIRO · GROUNDED",0,12);
+      ctx.restore();
+      // node cards
+      pos.forEach(p=>{
+        ctx.save();
+        ctx.translate(p.x,p.y);
+        const nw=Math.min(120,W*0.2), nh=34;
+        // node glow dot at attach
+        ctx.fillStyle="#5cb572";
+        ctx.beginPath(); ctx.arc(0,-nh/2,2.4,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="rgba(34,29,22,0.94)";
+        ctx.strokeStyle="rgba(226,220,207,0.38)"; ctx.lineWidth=1;
+        roundRect(ctx,-nw/2,-nh/2,nw,nh,5); ctx.fill(); ctx.stroke();
+        ctx.textAlign="left"; ctx.textBaseline="middle";
+        ctx.fillStyle="#f2eee6"; ctx.font="500 10px 'Noto Sans JP',sans-serif";
+        ctx.fillText(p.n.label,-nw/2+8,-nh/2+11);
+        ctx.fillStyle="#b8b0a4"; ctx.font="500 6.5px 'JetBrains Mono',monospace";
+        ctx.fillText(`${p.n.code} · ${p.n.kind}`,-nw/2+8,-nh/2+24);
+        ctx.restore();
+      });
+    }
+    function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+    function loop(now){ if(!running)return; draw(now); raf=requestAnimationFrame(loop); }
+    // The poster stays as a faint guaranteed base layer; the live canvas draws on top.
+    // We only dim the poster a little (never to 0) so the concept survives any rAF stall.
+    function paintOnce(){ if(!W||!H) resize(); if(W&&H){ draw(performance.now()); if(!hasPainted){ hasPainted=true; poster.style.transition="opacity .6s"; poster.style.opacity="0.32"; } } }
+    function start(){
+      if(running)return; running=true; t0=performance.now();
+      resize();                         // re-measure now that the band is in view
+      paintOnce();                      // immediate frame — survives rAF throttling
+      raf=requestAnimationFrame(loop);  // then the live drifting loop
+    }
+    function stop(){ running=false; cancelAnimationFrame(raf); }
+    // Run whenever the band is anywhere near the viewport (generous margin so a tall
+    // figure doesn't toggle off mid-scroll), and keep painting a frame on a slow timer
+    // as a belt-and-braces guarantee even if rAF is throttled.
+    new IntersectionObserver(es=>{es.forEach(e=> e.isIntersecting?start():stop())},{threshold:0,rootMargin:"200px 0px 200px 0px"}).observe(fig);
+  })();
+
+  /* ───────────────────────── MAGNETIC CTA ───────────────────────── */
+  (function(){
+    const btn=document.getElementById("magBtn");
+    if(RM||matchMedia("(pointer:coarse)").matches) return;
+    const radius=12; // tight 12px catch field beyond the button edge — restrained, not springy
+    addEventListener("mousemove",e=>{
+      const r=btn.getBoundingClientRect();
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const dx=e.clientX-cx, dy=e.clientY-cy;
+      // inside the catch zone (button bounds + radius) the button leans toward the cursor
+      const inside = e.clientX>r.left-radius && e.clientX<r.right+radius &&
+                     e.clientY>r.top-radius && e.clientY<r.bottom+radius;
+      if(inside){
+        btn.style.transform=`translate(${dx*0.14}px,${dy*0.18}px)`;
+      } else {
+        btn.style.transform="translate(0,0)";
+      }
+    },{passive:true});
+    btn.addEventListener("mouseleave",()=>btn.style.transform="translate(0,0)");
+    // keyboard: never leave the button leaning when it gains/loses focus
+    btn.addEventListener("focus",()=>btn.style.transform="translate(0,0)");
+    btn.addEventListener("blur",()=>btn.style.transform="translate(0,0)");
+  })();
+
+  /* ── constellation poster fallback if canvas unsupported ── */
+  (function(){
+    const canvas=document.getElementById("constCanvas");
+    try{ if(!canvas.getContext("2d")) throw 0; }
+    catch(e){ document.getElementById("constPoster").style.opacity="1"; canvas.style.display="none"; }
+  })();
+
+  if(hasGSAP) ScrollTrigger.refresh();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Zeiro — 墨 / Sumi · 税理士事務所のための顧客対応AIエージェント</title>
+<meta name="description" content="問い合わせはAIが下書きする。判断は、税理士がする。受信 → 分類 → 事務所ナレッジで下書き → 税理士レビュー → 送信。守秘義務（税理士法 第38条）準拠。" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================ TOKENS ============================ */
+:root{
+  --font-sans:"Inter Tight","Noto Sans JP",system-ui,sans-serif;
+  --font-jp:"Noto Sans JP","Inter Tight",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,monospace;
+
+  --bg:#f2eee6; --bg-2:#ede8de; --surface:#fbf9f4; --surface-2:#f7f4ed; --paper:#ffffff;
+  --ink:#14110d; --ink-2:#3a352d; --ink-soft:#5a5248; --muted:#6a6258; --muted-2:#9a9286;
+  --line:#e2dccf; --line-strong:#cfc8b8;
+  --accent:#314936; --accent-ink:#15301b; --accent-soft:#d9eadc;
+  --accent-bright:#3b834e; --accent-glow:#5cb572; --positive:#236436; --urgent:#c13234;
+
+  --cat-deadline:#a06f30; --cat-doc:#2f6868; --cat-tax:#9a504b; --cat-contract:#594c7d;
+  --cat-other:#8a8275;
+
+  /* on-ink text ramp — text colours over the lacquer stage (act I + CTA + sheet) */
+  --ink-on-1:#faf7f0; --ink-on-2:#e3ddd0; --ink-on-3:#c9bfb0; --ink-on-muted:#a39a8c;
+
+  /* the ink stage — warmed near-black, lacquer not void */
+  --lacquer:oklch(14% 0.012 70);
+  --lacquer-fallback:#16130d;
+
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-io:cubic-bezier(0.65,0,0.35,1);
+  --sh-1:0 1px 2px rgba(20,17,13,.04);
+  --sh-2:0 8px 24px -16px rgba(20,17,13,.12);
+  --sh-3:0 24px 60px -34px rgba(20,17,13,.30);
+
+  --measure:34em;
+  --pad-y:clamp(96px,14vh,180px);
+  --gut:clamp(20px,5vw,90px);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{ -webkit-text-size-adjust:100%; scroll-behavior:auto; }
+body{
+  font-family:var(--font-jp);
+  background:var(--bg);
+  color:var(--ink);
+  font-feature-settings:"palt","ss01";
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.6;
+  overflow-x:hidden;
+}
+body.is-loading{ overflow:hidden; }
+body.menu-open{ overflow:hidden; }
+::selection{ background:var(--accent-soft); color:var(--accent-ink); }
+
+a{ color:inherit; text-decoration:none; }
+img{ max-width:100%; display:block; }
+:focus-visible{ outline:2px solid var(--accent-bright); outline-offset:3px; border-radius:3px; }
+
+.mono{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+}
+.tnum{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+.measure{ max-width:var(--measure); }
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+/* ============================ NAV ============================ */
+.nav{
+  position:fixed; inset:0 0 auto 0; z-index:60;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px var(--gut);
+  transition:background .5s var(--ease-out), color .5s var(--ease-out), border-color .5s var(--ease-out);
+  border-bottom:1px solid transparent;
+  mix-blend-mode:normal;
+}
+/* over ink (act I + CTA) */
+.nav[data-stage="ink"]{ color:var(--ink-on-1); }
+.nav[data-stage="ink"] .nav-link{ color:var(--ink-on-3); }
+.nav[data-stage="ink"] .nav-cta{ border-color:rgba(241,237,228,.32); color:var(--ink-on-1); }
+.nav[data-stage="ink"] .wm-mark{ background:var(--accent-glow); }
+.nav[data-stage="ink"] .burger span{ background:var(--ink-on-1); }
+/* over paper */
+.nav[data-stage="paper"]{ color:var(--ink); }
+.nav[data-stage="paper"].scrolled{ background:rgba(251,249,244,.82); backdrop-filter:saturate(1.1) blur(10px); border-bottom-color:var(--line); }
+.nav[data-stage="paper"] .nav-link{ color:var(--ink-2); }
+.nav[data-stage="paper"] .nav-cta{ border-color:var(--line-strong); color:var(--ink); }
+.nav[data-stage="paper"] .wm-mark{ background:var(--accent); }
+.nav[data-stage="paper"] .burger span{ background:var(--ink); }
+
+.wordmark{ display:flex; align-items:center; gap:10px; font-family:var(--font-sans); font-weight:600; font-size:1.18rem; letter-spacing:-.01em; }
+.wm-mark{ width:11px; height:11px; border-radius:3px; transform:rotate(45deg); transition:background .5s var(--ease-out); box-shadow:0 0 14px -2px var(--accent-glow); }
+.wm-jp{ font-family:var(--font-jp); font-weight:500; font-size:.78rem; opacity:.6; letter-spacing:.04em; }
+
+.nav-right{ display:flex; align-items:center; gap:clamp(16px,2.4vw,34px); }
+.nav-links{ display:flex; gap:clamp(16px,2vw,30px); }
+.nav-link{ font-size:.86rem; font-weight:500; letter-spacing:.01em; position:relative; transition:color .3s; }
+.nav-link::after{ content:""; position:absolute; left:0; bottom:-5px; width:0; height:1px; background:currentColor; transition:width .35s var(--ease-out); }
+.nav-link:hover::after{ width:100%; }
+.nav-cta{ font-size:.84rem; font-weight:500; border:1px solid; border-radius:999px; padding:8px 17px; transition:all .35s var(--ease-out); }
+.nav-cta:hover{ background:var(--accent-bright); border-color:var(--accent-bright)!important; color:#fff!important; }
+
+.burger{ display:none; flex-direction:column; gap:5px; width:30px; height:24px; justify-content:center; cursor:pointer; background:none; border:0; }
+.burger span{ height:1.5px; width:100%; transition:transform .4s var(--ease-out), opacity .3s; }
+.burger.open span:nth-child(1){ transform:translateY(6.5px) rotate(45deg); }
+.burger.open span:nth-child(2){ opacity:0; }
+.burger.open span:nth-child(3){ transform:translateY(-6.5px) rotate(-45deg); }
+
+.mobile-sheet{
+  position:fixed; inset:0; z-index:55; background:var(--lacquer-fallback); background:var(--lacquer);
+  display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 var(--gut);
+  transform:translateY(-100%); transition:transform .6s var(--ease-out); visibility:hidden;
+}
+.mobile-sheet.open{ transform:translateY(0); visibility:visible; }
+.mobile-sheet a{ font-family:var(--font-jp); font-size:clamp(1.6rem,7vw,2.4rem); font-weight:600; color:var(--ink-on-1); padding:14px 0; border-bottom:1px solid rgba(241,237,228,.12); }
+.mobile-sheet a .en{ font-family:var(--font-mono); font-size:.7rem; letter-spacing:.2em; color:var(--accent-glow); display:block; margin-bottom:4px; }
+.mobile-sheet .ms-cta{ margin-top:26px; border:1px solid var(--accent-glow); border-radius:999px; text-align:center; color:var(--accent-glow); }
+
+/* ============================ HERO / ACT I ============================ */
+#stage{
+  position:fixed; inset:0; z-index:0;
+  background:var(--lacquer-fallback); background:var(--lacquer);
+}
+#ink-canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+#stage{ --vig:1; }
+#stage::after{ content:""; position:absolute; inset:0; pointer-events:none; z-index:1; opacity:var(--vig);
+  background:radial-gradient(ellipse 60% 52% at 50% 46%, rgba(8,6,4,.5) 0%, rgba(8,6,4,.18) 42%, transparent 72%); }
+#hero-poster{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; pointer-events:none; }
+
+.hero{
+  position:relative; z-index:10; height:100svh; min-height:600px;
+  display:grid; place-items:center; padding:0 var(--gut); text-align:center;
+  color:var(--ink-on-1); pointer-events:none;
+}
+.hero-inner{ max-width:1180px; width:100%; }
+.hero .mono.kicker{ color:var(--ink-on-muted); margin-bottom:clamp(22px,3.4vh,40px); display:inline-flex; gap:.6em; align-items:center; }
+.hero .kicker .dot{ width:5px; height:5px; border-radius:50%; background:var(--accent-glow); box-shadow:0 0 10px var(--accent-glow); animation:pulse 2.6s var(--ease-io) infinite; }
+@keyframes pulse{ 0%,100%{opacity:.45;transform:scale(.85)} 50%{opacity:1;transform:scale(1.15)} }
+
+.hero h1{
+  font-family:var(--font-jp); font-weight:600;
+  font-size:clamp(2.4rem,6vw,5.25rem); line-height:1.05; letter-spacing:-.01em;
+  color:var(--ink-on-1); text-wrap:balance; word-break:keep-all; line-break:strict;
+  text-shadow:0 2px 40px rgba(10,8,5,.55), 0 1px 3px rgba(10,8,5,.4);
+}
+.hero h1 .lo{ color:var(--ink-on-3); }
+.hero .sub{
+  font-family:var(--font-jp); margin:clamp(20px,3vh,34px) auto 0; max-width:40em;
+  font-size:clamp(.92rem,1.5vw,1.1rem); line-height:1.85; color:var(--ink-on-3);
+}
+.hero .sub b{ color:var(--ink-on-2); font-weight:500; }
+.hero-cta{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:clamp(30px,4.4vh,48px); pointer-events:auto; }
+.btn{
+  font-family:var(--font-sans); font-weight:500; font-size:.95rem; cursor:pointer;
+  border-radius:999px; padding:14px 28px; transition:transform .3s var(--ease-out), background .3s, box-shadow .3s, border-color .3s, color .3s;
+  border:1px solid transparent; display:inline-flex; align-items:center; gap:.5em; will-change:transform;
+}
+.btn-primary{ background:var(--accent-bright); color:#fff; box-shadow:0 10px 30px -14px rgba(20,17,13,.6); }
+.btn-primary:hover{ background:var(--accent-glow); box-shadow:0 12px 34px -14px rgba(20,17,13,.6); }
+.btn-ghost-ink{ border-color:rgba(244,240,232,.3); color:var(--ink-on-1); }
+.btn-ghost-ink:hover{ border-color:rgba(244,240,232,.7); background:rgba(244,240,232,.06); }
+
+/* the one fully focused object */
+.draft-node{
+  position:relative; z-index:11; margin:clamp(34px,5vh,58px) auto 0; pointer-events:auto;
+  width:fit-content; padding:18px 30px 16px;
+  background:rgba(20,17,13,.55); backdrop-filter:blur(3px);
+  border:1px solid var(--accent-glow);
+  border-radius:var(--r-md);
+  box-shadow:0 0 0 1px rgba(92,181,114,.18), 0 0 48px -8px rgba(92,181,114,.45), inset 0 0 40px -20px rgba(92,181,114,.4);
+  text-align:center;
+}
+.draft-node .jp{ font-family:var(--font-jp); font-weight:600; font-size:clamp(1.4rem,3vw,2rem); color:var(--ink-on-1); letter-spacing:.06em; line-height:1; }
+.draft-node .en{ font-family:var(--font-mono); font-size:.6rem; letter-spacing:.34em; color:var(--accent-glow); margin-top:8px; }
+.draft-node::before, .draft-node::after{ content:""; position:absolute; width:9px; height:9px; border:1px solid var(--accent-glow); }
+.draft-node::before{ top:-1px; left:-1px; border-right:0; border-bottom:0; }
+.draft-node::after{ bottom:-1px; right:-1px; border-left:0; border-top:0; }
+
+.scroll-hint{ position:absolute; bottom:clamp(18px,4vh,40px); left:50%; transform:translateX(-50%); z-index:12; color:var(--ink-on-muted); pointer-events:none; }
+.scroll-hint .line{ width:1px; height:34px; margin:8px auto 0; background:linear-gradient(var(--ink-on-muted),transparent); position:relative; overflow:hidden; }
+.scroll-hint .line::after{ content:""; position:absolute; inset:0; background:var(--accent-glow); animation:drip 2.4s var(--ease-io) infinite; }
+@keyframes drip{ 0%{transform:translateY(-100%)} 60%,100%{transform:translateY(100%)} }
+
+/* citation ghosts (cursor bloom) */
+#ghost-layer{ position:absolute; inset:0; z-index:11; pointer-events:none; overflow:hidden; }
+.ghost{
+  position:absolute; transform:translate(-50%,-50%) scale(.92);
+  background:rgba(24,21,15,.72); border:1px solid rgba(92,181,114,.4);
+  border-radius:var(--r-sm); padding:9px 13px; min-width:128px;
+  opacity:0; backdrop-filter:blur(4px);
+  box-shadow:0 0 28px -8px rgba(92,181,114,.4);
+}
+.ghost .g-jp{ font-family:var(--font-jp); font-size:.78rem; font-weight:500; color:var(--ink-on-1); }
+.ghost .g-en{ font-family:var(--font-mono); font-size:.56rem; letter-spacing:.16em; color:var(--accent-glow); margin-top:3px; }
+
+/* ============================ PAPER WORLD ============================ */
+.paper{ position:relative; z-index:20; background:var(--bg); }
+.paper.act-open{ background:transparent; } /* let stage drying show through during transition */
+
+.spacer-dry{ height:100vh; position:relative; z-index:5; pointer-events:none; }
+
+section{ padding:var(--pad-y) var(--gut); position:relative; }
+.wrap{ max-width:1240px; margin:0 auto; width:100%; }
+
+.eyebrow{ display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+.eyebrow::before{ content:""; width:26px; height:1px; background:var(--accent-bright); }
+h2.sec{ font-family:var(--font-jp); font-weight:600; font-size:clamp(1.9rem,3.6vw,3rem); line-height:1.18; letter-spacing:-.005em; }
+.lead{ font-family:var(--font-jp); color:var(--ink-2); font-size:clamp(.98rem,1.4vw,1.12rem); line-height:1.85; margin-top:20px; }
+
+/* hairline grid overlay (surfaces on hover near seams) */
+.grid-seam{ position:absolute; inset:0; pointer-events:none; z-index:1; display:grid; grid-template-columns:repeat(12,1fr); gap:0; opacity:0; transition:opacity .5s var(--ease-out); }
+.grid-seam span{ border-left:1px solid var(--line); }
+.grid-seam span:last-child{ border-right:1px solid var(--line); }
+section:hover > .grid-seam{ opacity:.5; }
+
+/* PROOF BAND */
+.proof{ background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.proof-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(28px,4vw,64px); }
+.proof-cell .labels{ display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap; }
+.proof-cell .before{ color:var(--muted); }
+.proof-cell .after{ color:var(--accent); }
+.proof-cell .pname{ font-family:var(--font-jp); font-size:.92rem; color:var(--ink-2); margin-bottom:6px; }
+.proof-cell .pnum{ font-family:var(--font-sans); font-weight:700; font-size:clamp(2rem,4.4vw,3.2rem); line-height:1; letter-spacing:-.02em; color:var(--ink); }
+.proof-cell .pnum .was{ color:var(--muted); font-size:.46em; font-weight:500; margin-right:.4em; text-decoration:line-through; text-decoration-thickness:1.5px; }
+.proof-cell .pnum .arrow{ color:var(--accent-bright); font-size:.5em; margin:0 .25em; }
+.proof-cell .pnum em{ font-style:normal; color:var(--accent); }
+.proof-cell .delta{ font-family:var(--font-mono); font-size:.78rem; color:var(--accent); margin-top:10px; letter-spacing:.04em; }
+
+/* THE FLOW */
+.flow-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:30px; flex-wrap:wrap; margin-bottom:clamp(40px,6vh,70px); }
+.pipe-stage{ position:relative; min-height:clamp(360px,52vh,540px); }
+#pipe-canvas{ position:absolute; inset:0; width:100%; height:100%; }
+.pipe-poster{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; opacity:0; }
+.triage-strip{ display:flex; gap:0; margin-top:46px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--sh-2); border:1px solid var(--line); }
+.triage-strip .cat{ flex:1; padding:18px 16px; background:var(--surface); border-right:1px solid var(--line); transition:flex .5s var(--ease-out), background .3s; position:relative; cursor:default; }
+.triage-strip .cat:last-child{ border-right:0; }
+.triage-strip .cat:hover{ flex:1.6; background:var(--paper); }
+.triage-strip .cat .bar{ height:3px; border-radius:2px; width:34px; margin-bottom:12px; }
+.triage-strip .cat .ja{ font-family:var(--font-jp); font-weight:600; font-size:.98rem; color:var(--ink); }
+.triage-strip .cat .en{ font-family:var(--font-mono); font-size:.6rem; letter-spacing:.14em; color:var(--ink-soft); margin-top:5px; }
+
+/* KNOWLEDGE DRAFT (paper centrepiece) */
+.kd{ display:grid; grid-template-columns:1.05fr 1fr; gap:clamp(36px,5vw,72px); align-items:start; }
+.draft-card{
+  background:var(--paper); border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--sh-2); padding:clamp(24px,3vw,38px); position:relative; overflow:hidden;
+}
+.draft-card .dc-head{ display:flex; align-items:center; gap:9px; padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:22px; }
+.dc-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent-bright); }
+.dc-head .mono{ color:var(--accent); }
+.reply-body{ font-family:var(--font-jp); font-size:1rem; line-height:2.0; color:var(--ink-2); min-height:230px; }
+.reply-body .cite{ color:var(--accent); border-bottom:1.5px solid var(--accent-soft); background:linear-gradient(transparent 62%, var(--accent-soft) 62%); padding:0 1px; }
+.caret{ display:inline-block; width:.55em; height:1.05em; background:var(--accent-bright); vertical-align:-.18em; margin-left:1px; animation:blink 1s step-end infinite; }
+@keyframes blink{ 50%{opacity:0} }
+.chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; }
+.chip{
+  display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.04em;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:6px 12px; color:var(--ink-2);
+  opacity:0; transform:translateY(8px); transition:opacity .5s var(--ease-out), transform .5s var(--ease-out);
+}
+.chip.in{ opacity:1; transform:none; }
+.chip .id{ background:var(--accent); color:#fff; border-radius:99px; padding:2px 7px; font-size:.6rem; }
+
+/* FEATURE PILLARS (editorial, asymmetric) */
+.pillars{ display:flex; flex-direction:column; gap:clamp(56px,9vh,108px); }
+.pillar{ display:grid; grid-template-columns:auto 1fr; gap:clamp(24px,4vw,60px); align-items:baseline; }
+.pillar .pno{ font-family:var(--font-mono); font-size:.78rem; color:var(--accent); letter-spacing:.18em; padding-top:.5em; }
+.pillar .ptitle{ font-family:var(--font-jp); font-weight:600; font-size:clamp(1.4rem,2.8vw,2.1rem); line-height:1.3; letter-spacing:-.005em; }
+.pillar .pbody{ font-family:var(--font-jp); color:var(--ink-2); font-size:1.02rem; line-height:1.9; margin-top:16px; max-width:38em; }
+.pillar .pbody .hl{ color:var(--accent); font-weight:500; }
+.pillar:nth-child(even){ grid-template-columns:1fr auto; }
+.pillar:nth-child(even) .pcontent{ order:1; text-align:right; }
+.pillar:nth-child(even) .pno{ order:2; text-align:left; }
+.pillar:nth-child(even) .pbody{ margin-left:auto; }
+.pillar .meta-row{ display:flex; gap:18px; margin-top:18px; flex-wrap:wrap; }
+.pillar:nth-child(even) .meta-row{ justify-content:flex-end; }
+.meta-pill{ font-family:var(--font-mono); font-size:.66rem; letter-spacing:.08em; color:var(--ink-soft); border:1px solid var(--line); border-radius:6px; padding:5px 9px; }
+.meta-pill b{ color:var(--accent); font-weight:600; }
+.pillar-rule{ height:1px; background:var(--line); }
+
+/* OUTCOME */
+.outcome{ background:var(--surface); border-top:1px solid var(--line); }
+.outcome-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:clamp(40px,6vw,90px); align-items:center; }
+.mega{ font-family:var(--font-jp); font-weight:600; font-size:clamp(2.2rem,5vw,4rem); line-height:1.18; letter-spacing:-.01em; text-wrap:balance; word-break:keep-all; line-break:strict; }
+.mega .big{ font-family:var(--font-sans); font-weight:700; font-size:clamp(4rem,12vw,9rem); color:var(--accent); letter-spacing:-.03em; display:inline-block; line-height:.9; vertical-align:-.04em; }
+.mega .unit{ font-size:.32em; color:var(--ink-2); font-weight:600; }
+.outcome ul{ list-style:none; margin-top:30px; }
+.outcome li{ font-family:var(--font-jp); color:var(--ink-2); padding:14px 0; border-top:1px solid var(--line); display:flex; gap:14px; align-items:baseline; font-size:1rem; }
+.outcome li::before{ content:""; width:6px; height:6px; flex:none; border-radius:50%; background:var(--accent-bright); transform:translateY(-.2em); }
+.outcome li b{ font-family:var(--font-sans); color:var(--ink); font-weight:600; }
+.spark-card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--r-lg); padding:28px; box-shadow:var(--sh-2); }
+.spark-card .sc-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+.spark-card .sc-big{ font-family:var(--font-sans); font-weight:700; font-size:2.6rem; letter-spacing:-.02em; }
+.spark-card .delta{ color:var(--accent); font-family:var(--font-mono); font-size:.82rem; }
+.spark-svg{ width:100%; height:120px; margin-top:8px; }
+.spark-svg .grid-l{ stroke:var(--line); stroke-width:1; }
+.spark-svg .before-l{ stroke:var(--muted-2); stroke-width:2; fill:none; stroke-dasharray:4 4; }
+.spark-svg .after-l{ stroke:var(--accent-bright); stroke-width:2.4; fill:none; }
+.spark-legend{ display:flex; gap:18px; margin-top:14px; font-family:var(--font-mono); font-size:.64rem; letter-spacing:.08em; color:var(--ink-soft); }
+.spark-legend .k{ display:flex; align-items:center; gap:7px; }
+.spark-legend .swatch{ width:14px; height:2.4px; }
+
+/* TRUST */
+.trust-grid{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(36px,5vw,72px); align-items:center; }
+.redact-card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--r-lg); padding:30px; box-shadow:var(--sh-2); }
+.redact-card .rc-label{ margin-bottom:18px; }
+.redline{ display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-top:1px solid var(--line); font-family:var(--font-jp); font-size:.96rem; }
+.redline .field{ color:var(--muted); font-size:.82rem; }
+.redval{ font-family:var(--font-mono); font-size:.94rem; letter-spacing:.04em; cursor:pointer; user-select:none; }
+.redval .masked{ color:var(--ink); }
+.redval .raw{ display:none; color:var(--urgent); }
+.redval.reveal .masked{ display:none; }
+.redval.reveal .raw{ display:inline; }
+.redval .tag{ font-family:var(--font-mono); font-size:.56rem; letter-spacing:.1em; color:var(--accent); margin-left:8px; border:1px solid var(--accent-soft); border-radius:4px; padding:1px 5px; }
+.redact-hint{ font-family:var(--font-mono); font-size:.64rem; letter-spacing:.1em; color:var(--ink-soft); margin-top:16px; }
+
+.audit{ }
+.audit .a-row{ display:flex; align-items:center; gap:14px; padding:16px 0; border-top:1px solid var(--line); }
+.audit .a-row:last-child{ border-bottom:1px solid var(--line); }
+.audit .lockbox{ width:26px; height:26px; flex:none; border:1.5px solid var(--line-strong); border-radius:6px; display:grid; place-items:center; transition:all .5s var(--ease-out); }
+.audit .a-row.locked .lockbox{ background:var(--accent); border-color:var(--accent); }
+.audit .checkpath{ stroke:#fff; stroke-width:2.4; fill:none; stroke-dasharray:18; stroke-dashoffset:18; transition:stroke-dashoffset .45s var(--ease-out) .1s; }
+.audit .a-row.locked .checkpath{ stroke-dashoffset:0; }
+.audit .a-text{ font-family:var(--font-jp); font-size:1rem; color:var(--ink-2); }
+.audit .a-row.locked .a-text{ color:var(--ink); }
+.audit .a-en{ font-family:var(--font-mono); font-size:.6rem; letter-spacing:.12em; color:var(--ink-soft); margin-left:auto; }
+
+/* CTA BOOKEND (ink) */
+#cta{ position:relative; z-index:20; background:var(--lacquer-fallback); background:var(--lacquer); color:var(--ink-on-1); overflow:hidden; text-align:center; }
+#cta-canvas{ position:absolute; inset:0; width:100%; height:100%; z-index:0; opacity:.9; }
+#cta .wrap{ position:relative; z-index:2; }
+#cta .eyebrow{ justify-content:center; }
+#cta .eyebrow::before{ background:var(--accent-glow); }
+#cta h2{ font-family:var(--font-jp); font-weight:600; font-size:clamp(2rem,4.6vw,3.6rem); line-height:1.25; color:var(--ink-on-1); max-width:18em; margin:0 auto; letter-spacing:-.005em; text-wrap:balance; word-break:keep-all; line-break:strict; }
+#cta .cta-row{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:42px; }
+.btn-en{ font-family:var(--font-mono); font-size:.8rem; letter-spacing:.06em; }
+
+/* FOOTER */
+footer{ position:relative; z-index:20; background:var(--lacquer-fallback); background:var(--lacquer); color:var(--ink-on-3); padding:48px var(--gut); border-top:1px solid rgba(241,237,228,.1); }
+.foot-grid{ max-width:1240px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; }
+.foot-trust{ font-family:var(--font-mono); font-size:.7rem; letter-spacing:.1em; color:var(--ink-on-muted); }
+.foot-trust span{ color:var(--accent-glow); }
+
+/* ENTRANCE reveals */
+.reveal{ opacity:0; transform:translateY(26px); transition:opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+.reveal.in{ opacity:1; transform:none; }
+
+/* loader */
+#loader{ position:fixed; inset:0; z-index:90; background:var(--lacquer-fallback); background:var(--lacquer); display:grid; place-items:center; transition:opacity .8s var(--ease-out); }
+#loader.done{ opacity:0; pointer-events:none; }
+#loader .lk{ font-family:var(--font-mono); font-size:.7rem; letter-spacing:.3em; color:var(--accent-glow); text-transform:uppercase; }
+
+/* ============================ RESPONSIVE ============================ */
+@media (max-width:920px){
+  .nav-links{ display:none; }
+  .nav .nav-cta{ display:none; }
+  .burger{ display:flex; }
+  .kd, .outcome-grid, .trust-grid{ grid-template-columns:1fr; }
+  .proof-grid{ grid-template-columns:1fr; gap:38px; }
+  .pillar, .pillar:nth-child(even){ grid-template-columns:1fr; gap:8px; }
+  .pillar:nth-child(even) .pcontent{ text-align:left; order:0; }
+  .pillar:nth-child(even) .meta-row{ justify-content:flex-start; }
+  .pillar:nth-child(even) .pbody{ margin-left:0; }
+  .pillar .pno{ padding-top:0; }
+}
+@media (max-width:560px){
+  .triage-strip{ flex-wrap:wrap; }
+  .triage-strip .cat{ flex:1 1 33%; border-bottom:1px solid var(--line); }
+  .hero .sub{ font-size:.92rem; }
+  .grid-seam{ display:none; }
+}
+
+/* reduced-motion: gate fallbacks on a body class so the poster is robust even if JS fails */
+body.reduced #ink-canvas,
+body.reduced #pipe-canvas,
+body.reduced #cta-canvas{ display:none; }
+body.reduced #hero-poster{ opacity:.55; }
+body.reduced .pipe-poster{ opacity:1; }
+body.reduced #stage{ position:absolute; }
+body.reduced .hero{ position:relative; }
+body.reduced .caret{ display:none; }
+body.reduced .reveal{ opacity:1; transform:none; }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+  .reveal{ opacity:1; transform:none; }
+  #ink-canvas,#pipe-canvas,#cta-canvas{ display:none; }
+  #hero-poster{ opacity:.55; }
+  .pipe-poster{ opacity:1; }
+  #stage{ position:absolute; }
+  .hero{ position:relative; }
+  .caret{ display:none; }
+}
+</style>
+</head>
+<body class="is-loading">
+
+<div id="loader"><div class="lk">墨 · SUMI · 描画中</div></div>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav" data-stage="ink" aria-label="メインナビゲーション">
+  <a class="wordmark" href="#top" aria-label="Zeiro ホーム">
+    <span class="wm-mark" aria-hidden="true"></span>
+    Zeiro <span class="wm-jp">墨</span>
+  </a>
+  <nav class="nav-right">
+    <div class="nav-links">
+      <a class="nav-link" href="#flow">仕組み</a>
+      <a class="nav-link" href="#draft">下書き</a>
+      <a class="nav-link" href="#pillars">機能</a>
+      <a class="nav-link" href="#trust">守秘義務</a>
+    </div>
+    <a class="nav-cta" href="#cta">デモを見る</a>
+    <button class="burger" id="burger" aria-label="メニューを開く" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<div class="mobile-sheet" id="sheet" aria-hidden="true">
+  <a href="#flow"><span class="en">FLOW</span>仕組み</a>
+  <a href="#draft"><span class="en">DRAFT</span>下書き</a>
+  <a href="#pillars"><span class="en">FEATURES</span>機能</a>
+  <a href="#trust"><span class="en">CONFIDENTIALITY</span>守秘義務</a>
+  <a href="#cta" class="ms-cta">デモを見る</a>
+</div>
+
+<!-- ===================== THE STAGE (fixed ink → dries to paper) ===================== -->
+<div id="stage" aria-hidden="true">
+  <canvas id="ink-canvas"></canvas>
+  <img id="hero-poster" src="../assets/still/KnowledgeConstellation.png" alt="" />
+  <div id="ghost-layer"></div>
+</div>
+
+<main id="top">
+
+  <!-- ===================== ACT I — HERO ===================== -->
+  <section class="hero" id="hero" aria-label="ヒーロー">
+    <div class="hero-inner">
+      <span class="mono kicker"><span class="dot" aria-hidden="true"></span>RETRIEVAL · 6 SOURCES · 0 HALLUCINATION</span>
+      <h1>問い合わせはAIが下書きする。<br><span class="lo">判断は、</span>税理士がする。</h1>
+      <p class="sub">受信 → 分類 → 事務所ナレッジで下書き → 税理士レビュー → 送信。<br><b>本当に判断が必要な案件にだけ、集中できる。</b></p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" id="magnetic" href="#cta">デモを見る</a>
+        <a class="btn btn-ghost-ink" href="#cta">資料を請求する</a>
+      </div>
+      <div class="draft-node" aria-label="下書きノード">
+        <div class="jp">下書き</div>
+        <div class="en">ZEIRO · GROUNDED</div>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">
+      <span class="mono" style="font-size:.6rem;letter-spacing:.3em">SCROLL — 乾く</span>
+      <div class="line"></div>
+    </div>
+  </section>
+
+  <!-- THE DRY — scrubbed transition spacer (ink dries to paper across this scroll) -->
+  <div class="spacer-dry" id="dry" aria-hidden="true"></div>
+
+  <!-- ===================== PAPER WORLD ===================== -->
+  <div class="paper">
+
+    <!-- PROOF BAND -->
+    <section class="proof" id="proof" aria-label="効果">
+      <div class="grid-seam" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="eyebrow reveal"><span class="mono">THE NUMBERS · 実測値</span></div>
+        <div class="proof-grid">
+          <div class="proof-cell reveal" role="group" aria-label="一次対応の所要時間。従来 15〜30分から、レビューのみの 2〜3分へ。">
+            <div class="labels"><span class="mono before">BEFORE</span><span class="mono after">AFTER</span></div>
+            <div class="pname">一次対応の所要時間</div>
+            <div class="pnum" aria-hidden="true"><span class="was">15〜30分</span><span class="arrow">→</span><em>2〜3<span style="font-size:.5em;font-weight:500">分</span></em></div>
+            <div class="delta">レビューのみ</div>
+          </div>
+          <div class="proof-cell reveal" role="group" aria-label="平均応答時間。14.2分から24秒へ、97パーセント短縮。">
+            <div class="labels"><span class="mono before">BEFORE · 14.2分</span><span class="mono after">AFTER · 24秒</span></div>
+            <div class="pname">平均応答時間</div>
+            <div class="pnum" aria-hidden="true"><em><span class="count" data-to="24" data-dec="0">24</span><span style="font-size:.5em;font-weight:500">秒</span></em></div>
+            <div class="delta">−97%（14.2分 → 24秒）</div>
+          </div>
+          <div class="proof-cell reveal" role="group" aria-label="税理士レビュー必要案件。100パーセントから約32パーセントへ。">
+            <div class="labels"><span class="mono before">BEFORE · 100%</span><span class="mono after">AFTER</span></div>
+            <div class="pname">税理士レビュー必要案件</div>
+            <div class="pnum" aria-hidden="true"><span class="arrow" style="font-size:.55em">約</span><em><span class="count" data-to="32" data-dec="0">32</span><span style="font-size:.5em;font-weight:500">%</span></em></div>
+            <div class="delta">100% → 約32%（HITL平均）</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE FLOW -->
+    <section id="flow" aria-label="仕組み">
+      <div class="grid-seam" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="flow-head">
+          <div>
+            <div class="eyebrow reveal"><span class="mono">AGENT PIPELINE · 5 STEPS</span></div>
+            <h2 class="sec reveal">受信から下書きまで、<br>5 つの工程。</h2>
+          </div>
+          <p class="lead reveal measure">受信 → 分類（トリアージ・Gemini Flash）→ ナレッジ検索（RAG・6ソース・pgvector）→ 下書き生成（Claude）→ レビュー＆送信。緑のパルスが、案件が進む様子です。</p>
+        </div>
+        <div class="pipe-stage reveal">
+          <canvas id="pipe-canvas"></canvas>
+          <img class="pipe-poster" src="../assets/still/AgentPipeline3D_f235.png" alt="5ステップのエージェントパイプライン" />
+        </div>
+        <div class="triage-strip reveal" aria-label="トリアージ・5カテゴリ">
+          <div class="cat"><div class="bar" style="background:var(--cat-deadline)"></div><div class="ja">期日確認</div><div class="en">DEADLINE</div></div>
+          <div class="cat"><div class="bar" style="background:var(--cat-doc)"></div><div class="ja">書類提出</div><div class="en">DOCUMENT</div></div>
+          <div class="cat"><div class="bar" style="background:var(--cat-tax)"></div><div class="ja">税務質問</div><div class="en">TAX Q&amp;A</div></div>
+          <div class="cat"><div class="bar" style="background:var(--cat-contract)"></div><div class="ja">顧問契約</div><div class="en">CONTRACT</div></div>
+          <div class="cat"><div class="bar" style="background:var(--cat-other)"></div><div class="ja">その他</div><div class="en">OTHER</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KNOWLEDGE DRAFT -->
+    <section id="draft" aria-label="下書き">
+      <div class="grid-seam" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="kd">
+          <div>
+            <div class="eyebrow reveal"><span class="mono">DRAFTING REPLY · ZEIRO.AGENT.DRAFT@V1</span></div>
+            <h2 class="sec reveal">根拠を引きながら、<br>書く。</h2>
+            <p class="lead reveal measure">下書きには必ず「引用元」を明示します。過去の回答・所内FAQ・規程・国税庁の質疑応答を情報源に、ナレッジに無い数値は生成しません。だから、レビューが速い。</p>
+            <div class="reveal" style="margin-top:26px">
+              <div class="meta-row" style="display:flex;gap:18px;flex-wrap:wrap">
+                <span class="meta-pill">モデル <b>Claude</b></span>
+                <span class="meta-pill">引用 <b>3 件</b></span>
+                <span class="meta-pill">信頼度 <b>0.91</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="draft-card reveal" id="draftcard">
+            <div class="dc-head">
+              <span class="dc-dot" aria-hidden="true"></span>
+              <span class="mono">RE: 給与支払報告書について</span>
+            </div>
+            <div class="reply-body" id="reply" aria-hidden="true">田中様　お世話になっております。Zeiro 経由でご返信申し上げます。
+ご依頼いただきました<span class="cite">源泉徴収票</span>につきまして、本日中に PDF にてお送りいたします。
+なお、再発行の根拠資料として、<span class="cite">令和5年分の給与支払報告書</span>を参照しております。対応範囲は<span class="cite">顧問契約 §4.2</span>に基づきます。ご不明点がございましたらお知らせください。</div>
+            <p class="sr-only" id="reply-sr">田中様 お世話になっております。Zeiro 経由でご返信申し上げます。ご依頼いただきました源泉徴収票につきまして、本日中に PDF にてお送りいたします。なお、再発行の根拠資料として、令和5年分の給与支払報告書を参照しております。対応範囲は顧問契約 §4.2 に基づきます。ご不明点がございましたらお知らせください。引用元、S-08 顧問契約書 §4.2、K-21 国税庁 質疑応答 No.4117、C-12 田中様 過去メール 2024-09-18。</p>
+            <div class="chips" id="chips" aria-label="引用元">
+              <span class="chip in" data-i="0"><span class="id">S-08</span>顧問契約書 §4.2</span>
+              <span class="chip in" data-i="1"><span class="id">K-21</span>国税庁 質疑応答 No.4117</span>
+              <span class="chip in" data-i="2"><span class="id">C-12</span>田中様 過去メール 2024-09-18</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE PILLARS -->
+    <section id="pillars" aria-label="機能">
+      <div class="grid-seam" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="eyebrow reveal"><span class="mono">WHAT MAKES IT TRUSTWORTHY · 4 PILLARS</span></div>
+        <h2 class="sec reveal" style="margin-bottom:clamp(48px,7vh,86px)">確からしさを、設計する。</h2>
+        <div class="pillars">
+          <article class="pillar reveal">
+            <div class="pno">01</div>
+            <div class="pcontent">
+              <h3 class="ptitle">事務所ナレッジで RAG。</h3>
+              <p class="pbody">過去の回答・所内FAQ・業務マニュアル・規程を情報源に。下書きには<span class="hl">必ず引用元を明示</span>し、何を根拠に書いたかを税理士が一目で確認できます。</p>
+              <div class="meta-row"><span class="meta-pill">pgvector</span><span class="meta-pill"><b>6</b> ソース / 件</span><span class="meta-pill">text-embedding-3-small</span></div>
+            </div>
+          </article>
+          <div class="pillar-rule reveal"></div>
+          <article class="pillar reveal">
+            <div class="pcontent">
+              <h3 class="ptitle">エスカレーション判定。</h3>
+              <p class="pbody">税務判断を要する質問・<span class="hl">信頼度 &lt; 0.75</span>・「至急 / クレーム / 税務調査」は税理士レビューを必須化。判断は、必ず人に戻します。</p>
+              <div class="meta-row"><span class="meta-pill">目標エスカレーション率 <b>約32%</b></span><span class="meta-pill">HITL</span></div>
+            </div>
+            <div class="pno">02</div>
+          </article>
+          <div class="pillar-rule reveal"></div>
+          <article class="pillar reveal">
+            <div class="pno">03</div>
+            <div class="pcontent">
+              <h3 class="ptitle">ハルシネーション防止。</h3>
+              <p class="pbody">法令・税率などの数値は、<span class="hl">ナレッジに無い限り生成しません</span>。推測で答えない。これが、規制業種で AI を使う前提です。</p>
+              <div class="meta-row"><span class="meta-pill">数値は引用必須</span><span class="meta-pill">no-guess</span></div>
+            </div>
+          </article>
+          <div class="pillar-rule reveal"></div>
+          <article class="pillar reveal">
+            <div class="pcontent">
+              <h3 class="ptitle">監査ログ、全件。</h3>
+              <p class="pbody">誰が・いつ・どのモデルで・どの引用に基づいて送ったかを<span class="hl">全件記録</span>。後から、すべてを辿れます。</p>
+              <div class="meta-row"><span class="meta-pill">who / when / model</span><span class="meta-pill">citations</span></div>
+            </div>
+            <div class="pno">04</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- OUTCOME -->
+    <section class="outcome" id="outcome" aria-label="成果">
+      <div class="grid-seam" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="outcome-grid">
+          <div>
+            <div class="eyebrow reveal"><span class="mono">RECLAIMED · 年間</span></div>
+            <h2 class="mega reveal" aria-label="年間 738 時間を、取り戻す。"><span aria-hidden="true">年間 <span class="big tnum"><span class="count" data-to="738" data-dec="0">738</span></span><span class="unit"> 時間</span>を、<br>取り戻す。</span></h2>
+            <ul class="reveal">
+              <li>月 <b>1,247</b> 件の返信を下書き</li>
+              <li>月間 <b>約200時間</b> 削減（顧問100社 × 月10件 想定）</li>
+              <li>営業時間外の問い合わせも、即時に下書き</li>
+            </ul>
+          </div>
+          <div class="spark-card reveal" role="group" aria-label="平均応答時間 週次。Zeiro 導入後 24秒、従来比マイナス97パーセント。">
+            <div class="sc-head" aria-hidden="true">
+              <div>
+                <div class="mono" style="color:var(--muted)">平均応答時間 / 週次</div>
+                <div class="sc-big tnum">24<span style="font-size:.42em;color:var(--ink-2)">秒</span></div>
+              </div>
+              <div class="delta">−97%</div>
+            </div>
+            <svg class="spark-svg" id="spark" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
+              <line class="grid-l" x1="0" y1="30" x2="320" y2="30"/>
+              <line class="grid-l" x1="0" y1="60" x2="320" y2="60"/>
+              <line class="grid-l" x1="0" y1="90" x2="320" y2="90"/>
+              <path class="before-l" d="M0,18 L53,24 L106,21 L160,30 L213,26 L266,33 L320,28"/>
+              <path class="after-l" id="afterline" d="M0,40 L53,58 L106,72 L160,86 L213,98 L266,104 L320,110"/>
+            </svg>
+            <div class="spark-legend">
+              <span class="k"><span class="swatch" style="background:var(--muted-2)"></span>従来 14.2分</span>
+              <span class="k"><span class="swatch" style="background:var(--accent-bright)"></span>Zeiro 24秒</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST -->
+    <section id="trust" aria-label="守秘義務">
+      <div class="grid-seam" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="eyebrow reveal"><span class="mono">CONFIDENTIALITY · 税理士法 第38条</span></div>
+        <h2 class="sec reveal" style="margin-bottom:14px">預かった情報は、預かったまま。</h2>
+        <p class="lead reveal measure" style="margin-bottom:clamp(40px,6vh,64px)">My Number は受信時にマスク。jp-tokyo データレジデンシー。学習しない契約の LLM のみ利用。守秘義務は、設計の前提です。</p>
+        <div class="trust-grid">
+          <div class="redact-card reveal">
+            <div class="rc-label mono">PII MASKING · 受信時</div>
+            <div class="redline">
+              <span class="field">個人番号 / My Number</span>
+              <span class="redval" tabindex="0" role="button" aria-label="個人番号のマスクを表示・解除" aria-pressed="false">
+                <span class="masked">●●●● ●●●● ●●●●</span><span class="raw">1234 5678 9012</span><span class="tag">MASKED</span>
+              </span>
+            </div>
+            <div class="redline">
+              <span class="field">氏名</span>
+              <span class="redval" tabindex="0" role="button" aria-label="氏名のマスクを表示・解除" aria-pressed="false">
+                <span class="masked">田●　●子</span><span class="raw">田中　花子</span><span class="tag">MASKED</span>
+              </span>
+            </div>
+            <div class="redline">
+              <span class="field">住所</span>
+              <span class="redval" tabindex="0" role="button" aria-label="住所のマスクを表示・解除" aria-pressed="false">
+                <span class="masked">東京都●●区●●</span><span class="raw">東京都港区赤坂</span><span class="tag">MASKED</span>
+              </span>
+            </div>
+            <p class="redact-hint">タップで原本を確認 — 実運用では権限とログのもとでのみ解除されます</p>
+          </div>
+          <div class="audit reveal" id="audit" aria-label="監査チェックリスト">
+            <div class="a-row locked">
+              <span class="lockbox"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><path class="checkpath" d="M3 9.5 L7.5 14 L15 4.5"/></svg></span>
+              <span class="a-text">個人番号マスキング</span><span class="a-en">PII · MY NUMBER</span>
+            </div>
+            <div class="a-row locked">
+              <span class="lockbox"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><path class="checkpath" d="M3 9.5 L7.5 14 L15 4.5"/></svg></span>
+              <span class="a-text">氏名・住所マスキング</span><span class="a-en">PII · NAME / ADDR</span>
+            </div>
+            <div class="a-row locked">
+              <span class="lockbox"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><path class="checkpath" d="M3 9.5 L7.5 14 L15 4.5"/></svg></span>
+              <span class="a-text">監査ログ記録</span><span class="a-en">AUDIT LOG</span>
+            </div>
+            <div class="a-row locked">
+              <span class="lockbox"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><path class="checkpath" d="M3 9.5 L7.5 14 L15 4.5"/></svg></span>
+              <span class="a-text">学習利用なし（no-training）</span><span class="a-en">NO TRAINING</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div><!-- /.paper -->
+
+  <!-- ===================== CTA BOOKEND (ink pools back) ===================== -->
+  <section id="cta" aria-label="お問い合わせ">
+    <canvas id="cta-canvas"></canvas>
+    <div class="wrap">
+      <div class="eyebrow reveal"><span class="mono" style="color:var(--accent-glow)">墨に還る · BACK TO INK</span></div>
+      <h2 class="reveal">顧問先対応の時間を、<br>税理士の判断に戻す。</h2>
+      <div class="cta-row reveal">
+        <a class="btn btn-primary" href="#">デモを見る</a>
+        <a class="btn btn-ghost-ink" href="#">無料で試す</a>
+        <a class="btn btn-ghost-ink btn-en" href="#">Book a demo →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <a class="wordmark" href="#top" style="color:var(--ink-on-1)"><span class="wm-mark" style="background:var(--accent-glow)" aria-hidden="true"></span>Zeiro <span class="wm-jp">墨</span></a>
+      <p class="foot-trust">税理士法 第38条 守秘義務準拠 <span>・</span> データ保管 jp-tokyo <span>・</span> 学習しないLLM契約</p>
+    </div>
+  </footer>
+</main>
+
+<!-- ===================== LIBS ===================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+
+<script>
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   1. WEBGL2 INK-DIFFUSION SHADER
+   FBM domain-warp + cheap reaction-diffusion ping-pong feedback.
+   warm-graphite field, forest-green injected only at peak density.
+   uDry uniform (0..1) scrubbed by scroll = the "drying" transition.
+   ============================================================ */
+let inkAPI = null;
+function initInk(canvas){
+  const gl = canvas.getContext('webgl2', { antialias:false, alpha:false, premultipliedAlpha:false });
+  if(!gl) return null;
+
+  const DPR = Math.min(devicePixelRatio || 1, 1.75);
+  const VERT = `#version 300 es
+  precision highp float; const vec2 P[3]=vec2[3](vec2(-1.,-1.),vec2(3.,-1.),vec2(-1.,3.));
+  out vec2 uv; void main(){ uv=(P[gl_VertexID]+1.)*.5; gl_Position=vec4(P[gl_VertexID],0.,1.); }`;
+
+  // ---- simulation pass: reaction-diffusion-ish feedback in warped FBM field ----
+  const SIM = `#version 300 es
+  precision highp float; in vec2 uv; out vec4 frag;
+  uniform sampler2D uPrev; uniform vec2 uRes; uniform float uTime;
+  uniform vec2 uMouse; uniform float uMouseOn; uniform float uDry;
+  float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+  float noise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+    float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
+    return mix(mix(a,b,f.x),mix(c,d,f.x),f.y); }
+  float fbm(vec2 p){ float v=0.,a=.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.03; a*=.5; } return v; }
+  void main(){
+    vec2 px=1./uRes;
+    float prev=texture(uPrev,uv).r;
+    // domain-warped flowing FBM field
+    vec2 q=vec2(fbm(uv*3.2+uTime*.03), fbm(uv*3.2-uTime*.025+5.2));
+    vec2 r=vec2(fbm(uv*3.0+q*1.8+uTime*.02), fbm(uv*3.0+q*1.8+vec2(8.3,2.8)));
+    float field=fbm(uv*4.0+r*2.2+uTime*.015);
+    // cheap diffusion: 4-neighbour blur of feedback buffer
+    float lap=( texture(uPrev,uv+vec2(px.x,0)).r + texture(uPrev,uv-vec2(px.x,0)).r
+              + texture(uPrev,uv+vec2(0,px.y)).r + texture(uPrev,uv-vec2(0,px.y)).r )*.25;
+    float diff = lap + (field-0.5)*0.10;
+    // mouse ink source — blooms where cursor hovers
+    float md = distance(uv*vec2(uRes.x/uRes.y,1.), uMouse*vec2(uRes.x/uRes.y,1.));
+    float inject = uMouseOn * smoothstep(0.20,0.0,md) * 0.24;
+    float v = mix(prev, diff, 0.14) + inject;
+    v -= 0.0016;                       // slow decay so blooms breathe out
+    v = clamp(v,0.,1.);
+    frag = vec4(v,0.,0.,1.);
+  }`;
+
+  // ---- display pass: colourise + apply drying threshold (paper floods edge-inward) ----
+  const DISP = `#version 300 es
+  precision highp float; in vec2 uv; out vec4 frag;
+  uniform sampler2D uField; uniform float uDry; uniform vec2 uRes; uniform float uTime;
+  // warm lacquer (deep, ~12% L) + warm cream
+  const vec3 LAC = vec3(0.058,0.050,0.034);
+  const vec3 GRAPH = vec3(0.255,0.240,0.212);
+  const vec3 CREAM = vec3(0.949,0.933,0.902);
+  const vec3 PAPERINK = vec3(0.118,0.106,0.075);
+  const vec3 GREEN = vec3(0.231,0.514,0.306);   // #3b834e
+  const vec3 GLOW  = vec3(0.361,0.710,0.447);   // #5cb572
+  const vec3 FOREST= vec3(0.192,0.286,0.212);   // #314936 settled
+  float fbm2(vec2 p){ float v=0.,a=.5; for(int i=0;i<4;i++){ float n=fract(sin(dot(floor(p),vec2(12.9,78.2)))*43758.5);
+    v+=a*n; p*=2.0; a*=.5; } return v; }
+  void main(){
+    float d = texture(uField,uv).r;
+    // ---------- ink (wet) look ----------
+    vec3 ink = mix(LAC, GRAPH, smoothstep(0.16,0.74,d));
+    // green ONLY where field is densest = where the truth concentrates
+    float peak = smoothstep(0.66,0.97,d);
+    ink = mix(ink, GREEN, peak*0.82);
+    ink += GLOW * pow(peak,2.0) * 0.45;
+    // subtle warm grain
+    ink += (fract(sin(dot(gl_FragCoord.xy,vec2(12.9,78.2)))*43758.5)-.5)*0.010;
+
+    // ---------- paper (dry) look ----------
+    // developing photo in reverse: cream front advances from edges inward as uDry 0->1.
+    vec2 c = abs(uv-0.5)*2.0;
+    float edge = max(c.x,c.y);                 // 0 center .. 1 edges
+    float depth = 1.0 - edge;                  // 0 edges .. 1 center
+    float wobble = (fbm2(uv*5.0+uTime*0.05)-0.5)*0.10;
+    // front sweeps from -0.15 (no cream) at uDry=0 to 1.15 (full cream) at uDry=1
+    float front = uDry*1.30 - 0.15;
+    float crm = smoothstep(front-0.12, front+0.06, depth + wobble);
+    crm *= step(0.001, uDry);                  // hard guarantee: zero cream at rest
+
+    vec3 paper = mix(CREAM, PAPERINK, smoothstep(0.22,0.82,d)*0.5);   // ink inverts to deep-on-paper
+    paper = mix(paper, FOREST, smoothstep(0.72,0.96,d)*0.4);          // green settles to flat forest
+    paper += (fract(sin(dot(gl_FragCoord.xy,vec2(34.1,11.7)))*9134.7)-.5)*0.008;
+
+    vec3 col = mix(ink, paper, crm);
+    frag = vec4(col,1.0);
+  }`;
+
+  function sh(type,src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) console.warn(gl.getShaderInfoLog(s)); return s; }
+  function prog(fs){ const p=gl.createProgram(); gl.attachShader(p,sh(gl.VERTEX_SHADER,VERT));
+    gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(p); return p; }
+  const simP = prog(SIM), dispP = prog(DISP);
+  const vao = gl.createVertexArray();
+
+  let W,H, simRes=[0,0], fb=[], tex=[], cur=0;
+  function makeTarget(w,h){ const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.R16F,w,h,0,gl.RED,gl.HALF_FLOAT,null);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
+    return {t,f}; }
+
+  function resize(){
+    W = Math.floor(canvas.clientWidth*DPR); H = Math.floor(canvas.clientHeight*DPR);
+    canvas.width=W; canvas.height=H;
+    const sw=Math.max(2,Math.floor(W*0.5)), sh2=Math.max(2,Math.floor(H*0.5));
+    simRes=[sw,sh2];
+    fb=[]; tex=[];
+    for(let i=0;i<2;i++){ const tg=makeTarget(sw,sh2); fb.push(tg.f); tex.push(tg.t); }
+  }
+  resize();
+  // EXT_color_buffer_float needed for R16F render target
+  if(!gl.getExtension('EXT_color_buffer_float')){ /* fall back handled by caller */ }
+
+  const mouse={x:.5,y:.5,on:0,tx:.5,ty:.5}, st={ dry:0, time:0 };
+
+  function draw(t){
+    st.time = t*0.001;
+    mouse.x += (mouse.tx-mouse.x)*0.12; mouse.y += (mouse.ty-mouse.y)*0.12;
+    mouse.on += ((mouse.targetOn||0)-mouse.on)*0.08;
+
+    // --- sim pass ---
+    gl.useProgram(simP); gl.bindVertexArray(vao);
+    gl.viewport(0,0,simRes[0],simRes[1]);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb[cur]);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[1-cur]);
+    gl.uniform1i(gl.getUniformLocation(simP,'uPrev'),0);
+    gl.uniform2f(gl.getUniformLocation(simP,'uRes'),simRes[0],simRes[1]);
+    gl.uniform1f(gl.getUniformLocation(simP,'uTime'),st.time);
+    gl.uniform2f(gl.getUniformLocation(simP,'uMouse'),mouse.x,mouse.y);
+    gl.uniform1f(gl.getUniformLocation(simP,'uMouseOn'),mouse.on);
+    gl.uniform1f(gl.getUniformLocation(simP,'uDry'),st.dry);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+
+    // --- display pass ---
+    gl.useProgram(dispP);
+    gl.viewport(0,0,W,H);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[cur]);
+    gl.uniform1i(gl.getUniformLocation(dispP,'uField'),0);
+    gl.uniform1f(gl.getUniformLocation(dispP,'uDry'),st.dry);
+    gl.uniform1f(gl.getUniformLocation(dispP,'uTime'),st.time);
+    gl.uniform2f(gl.getUniformLocation(dispP,'uRes'),W,H);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+
+    cur = 1-cur;
+  }
+
+  return {
+    draw, resize,
+    setMouse(x,y){ mouse.tx=x; mouse.ty=y; },
+    setMouseOn(v){ mouse.targetOn=v; },
+    setDry(v){ st.dry=v; },
+    ok:true
+  };
+}
+
+/* ============================================================
+   2. BOOT — Lenis + GSAP + the stage, then choreography
+   ============================================================ */
+const stage   = document.getElementById('stage');
+const inkCanvas = document.getElementById('ink-canvas');
+const poster  = document.getElementById('hero-poster');
+const nav     = document.querySelector('.nav');
+
+function finishLoad(){ document.getElementById('loader').classList.add('done'); document.body.classList.remove('is-loading'); }
+
+if(REDUCE){
+  // reduced motion: paper from the top, poster swaps, no scrub.
+  document.body.classList.add('reduced');
+  document.querySelectorAll('.reveal').forEach(e=>e.classList.add('in'));
+  document.querySelectorAll('.count').forEach(setCountFinal);
+  document.querySelectorAll('#audit .a-row').forEach(r=>r.classList.add('locked'));
+  document.querySelectorAll('.chip').forEach(c=>c.classList.add('in'));
+  typeReplyInstant();
+  drawSparkInstant();
+  finishLoad();
+} else {
+  bootRich();
+}
+
+var lenis = null;   // var (not let): bootRich() is invoked above this line, before the TDZ would resolve
+function bootRich(){
+  gsap.registerPlugin(ScrollTrigger);
+
+  // The HTML ships in its FINAL state so a JS failure still degrades to a
+  // complete, readable page. Now that JS is alive, RESET the animatable bits
+  // back to their starting state so the scroll-tied choreography can play.
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('in'));
+  document.querySelectorAll('#audit .a-row').forEach(r=>r.classList.remove('locked'));
+  document.querySelectorAll('.count').forEach(el=>{ el.textContent='0'; });
+  document.getElementById('reply').innerHTML='';
+
+  lenis = new Lenis({ lerp:0.09, wheelMultiplier:1, smoothWheel:true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add((t)=>{ if(lenis) lenis.raf(t*1000); });
+  gsap.ticker.lagSmoothing(0);
+
+  // --- ink shader (the shader draws no text, so it can boot immediately) ---
+  inkAPI = initInk(inkCanvas);
+  let inkVisible = true;
+  if(inkAPI && inkAPI.ok){
+    addEventListener('resize', ()=>inkAPI.resize());
+    // cursor → ink source
+    addEventListener('pointermove', (e)=>{
+      const r = inkCanvas.getBoundingClientRect();
+      inkAPI.setMouse((e.clientX-r.left)/r.width, 1-(e.clientY-r.top)/r.height);
+      inkAPI.setMouseOn(1);
+      maybeGhost(e.clientX, e.clientY);
+    });
+    addEventListener('pointerdown',()=>inkAPI.setMouseOn(1.4));
+    // pause when stage fully out of view (CTA still uses it via cta canvas, separate)
+    let rafId;
+    const tick=(t)=>{ if(inkVisible) inkAPI.draw(t); rafId=requestAnimationFrame(tick); };
+    rafId=requestAnimationFrame(tick);
+    const io = new IntersectionObserver(es=>{ inkVisible = es[0].isIntersecting; }, {threshold:0});
+    io.observe(stage);
+  } else {
+    // WebGL unavailable → poster fallback
+    inkCanvas.style.display='none'; poster.style.opacity=1;
+  }
+
+  finishLoad();
+
+  // --- THE DRY : master scrubbed timeline (hero → paper) ---
+  // Single source of truth: the dry progress drives ink, hero recede, nav swap AND
+  // the stage opacity fade — so there is never a window where the stage detaches
+  // before the cream has fully flooded (no bg flash behind .paper.act-open).
+  const heroInner = document.querySelector('.hero-inner');
+  ScrollTrigger.create({
+    trigger:'#dry', start:'top top', end:'bottom bottom', scrub:true,
+    onUpdate:(self)=>{
+      const p = self.progress;
+      if(inkAPI) inkAPI.setDry(p);
+      // hero content recedes / inverts as ink dries
+      const fade = 1 - Math.min(1, p*1.6);
+      heroInner.style.opacity = fade;
+      heroInner.style.transform = `translateY(${-p*40}px) scale(${1-p*0.04})`;
+      stage.style.setProperty('--vig', (1-Math.min(1,p*1.4)));
+      // nav stage swap at halfway
+      nav.dataset.stage = p>0.5 ? 'paper' : 'ink';
+      // fade the fixed stage out only once the cream has fully flooded (>0.92)
+      stage.style.opacity = p>0.92 ? (1 - (p-0.92)/0.08) : 1;
+    },
+    onLeave:()=>{ stage.style.opacity=0; },        // fully dry → free the stage
+    onEnterBack:()=>{ stage.style.opacity=1; }
+  });
+
+  // nav scrolled state
+  ScrollTrigger.create({ start:60, onUpdate:s=>nav.classList.toggle('scrolled', s.scroll()>60) });
+
+  // nav returns to ink styling over the dark CTA-bookend + footer (both lacquer)
+  ScrollTrigger.create({ trigger:'#cta', start:'top 64px', endTrigger:'footer', end:'bottom 64px',
+    onToggle:s=>{ nav.dataset.stage = s.isActive ? 'ink' : 'paper'; } });
+
+  // --- reveals ---
+  gsap.utils.toArray('.reveal').forEach(el=>{
+    ScrollTrigger.create({ trigger:el, start:'top 92%', once:true,
+      onEnter:()=>el.classList.add('in'),
+      onEnterBack:()=>el.classList.add('in') });
+  });
+  // robustness for hash deep-links: anything already on screen reveals immediately
+  function revealVisible(){
+    document.querySelectorAll('.reveal:not(.in)').forEach(el=>{
+      const r=el.getBoundingClientRect();
+      if(r.top < innerHeight*0.95 && r.bottom > 0) el.classList.add('in');
+    });
+  }
+  addEventListener('load', ()=>setTimeout(revealVisible,120));
+  addEventListener('hashchange', ()=>setTimeout(revealVisible,260));
+
+  // --- count-up KPIs (once on enter) ---
+  document.querySelectorAll('.count').forEach(el=>{
+    ScrollTrigger.create({ trigger:el, start:'top 88%', once:true, onEnter:()=>countUp(el) });
+  });
+
+  // --- pipeline scrubbed pulse ---
+  initPipe();
+
+  // --- DraftStream typing (scrubbed-in start) ---
+  ScrollTrigger.create({ trigger:'#draftcard', start:'top 72%', once:true, onEnter:typeReply });
+
+  // --- sparkline draw on scroll ---
+  const afterline = document.getElementById('afterline');
+  const len = afterline.getTotalLength();
+  afterline.style.strokeDasharray = len; afterline.style.strokeDashoffset = len;
+  ScrollTrigger.create({ trigger:'#spark', start:'top 80%', once:true,
+    onEnter:()=>gsap.to(afterline,{strokeDashoffset:0,duration:1.4,ease:'power2.out'}) });
+
+  // --- audit checklist locks row by row ---
+  ScrollTrigger.create({ trigger:'#audit', start:'top 78%', once:true, onEnter:()=>{
+    document.querySelectorAll('#audit .a-row').forEach((r,i)=>setTimeout(()=>r.classList.add('locked'), i*260));
+  }});
+
+  // --- CTA bookend : ink pools back (separate small shader) ---
+  initCtaInk();
+
+  ScrollTrigger.refresh();
+}
+
+/* ---------- citation ghosts on cursor (act I only) ---------- */
+const GHOSTS = [
+  {jp:'国税庁 質疑応答', en:'K-21 · No.4117'},
+  {jp:'過去メール', en:'C-12 · 2024-09'},
+  {jp:'顧問契約書', en:'S-08 · §4.2'}
+];
+let ghostCool = 0, gi = 0;
+function maybeGhost(x,y){
+  const now = performance.now();
+  if(now < ghostCool) return;
+  // only in act I (hero on screen)
+  if(window.scrollY > innerHeight*0.8) return;
+  ghostCool = now + 520;
+  const g = GHOSTS[gi++ % GHOSTS.length];
+  const el = document.createElement('div');
+  el.className='ghost';
+  el.style.left = x+'px'; el.style.top = y+'px';
+  el.innerHTML = `<div class="g-jp">${g.jp}</div><div class="g-en">${g.en}</div>`;
+  document.getElementById('ghost-layer').appendChild(el);
+  gsap.timeline({onComplete:()=>el.remove()})
+    .to(el,{opacity:1,scale:1,y:-14,duration:.45,ease:'power2.out'})
+    .to(el,{opacity:0,scale:.96,y:-26,duration:.55,ease:'power1.in'}, '+=0.55');
+}
+
+/* ---------- count-up ---------- */
+function countUp(el){
+  const to = parseFloat(el.dataset.to), dec = parseInt(el.dataset.dec||'0');
+  const obj = {v:0};
+  gsap.to(obj,{ v:to, duration:1.1, ease:'power2.out', snap: dec>0?undefined:{v:1},
+    onUpdate:()=>{ el.textContent = obj.v.toLocaleString('ja-JP',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }});
+}
+function setCountFinal(el){ const to=parseFloat(el.dataset.to),dec=parseInt(el.dataset.dec||'0');
+  el.textContent = to.toLocaleString('ja-JP',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+
+/* ---------- DraftStream typing ---------- */
+const REPLY = [
+  {t:'田中様　お世話になっております。Zeiro 経由でご返信申し上げます。\n', cite:null},
+  {t:'ご依頼いただきました', cite:null},
+  {t:'源泉徴収票', cite:2},
+  {t:'につきまして、本日中に PDF にてお送りいたします。\n', cite:null},
+  {t:'なお、再発行の根拠資料として、', cite:null},
+  {t:'令和5年分の給与支払報告書', cite:1},
+  {t:'を参照しております。', cite:null},
+  {t:'対応範囲は', cite:null},
+  {t:'顧問契約 §4.2', cite:0},
+  {t:'に基づきます。ご不明点がございましたらお知らせください。', cite:null}
+];
+function typeReply(){
+  const out = document.getElementById('reply');
+  out.innerHTML = '<span class="caret"></span>';
+  const caret = out.querySelector('.caret');
+  let seg=0, ch=0;
+  function step(){
+    if(seg>=REPLY.length){ caret.remove(); return; }
+    const s = REPLY[seg];
+    if(ch===0 && s.cite!==null){ /* start a cite span */ }
+    if(ch < s.t.length){
+      const piece = s.t.slice(0,ch+1);
+      // rebuild current segment node
+      let node = out.querySelector(`[data-seg="${seg}"]`);
+      if(!node){ node=document.createElement('span'); node.dataset.seg=seg;
+        if(s.cite!==null) node.className='cite';
+        out.insertBefore(node, caret); }
+      node.textContent = piece;
+      ch++;
+      const delay = /\n/.test(s.t[ch-1]) ? 60 : 11 + Math.random()*14;
+      setTimeout(step, delay);
+    } else {
+      if(s.cite!==null) popChip(s.cite);
+      seg++; ch=0; setTimeout(step, s.cite!==null?180:28);
+    }
+  }
+  step();
+}
+function popChip(i){ const c=document.querySelector(`.chip[data-i="${i}"]`); if(c) c.classList.add('in'); }
+function typeReplyInstant(){
+  const out=document.getElementById('reply'); out.innerHTML='';
+  REPLY.forEach(s=>{ const n=document.createElement('span'); if(s.cite!==null) n.className='cite'; n.textContent=s.t; out.appendChild(n); });
+}
+function drawSparkInstant(){ const a=document.getElementById('afterline'); if(a){a.style.strokeDashoffset=0;} }
+
+/* ============================================================
+   3. PIPELINE — receding diagonal hairline w/ scroll-scrubbed green pulse
+   ============================================================ */
+function initPipe(){
+  const cv = document.getElementById('pipe-canvas');
+  const ctx = cv.getContext('2d');
+  if(!ctx){ document.querySelector('.pipe-poster').style.opacity=1; cv.style.display='none'; return; }
+  const STEPS = [
+    {ja:'受信', en:'INBOX · 142 件'},
+    {ja:'分類', en:'CLASSIFY · Gemini Flash'},
+    {ja:'検索', en:'RETRIEVE · 6 / pgvector'},
+    {ja:'下書き', en:'DRAFT · Claude'},
+    {ja:'レビュー', en:'APPROVE · 人が送信'}
+  ];
+  // read brand colours from the live tokens instead of hardcoding hex
+  const css = getComputedStyle(document.documentElement);
+  const tok = n => css.getPropertyValue(n).trim();
+  const C = {
+    line: tok('--line-strong'), accent: tok('--accent-bright'), glow: tok('--accent-glow'),
+    paper: tok('--surface'), idle: tok('--bg'), ink: tok('--ink'), muted: tok('--muted'),
+    muted2: tok('--muted-2')
+  };
+  let W,H,DPR=Math.min(devicePixelRatio||1,2), pulse=0;
+  function size(){ const r=cv.getBoundingClientRect(); W=r.width;H=r.height; cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+  size(); addEventListener('resize',()=>{ size(); draw(); });
+
+  function nodePos(i){ const t=i/(STEPS.length-1);
+    return { x: W*(0.08 + t*0.84), y: H*(0.84 - t*0.66) }; }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // receding diagonal hairline
+    const a=nodePos(0), z=nodePos(STEPS.length-1);
+    ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.setLineDash([2,5]);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(z.x,z.y); ctx.stroke(); ctx.setLineDash([]);
+    // travelling green pulse position
+    const px = a.x + (z.x-a.x)*pulse, py = a.y + (z.y-a.y)*pulse;
+    const grad = ctx.createRadialGradient(px,py,0,px,py,60);
+    grad.addColorStop(0,'rgba(92,181,114,.55)'); grad.addColorStop(1,'rgba(92,181,114,0)');
+    ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(px,py,60,0,7); ctx.fill();
+    // nodes
+    STEPS.forEach((s,i)=>{
+      const p=nodePos(i); const t=i/(STEPS.length-1);
+      const reached = pulse >= t-0.04;
+      const scale = 1 - t*0.18;
+      const w=128*scale, h=58*scale;
+      ctx.save(); ctx.translate(p.x,p.y);
+      // card
+      ctx.fillStyle = reached ? C.paper : C.idle;
+      ctx.strokeStyle = reached ? C.accent : C.line;
+      ctx.lineWidth = reached?1.5:1;
+      roundRect(ctx,-w/2,-h/2,w,h,8); ctx.fill(); ctx.stroke();
+      // index
+      ctx.fillStyle = reached ? C.accent : C.muted;
+      ctx.font = `600 ${10*scale}px "JetBrains Mono", monospace`;
+      ctx.textAlign='left'; ctx.fillText('0'+(i+1), -w/2+12, -h/2+18);
+      // jp
+      ctx.fillStyle = reached ? C.ink : C.muted;
+      ctx.font = `600 ${15*scale}px "Noto Sans JP", sans-serif`;
+      ctx.fillText(s.ja, -w/2+12, h/2-16);
+      // en
+      ctx.fillStyle = C.muted;
+      ctx.font = `500 ${7.4*scale}px "JetBrains Mono", monospace`;
+      ctx.fillText(s.en, -w/2+12, h/2-5);
+      // node dot
+      ctx.fillStyle = reached ? C.glow : C.line;
+      ctx.beginPath(); ctx.arc(w/2-12,-h/2+12,3.2*scale,0,7); ctx.fill();
+      ctx.restore();
+    });
+  }
+  function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r);
+    c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+  draw();
+  // canvas text does not wait for webfonts — repaint once they land
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=>draw()); }
+  ScrollTrigger.create({ trigger:'.pipe-stage', start:'top 80%', end:'bottom 30%', scrub:true,
+    onUpdate:s=>{ pulse = s.progress; draw(); } });
+}
+
+/* ============================================================
+   4. CTA — small ink shader that "pools" back in on scroll
+   ============================================================ */
+function initCtaInk(){
+  const cv = document.getElementById('cta-canvas');
+  const api = initInk(cv);
+  if(!api || !api.ok){ cv.style.display='none'; return; }
+  api.setDry(0); // permanently wet ink in the bookend
+  let on=false, rafId;
+  function tick(t){ if(on) api.draw(t); rafId=requestAnimationFrame(tick); }
+  // gentle ambient ink in centre
+  let amb=0;
+  const ambTick=()=>{ amb+=0.01; api.setMouse(0.5+Math.sin(amb)*0.18, 0.5+Math.cos(amb*0.7)*0.18); api.setMouseOn(0.7); requestAnimationFrame(ambTick); };
+  const io=new IntersectionObserver(es=>{ on=es[0].isIntersecting; }, {threshold:0});
+  io.observe(cv);
+  addEventListener('resize',()=>api.resize());
+  rafId=requestAnimationFrame(tick); ambTick();
+  // pool-in scrub: fade canvas opacity by scroll into the section
+  ScrollTrigger.create({ trigger:'#cta', start:'top bottom', end:'top center', scrub:true,
+    onUpdate:s=>{ cv.style.opacity = 0.25 + s.progress*0.65; } });
+}
+
+/* ============================================================
+   5. UI: mobile nav, redact reveal, magnetic CTA
+   ============================================================ */
+const burger=document.getElementById('burger'), sheet=document.getElementById('sheet');
+const sheetLinks=[...sheet.querySelectorAll('a')];
+let menuOpen=false;
+
+function setMenu(open){
+  menuOpen=open;
+  sheet.classList.toggle('open',open); burger.classList.toggle('open',open);
+  burger.setAttribute('aria-expanded', String(open));
+  sheet.setAttribute('aria-hidden', String(!open));
+  document.body.classList.toggle('menu-open',open);
+  if(lenis){ open ? lenis.stop() : lenis.start(); }
+  if(open){ sheetLinks[0] && sheetLinks[0].focus(); }
+  else { burger.focus(); }
+}
+burger.addEventListener('click',()=>setMenu(!menuOpen));
+sheetLinks.forEach(a=>a.addEventListener('click',()=>setMenu(false)));
+// focus trap + escape
+sheet.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ setMenu(false); return; }
+  if(e.key!=='Tab' || !menuOpen) return;
+  const first=sheetLinks[0], last=sheetLinks[sheetLinks.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+});
+
+document.querySelectorAll('.redval').forEach(v=>{
+  const toggle=()=>{ const on=v.classList.toggle('reveal'); v.setAttribute('aria-pressed', String(on)); };
+  v.addEventListener('click',toggle);
+  v.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+});
+
+if(!REDUCE){
+  const mag=document.getElementById('magnetic');
+  if(mag){
+    mag.addEventListener('pointermove',e=>{ const r=mag.getBoundingClientRect();
+      const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+      gsap.to(mag,{x:Math.max(-12,Math.min(12,dx*0.3)),y:Math.max(-12,Math.min(12,dy*0.3)),duration:.4,ease:'power2.out'}); });
+    mag.addEventListener('pointerleave',()=>gsap.to(mag,{x:0,y:0,duration:.5,ease:'elastic.out(1,0.5)'}));
+  }
+}
+
+/* smooth anchor scroll fallback for reduced motion */
+if(REDUCE){
+  document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+    const id=a.getAttribute('href'); if(id.length>1){ const t=document.querySelector(id);
+      if(t){ e.preventDefault(); t.scrollIntoView(); } }
+  }));
+}
+</script>
+</body>
+</html>

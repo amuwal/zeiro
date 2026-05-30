@@ -6,6 +6,9 @@ type UpsertInput = {
   firmId: string;
   role: string;
   tier?: string;
+  appRole?: string;
+  canSend?: boolean;
+  clientScope?: string;
 };
 
 export function getMembership(userId: string, firmId: string) {
@@ -15,8 +18,8 @@ export function getMembership(userId: string, firmId: string) {
 }
 
 export async function upsertMembership(input: UpsertInput): Promise<Membership> {
-  const update: { role: string; tier?: string } = { role: input.role };
-  const create: { userId: string; firmId: string; role: string; tier?: string } = {
+  const update: Prisma.MembershipUpdateInput = { role: input.role };
+  const create: Prisma.MembershipUncheckedCreateInput = {
     userId: input.userId,
     firmId: input.firmId,
     role: input.role,
@@ -25,11 +28,48 @@ export async function upsertMembership(input: UpsertInput): Promise<Membership> 
     update.tier = input.tier;
     create.tier = input.tier;
   }
+  if (input.appRole) {
+    update.appRole = input.appRole;
+    create.appRole = input.appRole;
+  }
+  if (input.canSend !== undefined) {
+    update.canSend = input.canSend;
+    create.canSend = input.canSend;
+  }
+  if (input.clientScope) {
+    update.clientScope = input.clientScope;
+    create.clientScope = input.clientScope;
+  }
   return getPrisma().membership.upsert({
     where: { userId_firmId: { userId: input.userId, firmId: input.firmId } },
     update,
     create,
   });
+}
+
+// Updates the authorization axis only (appRole + capabilities). Clerk role
+// sync (owner ⟷ org:admin) is handled by the caller. Authorization and
+// last-owner protection belong to the caller.
+export async function updateMembershipAuthz(input: {
+  firmId: string;
+  userId: string;
+  appRole?: string;
+  canSend?: boolean;
+  clientScope?: string;
+}): Promise<void> {
+  const data: Prisma.MembershipUpdateInput = {};
+  if (input.appRole) data.appRole = input.appRole;
+  if (input.canSend !== undefined) data.canSend = input.canSend;
+  if (input.clientScope) data.clientScope = input.clientScope;
+  if (Object.keys(data).length === 0) return;
+  await getPrisma().membership.update({
+    where: { userId_firmId: { userId: input.userId, firmId: input.firmId } },
+    data,
+  });
+}
+
+export async function countOwners(firmId: string): Promise<number> {
+  return getPrisma().membership.count({ where: { firmId, appRole: 'owner' } });
 }
 
 export async function removeMembership(userId: string, firmId: string): Promise<void> {
@@ -66,6 +106,9 @@ export type FirmUser = {
   email: string;
   role: string;
   tier: string;
+  appRole: string;
+  canSend: boolean;
+  clientScope: string;
   supervisorId: string | null;
   joinedAt: Date;
 };
@@ -85,6 +128,9 @@ export async function listFirmUsers(firmId: string): Promise<FirmUser[]> {
     email: r.user.email,
     role: r.role,
     tier: r.tier,
+    appRole: r.appRole,
+    canSend: r.canSend,
+    clientScope: r.clientScope,
     supervisorId: r.supervisorId,
     joinedAt: r.createdAt,
   }));

@@ -75,6 +75,7 @@ async function persistResult(
 
   if (result.kind === 'draft') {
     await createDraft({
+      firmId,
       inquiryId,
       subject: result.subject,
       body: result.body,
@@ -108,6 +109,7 @@ async function persistResult(
   const inquiry = await getInquiry(firmId, inquiryId);
   const recipientName = inquiry?.client?.name ?? '顧問先';
   await createDraft({
+    firmId,
     inquiryId,
     subject: inquiry?.subject ?? '',
     body: buildSkeletonBody({

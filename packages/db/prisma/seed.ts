@@ -119,6 +119,7 @@ async function upsertInquiry(firmId: string, clientByEmail: Map<string, string>,
   if (inq.draft) {
     await prisma.draft.create({
       data: {
+        firmId,
         inquiryId: row.id,
         subject: inq.draft.subject,
         body: inq.draft.body,

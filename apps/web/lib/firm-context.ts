@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { type AppRole, asAppRole, asClientScope, type ClientScope } from '@zeiro/core';
 import { findFirmByClerkOrgId, findUserByClerkUserId, getMembership } from '@zeiro/db';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
@@ -6,7 +7,14 @@ import { cache } from 'react';
 export type FirmContext = {
   firmId: string;
   userId: string;
-  role: string;
+  // Authoritative authorization role (owner/reviewer/staff/viewer).
+  role: AppRole;
+  // Per-user send capability (staff is gate-able; owner/reviewer default on).
+  canSend: boolean;
+  // Whether the user sees all clients or only their assigned ones.
+  clientScope: ClientScope;
+  // Clerk org role string ('org:admin' | 'org:member') — billing-admin mirror only.
+  clerkRole: string;
 };
 
 export const NO_AUTH = 'NO_AUTH' as const;
@@ -31,7 +39,17 @@ export const getFirmContext = cache(async (): Promise<ContextResult> => {
   const membership = await getMembership(user.id, firm.id);
   if (!membership) return { ok: false, reason: NOT_PROVISIONED };
 
-  return { ok: true, ctx: { firmId: firm.id, userId: user.id, role: membership.role } };
+  return {
+    ok: true,
+    ctx: {
+      firmId: firm.id,
+      userId: user.id,
+      role: asAppRole(membership.appRole),
+      canSend: membership.canSend,
+      clientScope: asClientScope(membership.clientScope),
+      clerkRole: membership.role,
+    },
+  };
 });
 
 export async function requireFirmContext(): Promise<FirmContext> {

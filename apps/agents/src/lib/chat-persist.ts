@@ -68,6 +68,7 @@ export async function persistChatTerminal(args: {
     const t = args.terminal;
     const confidence = confidenceFromCitations(t.citations.length);
     const draft = await createDraft({
+      firmId: args.firmId,
       inquiryId: args.inquiryId,
       subject: args.subject,
       body: t.body,

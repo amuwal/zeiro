@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zeiro — 動く証拠 / Working Proof</title>
+<meta name="description" content="問い合わせはAIが下書きする。判断は、税理士がする。 受信 → 分類 → 事務所ナレッジで下書き → 税理士レビュー → 送信。税理士事務所のための顧客対応AIエージェント。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ───────────────────────── tokens ───────────────────────── */
+:root{
+  --bg:#f2eee6; --bg-2:#ede8de; --surface:#fbf9f4; --surface-2:#f7f4ed; --paper:#ffffff;
+  --ink:#14110d; --ink-2:#3a352d; --ink-soft:#5a5248; --muted:#7a7268; --muted-2:#9a9286;
+  --line:#e2dccf; --line-strong:#cfc8b8;
+  --accent:oklch(38% 0.045 150); --accent-ink:#15301b; --accent-soft:oklch(92% 0.025 150);
+  --accent-bright:#3b834e; --accent-glow:#5cb572; --positive:#236436; --urgent:#c13234;
+  /* category hues — one hue per triage class, used identically everywhere */
+  --cat-kijitsu:#a06f30;  /* 期日 */
+  --cat-shorui:#2f6868;   /* 書類 */
+  --cat-zeimu:#9a504b;    /* 税務 */
+  --cat-komon:#594c7d;    /* 顧問契約 */
+  --cat-sonota:#9a9286;   /* その他 */
+  /* ink-section surface tints (the one dark beat) */
+  --ink-surface:#1c1813; --ink-line:#3a352d; --ink-line-2:#2a251e; --ink-line-3:#241f19;
+  --ink-cream:#f5f1e8; --ink-cream-2:#f0ebe0;
+  --font-sans:"Inter Tight","Noto Sans JP",system-ui,sans-serif;
+  --font-jp:"Noto Sans JP","Inter Tight",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+  --ease-io:cubic-bezier(0.65,0,0.35,1);
+  --shadow-sm:0 1px 2px rgba(20,17,13,.04);
+  --shadow:0 1px 2px rgba(20,17,13,.04), 0 8px 24px -16px rgba(20,17,13,.14);
+  --shadow-lg:0 1px 2px rgba(20,17,13,.05), 0 30px 60px -32px rgba(20,17,13,.30);
+  --gutter:clamp(18px,4.4vw,68px);
+  --maxw:1280px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--font-jp);
+  font-feature-settings:"palt","ss01";
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  line-height:1.8; overflow-x:hidden;
+}
+::selection{background:var(--accent-soft); color:var(--accent-ink)}
+a{color:inherit; text-decoration:none}
+img{display:block; max-width:100%}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:3px}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+
+/* ─── the hairline 12-col grid — the proof of rigor, visible the WHOLE scroll ─── */
+.gridlines{
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  max-width:var(--maxw); margin:0 auto; padding:0 var(--gutter);
+  display:grid; grid-template-columns:repeat(12,1fr); gap:0;
+  opacity:.34; transition:opacity .8s var(--ease);
+}
+.gridlines span{border-left:1px solid var(--line); height:100%}
+.gridlines span:last-child{border-right:1px solid var(--line)}
+/* the two edge columns + the centre fold read stronger — a control-surface frame,
+   not a grid that fights the asymmetric content columns */
+.gridlines span:first-child,.gridlines span:last-child{border-left-color:var(--line-strong)}
+.gridlines span:nth-child(7){border-left-color:var(--line-strong)}
+body.dark .gridlines{opacity:.18}
+body.dark .gridlines span{border-color:var(--ink-line)}
+body.dark .gridlines span:first-child,body.dark .gridlines span:last-child,body.dark .gridlines span:nth-child(7){border-left-color:var(--ink-line)}
+@media(max-width:720px){
+  .gridlines span:nth-child(n+5){display:none}
+}
+
+/* layout shell */
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 var(--gutter); position:relative; z-index:2}
+section{position:relative; z-index:2}
+
+/* ─── type system ─── */
+.eyebrow{
+  font-family:var(--font-mono); font-weight:500; font-size:.66rem;
+  text-transform:uppercase; letter-spacing:.32em; color:var(--ink-soft);
+}
+.mono{font-family:var(--font-mono); letter-spacing:.06em}
+/* JP-led display: Noto Sans JP 700 with JP feature pairing + JP-tuned tracking.
+   Latin runs opt back into Inter Tight via .lat so only Japanese glyphs use JP tracking. */
+h1,h2,h3{font-family:var(--font-jp); font-weight:700; letter-spacing:-0.01em; line-height:1.18; font-feature-settings:"palt","ss01"}
+h1 .lat,h2 .lat,h3 .lat,.brand .lat,.closing .lat{font-family:var(--font-sans); letter-spacing:-0.02em}
+.sec-head{font-size:clamp(1.8rem,3.4vw,2.9rem); letter-spacing:-0.01em}
+.tabnum{font-variant-numeric:tabular-nums; font-family:var(--font-mono); font-weight:600}
+
+/* ═══════════════════════════ NAV ═══════════════════════════ */
+.nav{
+  position:fixed; top:0; left:0; right:0; z-index:60;
+  background:color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter:saturate(1.2) blur(10px);
+  border-bottom:1px solid transparent;
+  transition:border-color .5s var(--ease), background .5s var(--ease);
+}
+.nav.scrolled{border-bottom-color:var(--line)}
+.nav-inner{
+  max-width:var(--maxw); margin:0 auto; padding:0 var(--gutter);
+  height:60px; display:flex; align-items:center; justify-content:space-between;
+}
+.brand{
+  font-family:var(--font-sans); font-weight:700; font-size:1.18rem;
+  letter-spacing:-0.03em; display:flex; align-items:center; gap:.5rem;
+}
+.brand .glyph{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+}
+.nav-links{display:flex; align-items:center; gap:clamp(1.1rem,2.2vw,2.2rem)}
+.nav-links a{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-soft); position:relative; padding:4px 0;
+}
+.nav-links a::after{
+  content:""; position:absolute; left:0; bottom:-1px; height:1px; width:0;
+  background:var(--accent); transition:width .4s var(--ease);
+}
+.nav-links a:hover{color:var(--ink)}
+.nav-links a:hover::after{width:100%}
+.cta-magnet{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+  background:var(--ink); color:var(--bg); padding:.6rem 1.1rem; border-radius:8px;
+  position:relative; will-change:transform; transition:background .3s var(--ease);
+}
+.cta-magnet:hover{background:var(--accent-ink)}
+.hamburger{display:none; flex-direction:column; gap:5px; padding:8px; z-index:62}
+.hamburger span{width:24px; height:2px; background:var(--ink); transition:.4s var(--ease)}
+.mobile-menu{
+  position:fixed; inset:0; z-index:61; background:var(--ink); color:var(--bg);
+  display:flex; flex-direction:column; padding:var(--gutter);
+  transform:translateY(-100%); transition:transform .55s var(--ease);
+}
+.mobile-menu.open{transform:translateY(0)}
+.mobile-menu .mm-top{display:flex; align-items:center; justify-content:space-between; height:60px}
+.mobile-menu .mm-brand{color:var(--bg); font-size:1.18rem}
+.mobile-menu .mm-brand .glyph{background:var(--accent-glow); box-shadow:0 0 0 3px color-mix(in oklab,var(--accent-glow) 30%,transparent)}
+.mm-close{position:relative; width:30px; height:30px; flex:none}
+.mm-close span{position:absolute; left:3px; right:3px; top:50%; height:2px; background:var(--bg); border-radius:2px}
+.mm-close span:first-child{transform:rotate(45deg)}
+.mm-close span:last-child{transform:rotate(-45deg)}
+.mobile-menu .mm-links{flex:1; display:flex; flex-direction:column; justify-content:center; gap:1.4rem}
+.mobile-menu a:not(.mm-brand){
+  font-family:var(--font-jp); font-weight:700; font-feature-settings:"palt"; font-size:clamp(1.8rem,8vw,3rem);
+  letter-spacing:-0.01em; display:flex; align-items:baseline; gap:1rem;
+}
+.mobile-menu a .num{font-family:var(--font-mono); font-size:.8rem; color:var(--accent-glow); letter-spacing:.2em}
+@media(max-width:780px){
+  .nav-links,.nav .cta-magnet{display:none}
+  .hamburger{display:flex}
+  body.menu-open .hamburger span:nth-child(1){transform:translateY(7px) rotate(45deg); background:var(--bg)}
+  body.menu-open .hamburger span:nth-child(2){opacity:0}
+  body.menu-open .hamburger span:nth-child(3){transform:translateY(-7px) rotate(-45deg); background:var(--bg)}
+}
+
+/* ═══════════════════════════ HERO ═══════════════════════════ */
+.hero{padding:clamp(120px,16vh,180px) 0 clamp(60px,8vh,110px)}
+.hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,5vw,64px); align-items:center}
+.hero-eyebrow{margin-bottom:1.6rem}
+.hero h1{
+  font-family:var(--font-jp); font-weight:700; font-feature-settings:"palt","ss01";
+  font-size:clamp(2.4rem,5.2vw,4.6rem); line-height:1.16; letter-spacing:-0.01em;
+}
+.hero h1 .soft{color:var(--ink-soft); display:block; word-break:keep-all; overflow-wrap:anywhere}
+.hero h1 .hard{color:var(--ink); display:block; word-break:keep-all; overflow-wrap:anywhere}
+.hero h1 .lat{font-family:var(--font-sans); letter-spacing:-0.02em}
+.hero-sub{
+  margin-top:1.8rem; max-width:34ch; color:var(--ink-2);
+  font-size:clamp(1rem,1.15vw,1.18rem); line-height:1.8; text-wrap:pretty;
+}
+.hero-flow{
+  margin-top:1.1rem; font-family:var(--font-mono); font-size:.74rem; letter-spacing:.08em;
+  color:var(--muted); display:flex; flex-wrap:wrap; gap:.55rem; align-items:center;
+}
+.hero-flow b{color:var(--accent-ink); font-weight:500}
+.hero-flow .arr{color:var(--line-strong)}
+.hero-ctas{display:flex; gap:.8rem; margin-top:2.2rem; flex-wrap:wrap}
+.btn{
+  font-family:var(--font-mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase;
+  padding:.85rem 1.5rem; border-radius:9px; transition:.3s var(--ease); will-change:transform;
+}
+.btn-primary{background:var(--accent); color:var(--surface)}
+.btn-primary:hover{background:var(--accent-ink); transform:translateY(-1px)}
+.btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line-strong)}
+.btn-ghost:hover{border-color:var(--ink); background:var(--surface)}
+
+/* ── mini-inbox (hero + classify share the same widget) ── */
+.inbox{
+  background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow); overflow:hidden; will-change:transform;
+}
+.inbox-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.8rem 1.1rem; border-bottom:1px solid var(--line); background:var(--surface-2);
+}
+.inbox-bar .ttl{font-family:var(--font-mono); font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted)}
+.unread{
+  font-family:var(--font-mono); font-weight:600; font-size:.7rem; letter-spacing:.08em;
+  color:var(--accent-ink); background:var(--accent-soft); padding:.2rem .55rem; border-radius:20px;
+}
+.inbox-list{padding:.4rem}
+.mail{
+  display:grid; grid-template-columns:auto 1fr auto; gap:.7rem; align-items:center;
+  padding:.62rem .7rem; border-radius:9px; position:relative;
+  transition:background .3s var(--ease); cursor:default;
+}
+.mail:hover{background:var(--surface-2)}
+.mail .dot{width:8px; height:8px; border-radius:50%; flex:none}
+.mail .from{font-weight:600; font-size:.86rem; color:var(--ink); letter-spacing:-0.01em}
+.mail .subj{font-size:.74rem; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.mail .meta{display:flex; align-items:center; gap:.5rem}
+.mail .cat{
+  font-family:var(--font-mono); font-size:.6rem; letter-spacing:.06em; padding:.16rem .42rem;
+  border-radius:5px; white-space:nowrap; border:1px solid currentColor;
+}
+.mail .time{font-family:var(--font-mono); font-size:.64rem; color:var(--muted); letter-spacing:.04em}
+.mail.urgent-row .flag{
+  font-family:var(--font-mono); font-size:.58rem; letter-spacing:.08em; color:var(--urgent);
+  border:1px solid var(--urgent); padding:.14rem .4rem; border-radius:5px; white-space:nowrap;
+}
+.mail.urgent-row::before{
+  content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px; border-radius:3px; background:var(--urgent);
+}
+.mail.selected{
+  background:var(--paper); box-shadow:inset 0 0 0 1.5px var(--accent), var(--shadow-sm);
+}
+.mail.selected .zeiro-tag{
+  font-family:var(--font-mono); font-size:.56rem; letter-spacing:.1em; color:var(--accent-ink);
+  background:var(--accent-soft); padding:.12rem .4rem; border-radius:5px;
+}
+/* category lane labels (classify reveal) */
+.lane-label{
+  display:flex; align-items:center; gap:.5rem;
+  font-weight:600; font-size:.74rem; letter-spacing:-0.01em;
+  color:var(--ink-soft); padding:.6rem .7rem .2rem; opacity:0; height:0; overflow:hidden;
+  transition:opacity .5s var(--ease);
+}
+.lane-label .lane-dot{width:8px; height:8px; border-radius:2px; flex:none}
+.lane-label .lane-en{font-family:var(--font-mono); font-weight:500; font-size:.56rem; letter-spacing:.16em; color:var(--muted); text-transform:uppercase}
+body.lanes-on .lane-label{opacity:1; height:auto}
+
+/* ═══════════════════════════ CLASSIFY ═══════════════════════════ */
+.classify{padding:clamp(70px,10vh,130px) 0 clamp(40px,6vh,90px)}
+.classify-head{max-width:54ch; margin-bottom:2.4rem}
+.classify-head h2{margin:.6rem 0 .8rem}
+.classify-head p{color:var(--ink-2); max-width:46ch}
+.classify-grid{display:grid; grid-template-columns:1fr 1.15fr; gap:clamp(24px,4vw,52px); align-items:start}
+.lane-legend{display:flex; flex-direction:column; gap:.1rem}
+.lane{
+  display:flex; align-items:center; gap:.8rem; padding:.7rem .2rem;
+  border-bottom:1px solid var(--line); position:relative;
+}
+.lane:last-child{border-bottom:none}
+.lane .swatch{width:10px; height:10px; border-radius:3px; flex:none}
+.lane .name{font-weight:600; font-size:.95rem}
+.lane .en{font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; color:var(--ink-soft); text-transform:uppercase}
+.lane .count{margin-left:auto; font-family:var(--font-mono); font-weight:600; font-size:.85rem; color:var(--ink-soft); font-variant-numeric:tabular-nums}
+.lane .bar{position:absolute; left:0; bottom:0; height:2px; background:currentColor; width:0; opacity:.5}
+
+/* ═══════════════════════════ RETRIEVAL (the dark beat) ═══════════════════════════ */
+.retrieval{
+  background:var(--ink); color:var(--bg);
+  padding:clamp(90px,13vh,150px) 0; margin-top:clamp(50px,7vh,90px);
+  position:relative; overflow:hidden;
+}
+.retrieval .eyebrow{color:var(--muted-2)}
+.retrieval-head{text-align:center; margin-bottom:clamp(28px,4vh,52px)}
+.retrieval-head h2{color:var(--ink-cream); margin-top:.7rem; font-size:clamp(1.9rem,3.6vw,3rem)}
+.constellation{
+  position:relative; width:100%; aspect-ratio:16/9; max-height:560px;
+  perspective:1200px;
+}
+.const-stage{position:absolute; inset:0; transform-style:preserve-3d; will-change:transform}
+#constLines{position:absolute; inset:0; width:100%; height:100%; z-index:1}
+.node{
+  position:absolute; transform:translate(-50%,-50%); z-index:3;
+  background:var(--ink-surface); border:1px solid var(--ink-line); border-radius:11px;
+  padding:.7rem .95rem; box-shadow:0 18px 40px -22px rgba(0,0,0,.8); will-change:transform;
+}
+.node.center{
+  background:var(--ink-cream); color:var(--ink); border:1px solid var(--ink-cream); z-index:4;
+  padding:1rem 1.6rem; text-align:center;
+}
+.node.center .big{font-family:var(--font-jp); font-weight:700; font-feature-settings:"palt"; font-size:1.5rem; letter-spacing:-0.01em}
+.node.center .tag{font-family:var(--font-mono); font-size:.54rem; letter-spacing:.22em; color:var(--accent); margin-top:.2rem}
+.node .title{font-weight:600; font-size:.82rem; color:var(--ink-cream-2); letter-spacing:-0.01em}
+.node .sub{font-family:var(--font-mono); font-size:.56rem; letter-spacing:.06em; color:var(--muted-2); margin-top:.25rem}
+.node .id{font-family:var(--font-mono); font-size:.58rem; letter-spacing:.08em; margin-top:.15rem; font-weight:500}
+.node[data-cat]{border-left:3px solid var(--c)}
+.retrieval-foot{text-align:center; margin-top:clamp(20px,3vh,40px)}
+.retrieval-foot .mono{font-size:.66rem; letter-spacing:.2em; color:var(--muted-2); text-transform:uppercase}
+
+/* ═══════════════════════════ DRAFT (signature) ═══════════════════════════ */
+.draft{padding:clamp(80px,11vh,140px) 0 clamp(60px,8vh,100px)}
+.draft-head{margin-bottom:2.2rem; max-width:60ch}
+.draft-head h2{margin-top:.7rem}
+.draft-layout{display:grid; grid-template-columns:1.5fr .85fr; gap:clamp(24px,3.5vw,48px); align-items:start}
+.draft-sheet{
+  background:var(--paper); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow-lg); padding:clamp(20px,3vw,34px); position:relative; min-height:360px;
+}
+.draft-sheet-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  padding-bottom:.9rem; margin-bottom:1.2rem; border-bottom:1px solid var(--line);
+}
+.draft-sheet-bar .z{font-family:var(--font-sans); font-weight:700; letter-spacing:-0.02em; font-size:1rem; display:flex; align-items:center; gap:.45rem}
+.draft-sheet-bar .z .glyph{width:7px; height:7px; border-radius:50%; background:var(--accent)}
+.draft-sheet-bar .label{font-family:var(--font-mono); font-size:.6rem; letter-spacing:.14em; color:var(--muted); text-transform:uppercase}
+/* reserve the finished draft height so the citation chips don't shift when streaming completes */
+.draft-body{font-size:1.02rem; line-height:1.95; color:var(--ink); min-height:clamp(300px,40vh,340px); letter-spacing:.01em}
+.draft-body .cited{
+  background:var(--accent-soft); border-radius:4px; padding:0 .1em;
+  box-shadow:0 0 0 0 var(--accent-soft); transition:box-shadow .4s var(--ease);
+}
+.cursor{
+  display:inline-block; width:.5ch; height:1.1em; vertical-align:-0.18em;
+  background:var(--accent-bright); margin-left:1px; border-radius:1px;
+  box-shadow:0 0 8px var(--accent-glow); animation:blink 1s steps(2) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+.draft-chips{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.6rem; padding-top:1.2rem; border-top:1px solid var(--line)}
+.chip{
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.04em; display:inline-flex; gap:.45rem; align-items:center;
+  padding:.32rem .55rem; border-radius:6px; border:1px solid currentColor; opacity:0;
+  transform:scale(.85); transition:transform .45s var(--ease), opacity .45s var(--ease), background .3s;
+  cursor:pointer;
+}
+.chip.in{opacity:1; transform:scale(1)}
+.chip .code{font-weight:600}
+.chip .desc{color:var(--ink-soft); font-weight:400}
+.chip:hover{background:var(--surface-2)}
+.chip.spot{box-shadow:0 0 0 2px currentColor}
+.draft-side{display:flex; flex-direction:column; gap:1rem}
+.pillar-callout{
+  background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:1.1rem 1.2rem;
+}
+.pillar-callout .k{font-family:var(--font-mono); font-size:.6rem; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-ink); margin-bottom:.4rem}
+.pillar-callout h4{font-family:var(--font-sans); font-weight:600; font-size:1.02rem; letter-spacing:-0.01em; margin-bottom:.35rem}
+.pillar-callout p{font-size:.82rem; color:var(--ink-2); line-height:1.7}
+
+/* ═══════════════════════════ REVIEW / COVERFLOW ═══════════════════════════ */
+.review{padding:clamp(70px,10vh,130px) 0; background:var(--surface-2); border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
+.review-head{text-align:center; margin-bottom:clamp(28px,4vh,52px); max-width:50ch; margin-left:auto; margin-right:auto}
+.review-head h2{margin-top:.7rem}
+.coverflow{perspective:1400px; display:flex; justify-content:center; align-items:center; min-height:380px; position:relative}
+.cf-stage{position:relative; transform-style:preserve-3d; width:100%; max-width:560px; height:360px}
+.cf-card{
+  position:absolute; top:50%; left:50%; width:min(86vw,330px); height:330px;
+  background:var(--paper); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+  transform-style:preserve-3d; transition:transform .8s var(--ease), opacity .8s var(--ease), box-shadow .5s;
+  will-change:transform; overflow:hidden;
+}
+.cf-card .face{position:absolute; inset:0; padding:1.2rem 1.3rem; backface-visibility:hidden; display:flex; flex-direction:column; background:var(--paper); border-radius:12px}
+.cf-card .back{transform:rotateY(180deg)}
+.cf-card .ft{display:flex; align-items:center; justify-content:space-between; padding-bottom:.7rem; margin-bottom:.7rem; border-bottom:1px solid var(--line)}
+.cf-card .ft .z{font-family:var(--font-jp); font-weight:700; font-feature-settings:"palt"; font-size:.9rem}
+.cf-card .ft .badge{font-family:var(--font-mono); font-size:.56rem; letter-spacing:.1em; padding:.18rem .45rem; border-radius:5px; background:var(--surface-2); color:var(--muted); text-transform:uppercase}
+.cf-card .from{font-weight:600; font-size:.9rem; margin-bottom:.4rem}
+.cf-card .txt{font-size:.78rem; line-height:1.75; color:var(--ink-2); flex:1; overflow:hidden}
+.cf-card .mini-chip{font-family:var(--font-mono); font-size:.54rem; letter-spacing:.04em; padding:.16rem .4rem; border:1px solid var(--cat-komon); color:var(--cat-komon); border-radius:5px; align-self:flex-start; margin-top:.5rem}
+.cf-card.center{box-shadow:var(--shadow-lg)}
+.cf-card.center .back .badge{background:var(--accent-soft); color:var(--accent-ink)}
+.cf-controls{display:flex; flex-direction:column; align-items:center; gap:1rem; margin-top:clamp(20px,3vh,36px)}
+.approve{
+  font-family:var(--font-mono); font-size:.82rem; letter-spacing:.1em; text-transform:uppercase;
+  background:var(--accent); color:var(--surface); padding:.9rem 1.8rem; border-radius:10px;
+  display:inline-flex; align-items:center; gap:.6rem; transition:.4s var(--ease); will-change:transform; box-shadow:var(--shadow);
+}
+.approve:hover{background:var(--accent-ink); transform:translateY(-1px)}
+.approve.sent{background:var(--positive); pointer-events:none}
+.approve .ic{width:8px; height:8px; border-radius:50%; background:currentColor}
+.audit-log{
+  font-family:var(--font-mono); font-size:.66rem; letter-spacing:.04em; color:var(--ink-soft);
+  background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:.7rem 1rem;
+  min-height:1.2rem; max-width:680px; text-align:center; opacity:0; transition:opacity .5s var(--ease);
+}
+.audit-log.show{opacity:1}
+.audit-log .ok{color:var(--positive); font-weight:600}
+.cf-hint{font-family:var(--font-mono); font-size:.6rem; letter-spacing:.14em; color:var(--muted); text-transform:uppercase}
+
+/* ═══════════════════════════ PIPELINE ═══════════════════════════ */
+.pipeline{padding:clamp(80px,11vh,140px) 0}
+.pipeline-head{margin-bottom:clamp(30px,5vh,64px); max-width:56ch}
+.pipeline-head h2{margin-top:.7rem}
+.stair{perspective:1200px; margin:0 auto; max-width:1000px}
+.stair-stage{transform-style:preserve-3d; transform:rotateX(8deg) rotateY(-14deg); display:flex; flex-direction:column; gap:0}
+.step{
+  position:relative; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:1.1rem 1.3rem; box-shadow:var(--shadow); width:clamp(220px,46%,360px);
+  transform-style:preserve-3d; transition:transform .5s var(--ease); will-change:transform;
+}
+.step:nth-child(1){align-self:flex-start; transform:translateZ(0)}
+.step:nth-child(2){align-self:flex-start; margin-left:11%; margin-top:-14px; transform:translateZ(40px)}
+.step:nth-child(3){align-self:flex-start; margin-left:22%; margin-top:-14px; transform:translateZ(80px)}
+.step:nth-child(4){align-self:flex-start; margin-left:33%; margin-top:-14px; transform:translateZ(120px)}
+.step:nth-child(5){align-self:flex-start; margin-left:44%; margin-top:-14px; transform:translateZ(160px)}
+.step .no{font-family:var(--font-mono); font-size:.66rem; letter-spacing:.14em; color:var(--muted); display:flex; align-items:center; gap:.5rem}
+.step .no::after{content:""; height:1px; width:24px; background:var(--line-strong)}
+.step .nm{font-family:var(--font-sans); font-weight:700; font-size:1.25rem; letter-spacing:-0.02em; margin:.3rem 0 .15rem}
+.step .en{font-family:var(--font-mono); font-size:.58rem; letter-spacing:.1em; color:var(--ink-soft); text-transform:uppercase}
+.step .pulse{
+  position:absolute; top:50%; right:-4px; transform:translateY(-50%);
+  width:11px; height:11px; border-radius:50%; background:var(--accent); opacity:.25;
+  box-shadow:0 0 0 0 var(--accent-glow);
+}
+.step.lit .pulse{opacity:1; box-shadow:0 0 0 5px var(--accent-soft), 0 0 16px var(--accent-glow)}
+.step.lit{box-shadow:var(--shadow), inset 0 0 0 1.5px var(--accent-soft)}
+.step.done .badge{
+  position:absolute; top:.8rem; right:.9rem; font-family:var(--font-mono); font-size:.54rem;
+  letter-spacing:.08em; color:var(--accent-ink); background:var(--accent-soft); padding:.14rem .4rem; border-radius:5px;
+}
+.tech-chips{display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin-top:clamp(28px,5vh,56px)}
+.tech-chips span{
+  font-family:var(--font-mono); font-size:.64rem; letter-spacing:.1em; color:var(--ink-soft);
+  border:1px solid var(--line-strong); border-radius:20px; padding:.35rem .85rem; background:var(--surface);
+}
+
+/* ═══════════════════════════ NUMBERS ═══════════════════════════ */
+.numbers{padding:clamp(80px,11vh,140px) 0; background:var(--surface-2); border-top:1px solid var(--line)}
+.numbers-head{margin-bottom:clamp(28px,4vh,52px)}
+.numbers-head h2{margin-top:.7rem; display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap}
+.numbers-head h2 .ctx{font-family:var(--font-mono); font-size:.7rem; letter-spacing:.06em; color:var(--muted); font-weight:500}
+.dash{display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,2vw,22px)}
+.card{background:var(--paper); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:clamp(18px,2.4vw,28px)}
+.card .ch{font-family:var(--font-mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:1rem}
+.donut-wrap{display:flex; align-items:center; gap:1.6rem; flex-wrap:wrap}
+.donut-center{position:relative}
+.donut-num{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+.donut-num .v{font-family:var(--font-mono); font-weight:600; font-size:1.9rem; font-variant-numeric:tabular-nums; color:var(--ink)}
+.donut-num .u{font-size:.66rem; color:var(--ink-soft); font-family:var(--font-mono); letter-spacing:.08em}
+.legend{display:flex; flex-direction:column; gap:.5rem}
+.legend .it{display:flex; align-items:center; gap:.6rem; font-size:.82rem}
+.legend .sw{width:9px; height:9px; border-radius:2px}
+.legend .lv{margin-left:auto; font-family:var(--font-mono); font-weight:600; font-variant-numeric:tabular-nums; color:var(--ink-soft)}
+.compare-row{margin-bottom:1.1rem}
+.compare-row .lbl{display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em; color:var(--muted); margin-bottom:.4rem; text-transform:uppercase}
+.compare-row .lbl b{color:var(--ink); font-size:.84rem}
+.track{height:9px; border-radius:6px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line)}
+.track .fill{height:100%; border-radius:6px; width:0; transition:width 1.2s var(--ease)}
+.minus97{font-family:var(--font-mono); font-weight:600; font-size:clamp(2.4rem,4.5vw,3.4rem); color:var(--accent); font-variant-numeric:tabular-nums; line-height:1}
+.minus97 small{font-size:.34em; color:var(--muted); display:block; letter-spacing:.1em; margin-top:.3rem}
+.spark-card svg{width:100%; height:120px; display:block}
+.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(14px,2vw,22px); margin-top:clamp(14px,2vw,22px)}
+.tile{background:var(--paper); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:clamp(16px,2vw,24px)}
+.tile .tk{font-family:var(--font-mono); font-size:.6rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:.7rem}
+.tile .tv{font-family:var(--font-mono); font-weight:600; font-size:clamp(1.8rem,3.4vw,2.6rem); font-variant-numeric:tabular-nums; color:var(--ink); line-height:1}
+.tile .tv .un{font-size:.5em; color:var(--ink-soft)}
+.tile .tl{font-size:.78rem; color:var(--ink-2); margin-top:.5rem}
+
+/* ═══════════════════════════ FEATURES / TRUST / CTA ═══════════════════════════ */
+.close{padding:clamp(80px,11vh,140px) 0}
+.pillars{display:grid; grid-template-columns:1.25fr .75fr; gap:clamp(20px,3vw,40px); align-items:start; margin-bottom:clamp(50px,8vh,100px)}
+.pillar-big{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:clamp(24px,3.4vw,42px); box-shadow:var(--shadow)}
+.pillar-col{display:flex; flex-direction:column; gap:clamp(20px,3vw,40px)}
+.pillar-sm{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:clamp(20px,2.8vw,32px); box-shadow:var(--shadow)}
+.pillar-k{font-family:var(--font-mono); font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--accent-ink); margin-bottom:.9rem}
+.pillar-h{font-family:var(--font-jp); font-weight:700; font-feature-settings:"palt","ss01"; font-size:clamp(1.2rem,2vw,1.7rem); letter-spacing:-0.01em; margin-bottom:.7rem}
+.pillar-p{color:var(--ink-2); font-size:.95rem; line-height:1.8; max-width:44ch}
+.esc-meter{margin-top:1.4rem; display:flex; align-items:center; gap:.9rem}
+.esc-meter .bar{flex:1; height:8px; border-radius:5px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; position:relative}
+.esc-meter .bar i{position:absolute; left:0; top:0; bottom:0; width:32%; background:var(--accent); border-radius:5px}
+.esc-meter .v{font-family:var(--font-mono); font-weight:600; font-size:.92rem; color:var(--accent-ink); font-variant-numeric:tabular-nums}
+/* My-Number masking demo — receive (raw, last-4 only) → stored (fully masked).
+   The interaction MASKS on hover/focus, demonstrating the §38 promise; it never exposes. */
+.redact{margin-top:1.4rem; background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:1rem 1.1rem; font-family:var(--font-mono); font-size:.82rem}
+.redact .row{display:flex; align-items:center; gap:.7rem; padding:.4rem 0}
+.redact .row + .row{border-top:1px solid var(--line)}
+.redact .row .lab{color:var(--ink-soft); width:auto; min-width:11ch; font-size:.64rem; letter-spacing:.06em}
+.redact .arrow{color:var(--accent); font-size:.7rem; margin:.15rem 0 .25rem; display:flex; align-items:center; gap:.45rem; letter-spacing:.06em}
+.redact .arrow .ln{flex:1; height:1px; background:linear-gradient(90deg,var(--accent-soft),var(--line))}
+.mynum{
+  position:relative; padding:.1rem .42rem; border-radius:4px;
+  letter-spacing:.06em; user-select:none; transition:background .45s var(--ease), color .45s var(--ease);
+  outline-offset:2px;
+}
+/* row 1: received value — synthetic, masked except last 4. Hover demonstrates full auto-mask. */
+.mynum.received{background:var(--surface-2); color:var(--ink); cursor:pointer}
+.mynum.received .seal{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:var(--ink); color:var(--ink-cream); border-radius:4px; letter-spacing:.1em; font-size:.72em;
+  opacity:0; transition:opacity .45s var(--ease); pointer-events:none;
+}
+.mynum.received.sealed{color:transparent}
+.mynum.received.sealed .seal{opacity:1}
+/* row 2: stored value — permanently fully masked, never reveals */
+.mynum.stored{background:var(--ink); color:var(--ink-cream); cursor:default}
+.redact .hint{font-size:.6rem; letter-spacing:.08em; color:var(--ink-soft); margin-top:.7rem; line-height:1.6}
+.redact .hint b{color:var(--accent-ink); font-weight:600}
+
+.closing{text-align:center; max-width:30ch; margin:0 auto}
+.closing h2{font-family:var(--font-jp); font-weight:700; font-feature-settings:"palt","ss01"; font-size:clamp(2rem,4.4vw,3.4rem); letter-spacing:-0.01em; line-height:1.24; word-break:keep-all}
+.closing .sub{color:var(--ink-2); margin-top:1.2rem; max-width:42ch; margin-left:auto; margin-right:auto; font-size:1.02rem; text-wrap:pretty}
+.closing-ctas{display:flex; gap:.8rem; justify-content:center; margin-top:2rem; flex-wrap:wrap}
+.trust-line{
+  margin-top:2.4rem; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em; color:var(--muted);
+  display:flex; gap:.7rem; justify-content:center; flex-wrap:wrap; align-items:center;
+}
+.trust-line .sep{color:var(--line-strong)}
+
+footer{padding:clamp(40px,6vh,72px) 0; border-top:1px solid var(--line); margin-top:clamp(40px,6vh,80px)}
+.foot-inner{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem}
+.foot-inner .brand{font-size:1rem}
+.foot-inner .meta{font-family:var(--font-mono); font-size:.64rem; letter-spacing:.1em; color:var(--muted)}
+
+/* responsive */
+@media(max-width:900px){
+  .hero-grid,.classify-grid,.draft-layout,.pillars{grid-template-columns:1fr}
+  .draft-side{flex-direction:row; flex-wrap:wrap}
+  .pillar-callout{flex:1; min-width:240px}
+  .dash{grid-template-columns:1fr}
+  .stair-stage{transform:rotateX(4deg) rotateY(-8deg)}
+  .step{width:clamp(200px,72%,360px)}
+  .step:nth-child(n){margin-left:0; transform:translateZ(0)}
+  .step:nth-child(2),.step:nth-child(3),.step:nth-child(4),.step:nth-child(5){margin-top:8px}
+}
+@media(max-width:560px){
+  .tiles{grid-template-columns:1fr}
+  .mail .subj{display:none}
+  .hero h1{font-size:clamp(2rem,9vw,3rem)}
+}
+
+/* reduced motion */
+@media(prefers-reduced-motion:reduce){
+  *{animation:none !important; transition:none !important; scroll-behavior:auto !important}
+  .cursor{display:none}
+  .chip{opacity:1; transform:none}
+  .poster-fallback{display:block !important}
+  .live-only{display:none !important}
+}
+.poster-fallback{display:none; width:100%; border-radius:14px; border:1px solid var(--line)}
+.sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
+</style>
+</head>
+<body>
+
+<!-- hairline 12-col grid: the control surface, visible the whole scroll -->
+<div class="gridlines" aria-hidden="true">
+  <span></span><span></span><span></span><span></span><span></span><span></span>
+  <span></span><span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<!-- ══════════════ NAV ══════════════ -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top" aria-label="Zeiro home"><span class="glyph"></span>Zeiro</a>
+    <nav class="nav-links" aria-label="メインナビゲーション">
+      <a href="#classify">流れ</a>
+      <a href="#draft">機能</a>
+      <a href="#numbers">数字</a>
+      <a href="#trust">信頼</a>
+    </nav>
+    <a class="cta-magnet" id="navCta" href="#review">デモを見る</a>
+    <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+<nav class="mobile-menu" id="mobileMenu" aria-label="モバイルナビゲーション">
+  <div class="mm-top">
+    <a class="brand mm-brand" href="#top"><span class="glyph"></span>Zeiro</a>
+    <button class="mm-close" id="mmClose" aria-label="メニューを閉じる"><span></span><span></span></button>
+  </div>
+  <div class="mm-links">
+    <a href="#classify"><span class="num">01</span>流れ</a>
+    <a href="#draft"><span class="num">02</span>機能</a>
+    <a href="#numbers"><span class="num">03</span>数字</a>
+    <a href="#trust"><span class="num">04</span>信頼</a>
+    <a href="#review"><span class="num">→</span>デモを見る</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<!-- ══════════════ HERO ══════════════ -->
+<section class="hero" aria-labelledby="hero-h">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow hero-eyebrow">CUSTOMER-RESPONSE AI · 税理士事務所むけ</p>
+        <h1 id="hero-h">
+          <span class="soft">問い合わせは<span class="lat">AI</span>が下書きする。</span>
+          <span class="hard">判断は、税理士がする。</span>
+        </h1>
+        <p class="hero-sub">受信 → 分類 → 事務所ナレッジで下書き → 税理士レビュー → 送信。本当に判断が必要な案件にだけ、集中できる。</p>
+        <p class="hero-flow">
+          <b>受信</b><span class="arr">→</span><b>分類</b><span class="arr">→</span><b>RAG</b><span class="arr">→</span><b>下書き</b><span class="arr">→</span><b>レビュー</b><span class="arr">→</span><b>送信</b>
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary magnet" href="#review">デモを見る</a>
+          <a class="btn btn-ghost magnet" href="#trust">資料を請求する</a>
+        </div>
+      </div>
+
+      <!-- LIVE mini-inbox -->
+      <div class="inbox" id="inbox" aria-label="ライブ受信トレイ（サンプル）">
+        <div class="inbox-bar">
+          <span class="ttl">INBOX · 顧問先からの問い合わせ</span>
+          <span class="unread"><span id="unreadN" class="tabnum">12</span> 未読</span>
+        </div>
+        <div class="inbox-list" id="inboxList"><!-- rows injected --></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CLASSIFY ══════════════ -->
+<section class="classify" id="classify" aria-labelledby="classify-h">
+  <div class="wrap">
+    <div class="classify-head">
+      <p class="eyebrow">CLASSIFY · GEMINI FLASH</p>
+      <h2 class="sec-head" id="classify-h">届いた瞬間、5つに仕分ける。</h2>
+      <p>受信トレイは放っておけば積み上がる。Zeiro は届いたメールを <b>期日確認・書類提出・税務質問・顧問契約・その他</b> の5レーンへ自動で振り分け、判断を要する一件を浮かび上がらせる。</p>
+    </div>
+    <div class="classify-grid">
+      <div class="lane-legend" id="laneLegend">
+        <div class="lane"><span class="swatch" style="background:var(--cat-kijitsu)"></span><span class="name">期日確認</span><span class="en">Deadline</span><span class="count tabnum" data-final="221">0</span><i class="bar" style="color:var(--cat-kijitsu)" data-w="36"></i></div>
+        <div class="lane"><span class="swatch" style="background:var(--cat-shorui)"></span><span class="name">書類提出</span><span class="en">Document</span><span class="count tabnum" data-final="388">0</span><i class="bar" style="color:var(--cat-shorui)" data-w="62"></i></div>
+        <div class="lane"><span class="swatch" style="background:var(--cat-zeimu)"></span><span class="name">税務質問</span><span class="en">Tax</span><span class="count tabnum" data-final="512">0</span><i class="bar" style="color:var(--cat-zeimu)" data-w="82"></i></div>
+        <div class="lane"><span class="swatch" style="background:var(--cat-komon)"></span><span class="name">顧問契約</span><span class="en">Contract</span><span class="count tabnum" data-final="126">0</span><i class="bar" style="color:var(--cat-komon)" data-w="20"></i></div>
+        <div class="lane"><span class="swatch" style="background:var(--cat-sonota)"></span><span class="name">その他</span><span class="en">Other</span><span class="count tabnum" data-final="64">0</span><i class="bar" style="color:var(--cat-sonota)" data-w="11"></i></div>
+      </div>
+      <!-- mirror of the live inbox, self-sorting -->
+      <div class="inbox" id="inboxSorted" aria-label="自動仕分け後の受信トレイ">
+        <div class="inbox-bar">
+          <span class="ttl">SORTED · トリアージ完了</span>
+          <span class="unread">田中商事 を選択中</span>
+        </div>
+        <div class="inbox-list" id="inboxSortedList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ RETRIEVAL — the one dark beat ══════════════ -->
+<section class="retrieval" id="retrieval" aria-labelledby="retrieval-h">
+  <div class="wrap">
+    <div class="retrieval-head">
+      <p class="eyebrow">RETRIEVAL · 6 SOURCES · 0 HALLUCINATION</p>
+      <h2 class="sec-head" id="retrieval-h">引いてから、書く。</h2>
+    </div>
+    <div class="constellation" id="constellation">
+      <img class="poster-fallback" src="../assets/still/KnowledgeConstellation.png" alt="下書きノードを中心に6つの事務所ソースが軌道上に並ぶナレッジ・コンステレーション" />
+      <div class="live-only" style="position:absolute;inset:0">
+        <svg id="constLines" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="const-stage" id="constStage">
+          <div class="node center" id="nodeCenter"><div class="big">下書き</div><div class="tag">ZEIRO · GROUNDED</div></div>
+          <!-- 6 source cards -->
+          <div class="node" data-cat style="--c:var(--cat-komon)" data-x="14" data-y="48" data-src="S-08"><div class="title">顧問契約書</div><div class="sub">internal · v2</div><div class="id" style="color:var(--cat-komon)">S-08 §4.2</div></div>
+          <div class="node" data-cat style="--c:var(--cat-zeimu)" data-x="33" data-y="14" data-src="K-21"><div class="title">国税庁 質疑応答</div><div class="sub">external · gov.jp</div><div class="id" style="color:var(--cat-zeimu)">K-21 No.4117</div></div>
+          <div class="node" data-cat style="--c:var(--cat-shorui)" data-x="78" data-y="22" data-src="C-12"><div class="title">田中様 過去メール</div><div class="sub">internal · 2024-09</div><div class="id" style="color:var(--cat-shorui)">C-12</div></div>
+          <div class="node" data-cat style="--c:var(--cat-sonota)" data-x="16" data-y="74" data-src="G-03"><div class="title">業務ガイドライン</div><div class="sub">internal · janl</div><div class="id" style="color:var(--cat-sonota)">G-03</div></div>
+          <div class="node" data-cat style="--c:var(--cat-kijitsu)" data-x="84" data-y="76" data-src="L-04"><div class="title">電子帳簿保存法</div><div class="sub">external · law</div><div class="id" style="color:var(--cat-kijitsu)">L-04 §7</div></div>
+          <div class="node" data-cat style="--c:var(--cat-shorui)" data-x="60" data-y="86" data-src="D-09"><div class="title">前回の決算書</div><div class="sub">internal · FY2023</div><div class="id" style="color:var(--cat-shorui)">D-09</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="retrieval-foot">
+      <p class="mono">田中商事「源泉徴収票」 → 6件のソースを照合 → 引用元を確定</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ DRAFT — signature ══════════════ -->
+<section class="draft" id="draft" aria-labelledby="draft-h">
+  <div class="wrap">
+    <div class="draft-head">
+      <p class="eyebrow">DRAFTING REPLY · ZEIRO.AGENT.DRAFT@V1</p>
+      <h2 class="sec-head" id="draft-h">根拠を引きながら、書く。</h2>
+    </div>
+    <div class="draft-layout">
+      <div class="draft-sheet" id="draftSheet">
+        <img class="poster-fallback" src="../assets/still/DraftStream.png" alt="田中様への返信下書きが引用チップ付きで完成した状態のスクリーンショット" />
+        <div class="live-only">
+          <div class="draft-sheet-bar">
+            <span class="z"><span class="glyph"></span>Zeiro</span>
+            <span class="label">RE: 源泉徴収票の再発行について</span>
+          </div>
+          <div class="draft-body" id="draftBody" aria-hidden="true"></div>
+          <p class="sr-only" id="draftLive" aria-live="polite"></p>
+          <div class="draft-chips" id="draftChips">
+            <span class="chip" data-src="S-08" style="color:var(--cat-komon)"><span class="code">S-08</span><span class="desc">顧問契約書 §4.2</span></span>
+            <span class="chip" data-src="K-21" style="color:var(--cat-zeimu)"><span class="code">K-21</span><span class="desc">国税庁 質疑応答 No.4117</span></span>
+            <span class="chip" data-src="C-12" style="color:var(--cat-shorui)"><span class="code">C-12</span><span class="desc">田中様 過去メール 2024-09-18</span></span>
+          </div>
+        </div>
+      </div>
+      <aside class="draft-side">
+        <div class="pillar-callout">
+          <div class="k">PILLAR 01</div>
+          <h4>事務所ナレッジでRAG</h4>
+          <p>過去の回答・所内FAQ・業務マニュアル・規程を情報源に。下書きには必ず「引用元」を明示する。</p>
+        </div>
+        <div class="pillar-callout">
+          <div class="k">PILLAR 02</div>
+          <h4>ハルシネーション防止</h4>
+          <p>法令・税率などの数値は、ナレッジに根拠が無い限り生成しない。引用できない一文は、書かない。</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ REVIEW / COVERFLOW ══════════════ -->
+<section class="review" id="review" aria-labelledby="review-h">
+  <div class="wrap">
+    <div class="review-head">
+      <p class="eyebrow">ONE PASS · 受信 → 下書き</p>
+      <h2 class="sec-head" id="review-h">受信メールが、そのまま返信の下書きに。</h2>
+    </div>
+    <div class="coverflow" id="coverflow">
+      <img class="poster-fallback" src="../assets/still/DocumentCoverflow_f205.png" alt="受信メールのカードが引用付きの返信下書きに反転するカバーフロー" style="max-width:560px;margin:0 auto" />
+      <div class="cf-stage live-only" id="cfStage"></div>
+    </div>
+    <div class="cf-controls">
+      <button class="approve" id="approveBtn" aria-label="承認して送信"><span class="ic"></span>承認して送信</button>
+      <p class="sr-only" id="sendStatus" role="status" aria-live="polite"></p>
+      <div class="audit-log" id="auditLog" aria-hidden="true"></div>
+      <p class="cf-hint">引用付き · 人が承認して送信</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ PIPELINE ══════════════ -->
+<section class="pipeline" id="pipeline" aria-labelledby="pipeline-h">
+  <div class="wrap">
+    <div class="pipeline-head">
+      <p class="eyebrow">AGENT PIPELINE · 5 STEPS</p>
+      <h2 class="sec-head" id="pipeline-h">受信から下書きまで、5つの工程。</h2>
+    </div>
+    <div class="stair">
+      <img class="poster-fallback" src="../assets/still/AgentPipeline3D_f235.png" alt="受信から レビューまで5段階が奥へ後退する3Dパイプライン" />
+      <div class="stair-stage live-only" id="stairStage">
+        <div class="step" data-i="0"><div class="no">01</div><div class="nm">受信</div><div class="en">INBOX · 142 件の未読</div><div class="pulse"></div></div>
+        <div class="step" data-i="1"><div class="no">02</div><div class="nm">分類</div><div class="en">CLASSIFY · Gemini Flash</div><div class="pulse"></div></div>
+        <div class="step" data-i="2"><div class="no">03</div><div class="nm">検索</div><div class="en">RETRIEVE · 6 ソース · pgvector</div><div class="pulse"></div></div>
+        <div class="step" data-i="3"><div class="no">04</div><div class="nm">下書き</div><div class="en">DRAFT · Claude · 引用付き</div><div class="pulse"></div></div>
+        <div class="step done" data-i="4"><div class="no">05</div><div class="nm">レビュー</div><div class="en">APPROVE · 人が承認して送信</div><div class="pulse"></div><span class="badge">完了 ✓</span></div>
+      </div>
+    </div>
+    <div class="tech-chips">
+      <span>Mastra</span><span>Claude</span><span>Gemini Flash</span><span>pgvector</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ NUMBERS ══════════════ -->
+<section class="numbers" id="numbers" aria-labelledby="numbers-h">
+  <div class="wrap">
+    <div class="numbers-head">
+      <p class="eyebrow">THE NUMBERS · 月次</p>
+      <h2 class="sec-head" id="numbers-h">数字で見る、<span class="lat">Zeiro</span>。<span class="ctx">事務所あたりの平均値 · 直近38日</span></h2>
+    </div>
+    <div class="dash">
+      <div class="card">
+        <div class="ch">返信件数 · REPLIES / MO</div>
+        <div class="donut-wrap">
+          <div class="donut-center">
+            <svg width="180" height="180" viewBox="0 0 180 180" id="donut" aria-hidden="true">
+              <circle cx="90" cy="90" r="70" fill="none" stroke="var(--surface-2)" stroke-width="20"/>
+            </svg>
+            <div class="donut-num"><span class="v countup tabnum" data-final="1247" data-comma="1">0</span><span class="u">件 / 月</span></div>
+          </div>
+          <div class="legend">
+            <div class="it"><span class="sw" style="background:var(--cat-zeimu)"></span>税務<span class="lv">512</span></div>
+            <div class="it"><span class="sw" style="background:var(--cat-shorui)"></span>書類<span class="lv">388</span></div>
+            <div class="it"><span class="sw" style="background:var(--cat-kijitsu)"></span>期日<span class="lv">221</span></div>
+            <div class="it"><span class="sw" style="background:var(--cat-komon)"></span>契約<span class="lv">126</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch">1通あたり · PER MESSAGE</div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:1.4rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div class="compare-row">
+              <div class="lbl"><span>従来</span><b><span class="countup tabnum" data-final="14.2" data-dec="1">0</span>分</b></div>
+              <div class="track"><i class="fill" style="background:var(--line-strong)" data-w="100"></i></div>
+            </div>
+            <div class="compare-row">
+              <div class="lbl"><span>Zeiro</span><b><span class="countup tabnum" data-final="24">0</span>秒</b></div>
+              <div class="track"><i class="fill" style="background:var(--accent)" data-w="3"></i></div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="minus97" id="minus97">−97<span style="font-size:.6em">%</span><small>所要時間</small></div>
+          </div>
+        </div>
+        <div class="ch" style="margin-top:1.6rem">週次 未読推移 · UNREAD / WK</div>
+        <div class="spark-card">
+          <svg viewBox="0 0 480 120" id="spark" aria-hidden="true">
+            <polyline id="sparkLine" fill="none" stroke="var(--ink)" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round"
+              points="6,28 74,40 142,52 210,66 278,76 346,90 414,102 474,108"/>
+            <circle id="sparkDot" cx="474" cy="108" r="4" fill="var(--ink)"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="tk">AUTO-DRAFTED</div><div class="tv"><span class="countup tabnum" data-final="92">0</span><span class="un">%</span></div><div class="tl">自動下書き率</div></div>
+      <div class="tile"><div class="tk">HOURS SAVED</div><div class="tv"><span class="countup tabnum" data-final="738">0</span><span class="un">h/年</span></div><div class="tl">削減時間</div></div>
+      <div class="tile"><div class="tk">REVIEW NEEDED</div><div class="tv"><span class="countup tabnum" data-final="32">0</span><span class="un">%</span></div><div class="tl">レビュー必要 100%→約32%</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FEATURES / TRUST / CTA ══════════════ -->
+<section class="close" id="trust" aria-labelledby="closing-h">
+  <div class="wrap">
+    <div class="pillars">
+      <div class="pillar-big">
+        <div class="pillar-k">ESCALATION · 信頼度 &lt; 0.75</div>
+        <h3 class="pillar-h">本当に判断が要る一件だけ、税理士へ。</h3>
+        <p class="pillar-p">税務判断を要する質問・信頼度 0.75 未満・「至急 / クレーム / 税務調査」を含む案件は、税理士レビューを必須化する。残りは下書きのまま、数十秒で。</p>
+        <div class="esc-meter">
+          <span class="mono" style="font-size:.6rem;letter-spacing:.16em;color:var(--muted)">エスカレーション率</span>
+          <div class="bar"><i></i></div>
+          <span class="v">約32%</span>
+        </div>
+      </div>
+      <div class="pillar-col">
+        <div class="pillar-sm">
+          <div class="pillar-k">AUDIT LOG · 全件</div>
+          <h3 class="pillar-h" style="font-size:clamp(1.1rem,1.7vw,1.4rem)">監査ログ</h3>
+          <p class="pillar-p" style="font-size:.86rem">誰が・いつ・どのモデルで・どの引用に基づいて送ったかを全件記録。後から必ず辿れる。</p>
+        </div>
+        <div class="pillar-sm">
+          <div class="pillar-k">守秘義務 · 税理士法 §38</div>
+          <h3 class="pillar-h" style="font-size:clamp(1.1rem,1.7vw,1.4rem)"><span class="lat">My Number</span> は受信時にマスク</h3>
+          <p class="pillar-p" style="font-size:.86rem">jp-tokyo データレジデンシー。学習しない契約のLLMのみ利用。受信値にカーソルを合わせると、自動マスクの動きを確認できる。</p>
+          <img class="poster-fallback" src="../assets/still/VaultSeal_f210.png" alt="守秘義務 §38：マイナンバーが封印され、監査チェックリストがロックされる金庫のイメージ" style="margin-top:1.4rem" />
+          <div class="redact live-only" id="redact">
+            <div class="row">
+              <span class="lab">受信メール（生）</span>
+              <span class="mynum received" tabindex="0" role="button"
+                aria-label="受信したマイナンバーの末尾4桁。カーソルを合わせると受信時の自動マスクを再生します。">
+                •••• •••• 0000<span class="seal" aria-hidden="true">受信時に自動マスク</span>
+              </span>
+            </div>
+            <div class="arrow" aria-hidden="true"><span class="ln"></span>保存・LLM送信の前にマスク<span class="ln"></span></div>
+            <div class="row">
+              <span class="lab">Zeiro 保存値</span>
+              <span class="mynum stored" aria-label="Zeiro 保存値。マイナンバーは完全にマスクされ、原本は保持しません。">•••• •••• ••••</span>
+            </div>
+            <p class="hint"><b>My Number は保存・LLM送信の前にマスク</b>されます。受信した時点で末尾以外を伏せ、保存値は完全マスク。原本は保持しません。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="closing">
+      <h2 id="closing-h">顧問先対応の時間を、<br>税理士の判断に戻す。</h2>
+      <p class="sub">定型的な顧問先対応を、2〜3分のレビューに。本当に判断が必要な案件にだけ、集中できる。</p>
+      <div class="closing-ctas">
+        <a class="btn btn-primary magnet" href="#review">無料で試す</a>
+        <a class="btn btn-ghost magnet" href="#review">デモを見る</a>
+      </div>
+      <p class="trust-line">
+        税理士法 第38条 守秘義務準拠 <span class="sep">·</span> データ保管 jp-tokyo <span class="sep">·</span> 学習しないLLM契約
+      </p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <a class="brand" href="#top"><span class="glyph"></span>Zeiro</a>
+    <span class="meta">税理士事務所のための、顧客対応AIエージェント</span>
+    <span class="meta">© 2026 Zeiro · jp-tokyo</span>
+  </div>
+</footer>
+
+<!-- ══════════════ libs (deferred) ══════════════ -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+window.addEventListener("DOMContentLoaded",function(){
+  "use strict";
+  const RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (s,r=document)=>r.querySelector(s);
+  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+
+  /* ── sample emails (real triage classes + exact token hues) ── */
+  const CAT = {
+    kijitsu:{n:"期日確認",en:"DEADLINE",c:"var(--cat-kijitsu)"},
+    shorui:{n:"書類提出",en:"DOCUMENT",c:"var(--cat-shorui)"},
+    zeimu:{n:"税務質問",en:"TAX",c:"var(--cat-zeimu)"},
+    komon:{n:"顧問契約",en:"CONTRACT",c:"var(--cat-komon)"},
+    sonota:{n:"その他",en:"OTHER",c:"var(--cat-sonota)"},
+  };
+  const MAILS = [
+    {from:"田中商事",subj:"源泉徴収票の再発行について",cat:"shorui",t:"09:14",sel:true},
+    {from:"佐藤工業",subj:"消費税申告書の提出期限",cat:"zeimu",t:"09:02"},
+    {from:"山本商店",subj:"月次決算の確認依頼",cat:"shorui",t:"08:51"},
+    {from:"森田税務署",subj:"実地調査の日程について",cat:"zeimu",t:"08:40",urgent:true},
+    {from:"西村法律事務所",subj:"顧問契約更新のご相談",cat:"komon",t:"08:33"},
+    {from:"高橋製作所",subj:"年末調整の必要書類は？",cat:"kijitsu",t:"08:20"},
+    {from:"小林デザイン",subj:"インボイス登録の控え",cat:"shorui",t:"08:07"},
+    {from:"中村フーズ",subj:"納付期限の確認をお願いします",cat:"kijitsu",t:"07:58"},
+    {from:"井上クリニック",subj:"医療費控除の範囲について",cat:"zeimu",t:"07:44"},
+    {from:"渡辺商会",subj:"請求書のフォーマット変更",cat:"sonota",t:"07:31"},
+    {from:"加藤建設",subj:"減価償却の計算方法",cat:"zeimu",t:"07:19"},
+    {from:"松本物産",subj:"顧問報酬の改定について",cat:"komon",t:"07:05"},
+  ];
+
+  function rowHTML(m){
+    const cat = CAT[m.cat];
+    return `<div class="mail ${m.sel?'selected':''} ${m.urgent?'urgent-row':''}" data-cat="${m.cat}">
+      <span class="dot" style="background:${cat.c}"></span>
+      <div style="min-width:0">
+        <div class="from">${m.from}${m.sel?' <span class="zeiro-tag">ZEIRO · 追跡中</span>':''}</div>
+        <div class="subj">${m.subj}</div>
+      </div>
+      <div class="meta">
+        ${m.urgent?'<span class="flag">エスカレーション必須</span>':''}
+        <span class="cat" style="color:${cat.c}">${cat.n}</span>
+        <span class="time">${m.t}</span>
+      </div>
+    </div>`;
+  }
+
+  // hero inbox
+  $("#inboxList").innerHTML = MAILS.map(rowHTML).join("");
+  // sorted inbox: group by category order, lane labels between groups
+  const order = ["kijitsu","shorui","zeimu","komon","sonota"];
+  let sortedHTML = "";
+  order.forEach(k=>{
+    const swatch = `<span class="lane-dot" style="background:${CAT[k].c}"></span>`;
+    sortedHTML += `<div class="lane-label">${swatch}${CAT[k].n}<span class="lane-en">${CAT[k].en}</span></div>`;
+    MAILS.filter(m=>m.cat===k).forEach(m=>{ sortedHTML += rowHTML(m); });
+  });
+  $("#inboxSortedList").innerHTML = sortedHTML;
+
+  /* ── mobile menu (focus-managed) ── */
+  const ham = $("#hamburger"), menu = $("#mobileMenu"), mmClose = $("#mmClose");
+  function toggleMenu(open){
+    document.body.classList.toggle("menu-open",open);
+    menu.classList.toggle("open",open);
+    ham.setAttribute("aria-expanded",String(open));
+    ham.setAttribute("aria-label",open?"メニューを閉じる":"メニューを開く");
+    if(open){ (menu.querySelector(".mm-links a")||mmClose).focus(); }
+    else { ham.focus(); }
+  }
+  ham.addEventListener("click",()=>toggleMenu(!menu.classList.contains("open")));
+  mmClose.addEventListener("click",()=>toggleMenu(false));
+  $$("#mobileMenu a:not(.mm-brand)").forEach(a=>a.addEventListener("click",()=>toggleMenu(false)));
+  $("#mobileMenu .mm-brand").addEventListener("click",()=>toggleMenu(false));
+  document.addEventListener("keydown",e=>{
+    if(!menu.classList.contains("open")) return;
+    if(e.key==="Escape"){ toggleMenu(false); return; }
+    if(e.key==="Tab"){
+      const f = $$('a, button', menu);
+      const first = f[0], last = f[f.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+  });
+
+  /* ── nav scrolled border ── */
+  const nav = $("#nav");
+  function onScroll(){ nav.classList.toggle("scrolled", window.scrollY > 12); }
+  window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
+
+  /* ── magnetic CTAs ── */
+  if(!RM && window.matchMedia("(pointer:fine)").matches){
+    $$(".magnet, #navCta").forEach(el=>{
+      el.addEventListener("mousemove",e=>{
+        const r = el.getBoundingClientRect();
+        const x = e.clientX - (r.left+r.width/2), y = e.clientY - (r.top+r.height/2);
+        el.style.transform = `translate(${x*0.28}px,${y*0.32}px)`;
+      });
+      el.addEventListener("mouseleave",()=>{ el.style.transform=""; });
+    });
+  }
+
+  /* ── dashboard renderers (shared by the live ScrollTrigger path and the reduced-motion path) ── */
+  const DONUT = [["zeimu",512],["shorui",388],["kijitsu",221],["komon",126]];
+  function renderDonut(animate){
+    const donut = $("#donut"); if(!donut) return;
+    const total = DONUT.reduce((a,b)=>a+b[1],0), R=70, C=2*Math.PI*R; let acc=0;
+    DONUT.forEach(([k,v])=>{
+      const len = v/total*C;
+      const circ = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      circ.setAttribute("cx",90); circ.setAttribute("cy",90); circ.setAttribute("r",R);
+      circ.setAttribute("fill","none"); circ.setAttribute("stroke",`var(--cat-${k})`);
+      circ.setAttribute("stroke-width",20); circ.setAttribute("transform","rotate(-90 90 90)");
+      circ.style.strokeDashoffset = -acc;
+      donut.appendChild(circ);
+      if(animate){
+        circ.setAttribute("stroke-dasharray",`0 ${C}`);
+        gsap.to(circ,{ attr:{"stroke-dasharray":`${len} ${C}`}, duration:1.1, ease:EASE, delay:.2 });
+      } else {
+        circ.setAttribute("stroke-dasharray",`${len} ${C}`);
+      }
+      acc += len;
+    });
+  }
+  function renderSpark(animate){
+    const line = $("#sparkLine"); if(!line) return;
+    const L = line.getTotalLength();
+    line.style.strokeDasharray = L;
+    if(animate){ line.style.strokeDashoffset = L; gsap.to(line,{ strokeDashoffset:0, duration:1.6, ease:EASE }); }
+    else { line.style.strokeDashoffset = 0; }
+  }
+  function fillBars(animate){
+    $$("#numbers .fill").forEach(f=>{
+      if(animate) gsap.to(f,{width:f.dataset.w+"%",duration:1.2,ease:EASE});
+      else f.style.width = f.dataset.w+"%";
+    });
+  }
+
+  /* ════════ reduced-motion: render finals, skip live ════════ */
+  if(RM){
+    $("#unreadN").textContent = "12";
+    $$(".countup").forEach(el=>{
+      const f = el.dataset.final;
+      el.textContent = el.dataset.comma ? Number(f).toLocaleString()
+        : (el.dataset.dec ? parseFloat(f).toFixed(+el.dataset.dec) : f);
+    });
+    $$(".lane .count").forEach(el=>el.textContent = el.dataset.final);
+    $$(".lane .bar").forEach(b=>b.style.width = b.dataset.w+"%");
+    $$(".esc-meter .bar i").forEach(i=>i.style.width="32%");
+    document.body.classList.add("lanes-on");
+    // dashboard renders in its FINAL state instantly (fidelity over poster swap)
+    renderDonut(false); renderSpark(false); fillBars(false);
+    // approve still works as a static demo even with motion off
+    const rmApprove = $("#approveBtn"), rmAudit = $("#auditLog"), rmStatus = $("#sendStatus");
+    rmApprove.addEventListener("click",()=>{
+      if(rmApprove.classList.contains("sent")) return;
+      rmApprove.classList.add("sent"); rmApprove.setAttribute("aria-disabled","true"); rmApprove.setAttribute("aria-label","送信済み");
+      rmApprove.innerHTML = '<span class="ic"></span>送信済み';
+      rmAudit.classList.add("show");
+      rmAudit.innerHTML = "AUDIT ▸ 2026-05-30 · 承認者: 所長税理士 · model: Claude · 引用: S-08 / K-21 / C-12 · " + '<span class="ok">送信完了 ✓</span>';
+      if(rmStatus) rmStatus.textContent = "送信済み。監査ログを記録しました。";
+    });
+    return;
+  }
+
+  /* ════════ Lenis smooth scroll + GSAP ScrollTrigger ════════ */
+  const lenis = new Lenis({ duration:1.1, easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)), smoothWheel:true });
+  gsap.registerPlugin(ScrollTrigger);
+  lenis.on("scroll", ScrollTrigger.update);
+  // single driver — Lenis is rAF'd only via the GSAP ticker (no second manual loop)
+  gsap.ticker.add(t=>lenis.raf(t*1000));
+  gsap.ticker.lagSmoothing(0);
+  // anchor jumps through lenis
+  $$('a[href^="#"]').forEach(a=>{
+    a.addEventListener("click",e=>{
+      const id = a.getAttribute("href");
+      const t = id==="#top"? 0 : $(id);
+      if(t!==null){ e.preventDefault(); lenis.scrollTo(t===0?0:t,{offset:-60}); }
+    });
+  });
+
+  const EASE = "power3.out";
+
+  /* ── HERO: rows breathe in + unread counter settles ── */
+  gsap.from("#inboxList .mail",{ y:14, opacity:0, duration:.7, stagger:.05, ease:EASE,
+    scrollTrigger:{trigger:"#inbox", start:"top 85%"} });
+  // breathing pulse on selected row
+  gsap.to("#inboxList .mail.selected",{ boxShadow:"inset 0 0 0 1.5px var(--accent), 0 0 0 4px var(--accent-soft)",
+    duration:1.8, repeat:-1, yoyo:true, ease:"sine.inOut" });
+  // hero parallax on inbox
+  gsap.to("#inbox",{ y:-40, ease:"none",
+    scrollTrigger:{trigger:"#inbox", start:"top 80%", end:"bottom top", scrub:true} });
+
+  /* ── CLASSIFY: lane labels + self-sort reveal + counts count up + bars ── */
+  ScrollTrigger.create({
+    trigger:"#classify", start:"top 60%",
+    onEnter(){ document.body.classList.add("lanes-on"); }
+  });
+  gsap.from("#inboxSortedList .mail",{ x:-18, opacity:0, duration:.6, stagger:.045, ease:EASE,
+    scrollTrigger:{trigger:"#inboxSorted", start:"top 78%"} });
+  // lane counts count up
+  ScrollTrigger.create({
+    trigger:"#laneLegend", start:"top 75%", once:true,
+    onEnter(){
+      $$(".lane").forEach(l=>{
+        const cnt = $(".count",l), bar = $(".bar",l);
+        const tgt = +cnt.dataset.final;
+        gsap.to({v:0},{v:tgt, duration:1.3, ease:EASE, onUpdate(){ cnt.textContent = Math.round(this.targets()[0].v); }});
+        gsap.to(bar,{width:bar.dataset.w+"%", duration:1.2, ease:EASE, delay:.15});
+      });
+    }
+  });
+
+  /* ── RETRIEVAL: dark beat toggle + constellation positions + lines + orbital drift ── */
+  const stage = $("#constStage"), svg = $("#constLines");
+  const nodes = $$(".node[data-cat]");
+  const center = $("#nodeCenter");
+  ScrollTrigger.create({
+    trigger:"#retrieval", start:"top 55%", end:"bottom 45%",
+    onToggle(self){ document.body.classList.toggle("dark", self.isActive); }
+  });
+  function placeNodes(){
+    const stg = $("#constellation .live-only");
+    if(!stg) return;
+    const W = stg.clientWidth, H = stg.clientHeight;
+    center.style.left = "50%"; center.style.top = "50%";
+    nodes.forEach(n=>{ n.style.left = n.dataset.x+"%"; n.style.top = n.dataset.y+"%"; });
+    drawLines();
+  }
+  function nodeCenterPt(el){
+    const p = el.parentElement.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return { x:r.left+r.width/2-p.left, y:r.top+r.height/2-p.top };
+  }
+  function drawLines(){
+    const stg = $("#constellation .live-only");
+    if(!stg) return;
+    svg.setAttribute("viewBox",`0 0 ${stg.clientWidth} ${stg.clientHeight}`);
+    const rootCS = getComputedStyle(document.documentElement);
+    const ring1 = rootCS.getPropertyValue("--ink-line-2").trim();
+    const ring2 = rootCS.getPropertyValue("--ink-line-3").trim();
+    const cp = nodeCenterPt(center);
+    let g = `<circle cx="${cp.x}" cy="${cp.y}" r="${stg.clientHeight*0.30}" fill="none" stroke="${ring1}" stroke-width="1"/>`;
+    g += `<circle cx="${cp.x}" cy="${cp.y}" r="${stg.clientHeight*0.46}" fill="none" stroke="${ring2}" stroke-width="1"/>`;
+    nodes.forEach(n=>{
+      const p = nodeCenterPt(n);
+      const col = getComputedStyle(n).getPropertyValue("--c").trim();
+      g += `<line class="cline" data-src="${n.dataset.src}" x1="${cp.x}" y1="${cp.y}" x2="${p.x}" y2="${p.y}" stroke="${col}" stroke-width="1.4" stroke-dasharray="4 5" stroke-opacity=".55"/>`;
+    });
+    svg.innerHTML = g;
+  }
+  ScrollTrigger.create({ trigger:"#retrieval", start:"top 80%", once:true, onEnter:placeNodes });
+  window.addEventListener("resize",()=>{ placeNodes(); });
+  // entrance
+  gsap.from(".node",{ scale:.7, opacity:0, duration:.8, stagger:.08, ease:EASE,
+    scrollTrigger:{trigger:"#retrieval", start:"top 60%"} });
+  // slow orbital drift
+  nodes.forEach((n,i)=>{
+    gsap.to(n,{ y:`+=${(i%2?-1:1)*10}`, x:`+=${(i%3?1:-1)*8}`, duration:5+i*0.4, repeat:-1, yoyo:true, ease:"sine.inOut", delay:i*0.2 });
+  });
+  // cursor-parallax tilt ≤6° on the dark constellation only
+  $("#constellation").addEventListener("mousemove",e=>{
+    const r = e.currentTarget.getBoundingClientRect();
+    const rx = ((e.clientY-r.top)/r.height-0.5)*-6;
+    const ry = ((e.clientX-r.left)/r.width-0.5)*6;
+    gsap.to(stage,{ rotateX:rx, rotateY:ry, duration:.6, ease:"power2.out", transformPerspective:1200 });
+  });
+  $("#constellation").addEventListener("mouseleave",()=>{ gsap.to(stage,{rotateX:0,rotateY:0,duration:.8}); });
+
+  /* ════════ DRAFT signature: token stream + citation chips wired to constellation ════════ */
+  // segments: {t:text, cited:bool, fire:'S-08'} — chip fires AT the cited words
+  const SEG = [
+    {t:"田中様\n\n"},
+    {t:"お世話になっております。Zeiro 経由でご返信申し上げます。\n"},
+    {t:"ご依頼いただきました"},{t:"源泉徴収票",cited:true},{t:"につきまして、本日中に PDF にてお送りいたします。\n"},
+    {t:"なお、"},{t:"再発行の根拠資料",cited:true,fire:"S-08"},{t:"として、"},
+    {t:"令和5年分の給与支払報告書",cited:true,fire:"K-21"},{t:"を参照しております。\n"},
+    {t:"前回（"},{t:"2024-09-18",cited:true,fire:"C-12"},{t:"）のお問い合わせ内容も踏まえております。\n"},
+    {t:"ご不明点がございましたらお知らせください。"},
+  ];
+  const draftBody = $("#draftBody");
+  const chips = {}; $$("#draftChips .chip").forEach(c=>chips[c.dataset.src]=c);
+  let drafted = false;
+  function spotlightSource(src,on){
+    const node = nodes.find(n=>n.dataset.src===src);
+    const line = svg.querySelector(`.cline[data-src="${src}"]`);
+    if(node) node.style.boxShadow = on?"0 0 0 2px "+getComputedStyle(node).getPropertyValue("--c")+", 0 18px 40px -22px rgba(0,0,0,.8)":"";
+    if(line){ line.setAttribute("stroke-opacity", on?"1":".55"); line.setAttribute("stroke-width", on?"2.4":"1.4"); }
+  }
+  function fireChip(src){
+    const chip = chips[src]; if(!chip) return;
+    chip.classList.add("in");
+    // dashed line snaps up to matching source card
+    spotlightSource(src,true);
+    setTimeout(()=>spotlightSource(src,false),900);
+  }
+  function runDraft(){
+    if(drafted) return; drafted = true;
+    draftBody.innerHTML = "";
+    const cursor = document.createElement("span"); cursor.className="cursor";
+    draftBody.appendChild(cursor);
+    let si=0, ci=0, acc=null;
+    function ensureSpan(seg){
+      const span = document.createElement("span");
+      if(seg.cited) span.className="cited";
+      draftBody.insertBefore(span,cursor);
+      return span;
+    }
+    function tick(){
+      if(si>=SEG.length){
+        cursor.remove();
+        const live = $("#draftLive");
+        if(live) live.textContent = "下書きが完成しました。" + SEG.map(s=>s.t).join("").replace(/\n+/g," ").trim() + "（引用元 S-08 / K-21 / C-12）";
+        return;
+      }
+      const seg = SEG[si];
+      if(ci===0){ acc = ensureSpan(seg); }
+      const ch = seg.t[ci];
+      acc.appendChild(document.createTextNode(ch==="\n"?"\n":ch));
+      if(ch==="\n"){ acc.appendChild(document.createElement("br")); }
+      ci++;
+      if(ci>=seg.t.length){
+        if(seg.fire) fireChip(seg.fire);
+        si++; ci=0;
+      }
+      // variable token cadence
+      const delay = ch==="\n"?180:(seg.cited?52:30);
+      setTimeout(tick, delay);
+    }
+    tick();
+  }
+  ScrollTrigger.create({ trigger:"#draftSheet", start:"top 68%", once:true, onEnter(){ placeNodes(); runDraft(); } });
+  // hover chip -> spotlight its source
+  $$("#draftChips .chip").forEach(c=>{
+    c.addEventListener("mouseenter",()=>{ c.classList.add("spot"); spotlightSource(c.dataset.src,true); });
+    c.addEventListener("mouseleave",()=>{ c.classList.remove("spot"); spotlightSource(c.dataset.src,false); });
+  });
+
+  /* ════════ REVIEW coverflow ════════ */
+  const cfStage = $("#cfStage");
+  const CARDS = [
+    {from:"佐藤工業",txt:"消費税申告書の提出期限について確認させてください。",cat:"zeimu"},
+    {from:"山本商店",txt:"月次決算の数字を確認したく、ご連絡しました。",cat:"shorui"},
+    {center:true,from:"田中商事",
+      front:"源泉徴収票を再発行いただけますか。手元の控えを紛失してしまいました。",
+      back:"田中様　お世話になっております。Zeiro 経由でご返信申し上げます。源泉徴収票につきまして、本日中に PDF にてお送りいたします。再発行の根拠資料として令和5年分の給与支払報告書を参照しております。"},
+    {from:"西村法律事務所",txt:"顧問契約更新の条件についてご相談です。",cat:"komon"},
+    {from:"高橋製作所",txt:"年末調整に必要な書類を教えてください。",cat:"kijitsu"},
+  ];
+  CARDS.forEach((c,i)=>{
+    const el = document.createElement("div");
+    el.className="cf-card"+(c.center?" center":"");
+    if(c.center){
+      el.innerHTML = `
+        <div class="face front">
+          <div class="ft"><span class="z">受信メール</span><span class="badge">INBOUND</span></div>
+          <div class="from">${c.from}</div>
+          <div class="txt">${c.front}</div>
+          <span class="mini-chip">源泉徴収票 · 書類提出</span>
+        </div>
+        <div class="face back">
+          <div class="ft"><span class="z">Zeiro 下書き</span><span class="badge">CITED</span></div>
+          <div class="from">RE: ${c.from} 様</div>
+          <div class="txt">${c.back}</div>
+          <span class="mini-chip" style="border-color:var(--cat-komon);color:var(--cat-komon)">S-08 §4.2 引用</span>
+        </div>`;
+    } else {
+      const cat = CAT[c.cat];
+      el.innerHTML = `<div class="face front">
+        <div class="ft"><span class="z">受信メール</span><span class="badge" style="color:${cat.c}">${cat.n}</span></div>
+        <div class="from">${c.from}</div>
+        <div class="txt">${c.txt}</div></div>`;
+    }
+    el.dataset.i = i;
+    cfStage.appendChild(el);
+  });
+  const cfCards = $$(".cf-card", cfStage);
+  const centerIdx = CARDS.findIndex(c=>c.center);
+  let flipped = false;        // approve-driven hard flip (snaps to 180)
+  let flipProgress = 0;       // scroll-driven continuous flip 0→1
+  function layoutCF(){
+    cfCards.forEach((el,i)=>{
+      const off = i - centerIdx;
+      const isC = i===centerIdx;
+      const ry = isC
+        ? (flipped ? 180 : gsap.utils.clamp(0,180,flipProgress*180))
+        : (off<0?30:-30);
+      const x = off*96;
+      const z = isC?60:-Math.abs(off)*70;
+      const sc = isC?1:.84;
+      el.style.transform = `translate(-50%,-50%) translateX(${x}px) translateZ(${z}px) rotateY(${ry}deg) scale(${sc})`;
+      // side cards read as context, not content
+      el.style.opacity = Math.abs(off)>2?0:(isC?1:.5);
+      el.style.zIndex = isC?5:5-Math.abs(off);
+    });
+  }
+  layoutCF();
+  // scroll-bound continuous flip of the centre card (scrubs smoothly, no binary snap)
+  ScrollTrigger.create({
+    trigger:"#review", start:"top 55%", end:"center 40%", scrub:true,
+    onUpdate(self){ if(!flipped){ flipProgress = gsap.utils.clamp(0,1,(self.progress-0.18)/0.62); layoutCF(); } }
+  });
+  // entrance
+  gsap.from(cfCards,{ y:30, opacity:0, duration:.7, stagger:.06, ease:EASE,
+    scrollTrigger:{trigger:"#review", start:"top 70%"} });
+
+  /* ── approve → 送信済み + audit log types in (announced once to AT) ── */
+  const approve = $("#approveBtn"), audit = $("#auditLog"), sendStatus = $("#sendStatus");
+  approve.addEventListener("click",()=>{
+    if(approve.classList.contains("sent")) return;
+    flipped = true; layoutCF();
+    approve.classList.add("sent");
+    approve.setAttribute("aria-disabled","true");
+    approve.setAttribute("aria-label","送信済み");
+    approve.innerHTML = '<span class="ic"></span>送信済み';
+    audit.classList.add("show");
+    const now = new Date();
+    const ts = `2026-05-30 ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    const full = `AUDIT ▸ ${ts} · 承認者: 所長税理士 · model: Claude · 引用: S-08 / K-21 / C-12 · `;
+    const done = ()=>{ audit.innerHTML = full + '<span class="ok">送信完了 ✓</span>'; };
+    if(sendStatus) sendStatus.textContent = "送信済み。監査ログを記録しました。承認者 所長税理士、モデル Claude、引用 S-08 / K-21 / C-12。";
+    if(RM){ done(); return; }
+    audit.innerHTML = ""; let k=0;
+    (function type(){
+      if(k<full.length){ audit.innerHTML = full.slice(0,k); k++; setTimeout(type,14); }
+      else done();
+    })();
+  });
+
+  /* ════════ PIPELINE: green pulse travels staircase bound to scroll ════════ */
+  const steps = $$(".step");
+  ScrollTrigger.create({
+    trigger:"#pipeline", start:"top 70%", end:"bottom 55%", scrub:true,
+    onUpdate(self){
+      const active = Math.min(steps.length-1, Math.floor(self.progress*steps.length*1.15));
+      steps.forEach((s,i)=>s.classList.toggle("lit", i<=active));
+    }
+  });
+  gsap.from(steps,{ y:24, opacity:0, duration:.6, stagger:.08, ease:EASE,
+    scrollTrigger:{trigger:"#pipeline", start:"top 65%"} });
+
+  /* ════════ NUMBERS: count-up + donut sweep + sparkline draw + bars ════════ */
+  function countUp(el){
+    const f = parseFloat(el.dataset.final), dec = +el.dataset.dec||0, comma = el.dataset.comma;
+    gsap.to({v:0},{ v:f, duration:1.6, ease:EASE, onUpdate(){
+      const v = this.targets()[0].v;
+      el.textContent = comma ? Math.round(v).toLocaleString() : (dec? v.toFixed(dec) : Math.round(v));
+    }});
+  }
+  ScrollTrigger.create({ trigger:"#numbers", start:"top 65%", once:true, onEnter(){
+    $$(".countup").forEach(countUp);
+    fillBars(true);
+    renderDonut(true);
+    renderSpark(true);
+    gsap.from("#sparkDot",{ scale:0, transformOrigin:"center", duration:.5, delay:1.3, ease:EASE });
+    gsap.from("#minus97",{ y:16, opacity:0, duration:.7, ease:EASE });
+  }});
+
+  /* ── My-Number masking demo: hover/focus the received value to play the auto-mask (it conceals, never exposes) ── */
+  const received = $("#redact .mynum.received");
+  if(received){
+    const seal=()=>received.classList.add("sealed"), unseal=()=>received.classList.remove("sealed");
+    received.addEventListener("mouseenter",seal); received.addEventListener("mouseleave",unseal);
+    received.addEventListener("focus",seal); received.addEventListener("blur",unseal);
+    received.addEventListener("click",()=>received.classList.toggle("sealed"));
+  }
+  // esc meter fill
+  gsap.from(".esc-meter .bar i",{ width:0, duration:1.2, ease:EASE,
+    scrollTrigger:{trigger:".esc-meter", start:"top 85%"} });
+
+  /* ── pause offscreen heavy loops (constellation drift) ── */
+  const constIO = new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      nodes.forEach(n=>{ gsap.getTweensOf(n).forEach(t=>{ e.isIntersecting ? t.play() : t.pause(); }); });
+    });
+  },{threshold:0.05});
+  constIO.observe($("#retrieval"));
+
+  ScrollTrigger.refresh();
+});
+</script>
+</body>
+</html>

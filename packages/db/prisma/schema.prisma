@@ -19,6 +19,7 @@ model Firm {
 
   clients         Client[]
   inquiries       Inquiry[]
+  drafts          Draft[]
   audits          AuditEvent[]
   knowledge       KnowledgeChunk[]
   memberships     Membership[]
@@ -27,6 +28,7 @@ model Firm {
   ingestionJobs   KnowledgeIngestionJob[]
   clientImports   ClientImport[]
   integrations    Integration[]
+  clientAssignees ClientAssignee[]
 
   @@map("firms")
 }
@@ -125,10 +127,11 @@ model User {
   metadata    Json     @default("{}")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  memberships       Membership[] @relation("MembershipUser")
-  supervises        Membership[] @relation("MembershipSupervisor")
-  assignedClients   Client[]     @relation("ClientAssignment")
-  assignedInquiries Inquiry[]    @relation("InquiryAssignment")
+  memberships       Membership[]     @relation("MembershipUser")
+  supervises        Membership[]     @relation("MembershipSupervisor")
+  assignedClients   Client[]         @relation("ClientAssignment")
+  assignedInquiries Inquiry[]        @relation("InquiryAssignment")
+  clientAssignments ClientAssignee[]
 
   @@map("users")
 }
@@ -138,6 +141,9 @@ model Membership {
   firmId       String   @map("firm_id") @db.Uuid
   role         String
   tier         String   @default("member")
+  appRole      String   @default("staff") @map("app_role")
+  canSend      Boolean  @default(false) @map("can_send")
+  clientScope  String   @default("assigned") @map("client_scope")
   supervisorId String?  @map("supervisor_id") @db.Uuid
   metadata     Json     @default("{}")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -150,6 +156,7 @@ model Membership {
   @@index([firmId])
   @@index([supervisorId])
   @@index([firmId, tier])
+  @@index([firmId, appRole])
   @@map("memberships")
 }
 
@@ -168,6 +175,7 @@ model Client {
   inquiries    Inquiry[]
   assignedUser User?     @relation("ClientAssignment", fields: [assignedTaxAccountantId], references: [id])
   integrationBindings ClientIntegrationBinding[]
+  assignees    ClientAssignee[]
 
   @@unique([firmId, primaryEmail])
   @@unique([firmId, lineUserId])
@@ -209,6 +217,7 @@ model Inquiry {
 model Draft {
   id         String   @id @default(uuid()) @db.Uuid
   inquiryId  String   @map("inquiry_id") @db.Uuid
+  firmId     String   @map("firm_id") @db.Uuid
   subject    String
   body       String
   citations  Json     @default("[]")
@@ -218,8 +227,10 @@ model Draft {
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  firm    Firm    @relation(fields: [firmId], references: [id], onDelete: Cascade)
 
   @@index([inquiryId, createdAt(sort: Desc)])
+  @@index([firmId])
   @@map("drafts")
 }
 
@@ -277,6 +288,29 @@ model Integration {
   @@unique([firmId, provider])
   @@index([status, expiresAt])
   @@map("integrations")
+}
+
+// Per-client 担当者 assignment. Drives "assigned-only" client scoping for
+// Staff/Viewer (§54 need-to-know). `role` distinguishes primary 担当 from
+// secondary helpers and the supervising reviewer. The denormalized
+// clients.assigned_tax_accountant_id remains the single "primary" pointer.
+model ClientAssignee {
+  id        String   @id @default(uuid()) @db.Uuid
+  firmId    String   @map("firm_id") @db.Uuid
+  clientId  String   @map("client_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      String   @default("primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, userId])
+  @@index([firmId])
+  @@index([userId])
+  @@index([firmId, userId])
+  @@map("client_assignees")
 }
 
 model ClientIntegrationBinding {

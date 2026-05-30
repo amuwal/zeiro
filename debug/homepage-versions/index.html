@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zeiro — Homepage Directions ｜ 3つのデザイン方向</title>
+<meta name="description" content="Zeiro ホームページの3つのデザイン方向。官報ブロードシート／墨・シネマティックインク／動く証拠。税理士事務所のための、引用付き顧客対応AIエージェント。" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f2eee6'/%3E%3Ctext x='16' y='23' font-family='Inter Tight,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%2314110d'%3EZ%3C/text%3E%3C/svg%3E" />
+<style>
+:root{
+  --bg:#f2eee6; --bg-2:#ede8de; --surface:#fbf9f4; --surface-2:#f7f4ed; --paper:#ffffff;
+  --ink:#14110d; --ink-2:#3a352d; --ink-soft:#5a5248; --muted:#7a7268; --muted-2:#9a9286;
+  --label-ink:#5b554b;
+  --line:#e2dccf; --line-strong:#cfc8b8;
+  --accent:oklch(38% 0.045 150); --accent-ink:#15301b; --accent-soft:#d9eadc;
+  --accent-bright:#3b834e; --accent-glow:#5cb572; --positive:#236436; --urgent:#c13234;
+  --cat-deadline:#a06f30; --cat-docs:#2f6868; --cat-tax:#9a504b; --cat-contract:#594c7d; --cat-other:#9a9286;
+  --font-sans:"Inter Tight","Noto Sans JP",system-ui,sans-serif;
+  --font-jp:"Noto Sans JP","Inter Tight",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,monospace;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-press:cubic-bezier(0.65,0,0.35,1);
+  --margin:clamp(20px,6vw,96px);
+  --shadow-soft:0 1px 2px rgba(20,17,13,.04), 0 8px 24px -16px rgba(20,17,13,.12);
+  --shadow-lift:0 2px 4px rgba(20,17,13,.05), 0 22px 48px -28px rgba(20,17,13,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-jp);
+  font-feature-settings:"palt","ss01"; line-height:1.8; overflow-x:hidden;
+  min-height:100vh;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent-soft);color:var(--accent-ink)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+
+.wrap{max-width:1320px;margin-inline:auto;padding-inline:var(--margin)}
+.mono{font-family:var(--font-mono);font-weight:500;letter-spacing:.18em;color:var(--label-ink);font-feature-settings:normal}
+.mono-up{font-family:var(--font-mono);font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--label-ink);font-size:.66rem;font-feature-settings:normal}
+.tnum{font-variant-numeric:tabular-nums lining-nums}
+
+/* ─── reveal grammar: hairline rules draw L→R, content rises ─── */
+.rule{height:1px;background:var(--line);transform:scaleX(0);transform-origin:left center;border:0;
+  transition:transform .7s var(--ease-press)}
+.rule--heavy{height:2px;background:var(--ink)}
+.is-in .rule,.rule.is-in{transform:scaleX(1)}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.reveal.is-in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rule{transform:scaleX(1);transition:none}
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+/* ───────────────────────── MASTHEAD ───────────────────────── */
+.masthead{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--bg) 88%,transparent);backdrop-filter:saturate(1.1) blur(8px)}
+.masthead__top{height:1px;background:var(--ink)}
+.folio-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:13px 0 11px}
+.folio-row .tagline{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.08em;color:var(--label-ink);font-feature-settings:"palt";max-width:34ch;line-height:1.5}
+.wordmark{font-family:var(--font-sans);font-weight:700;font-size:clamp(1.4rem,2.4vw,1.9rem);letter-spacing:-.02em;text-align:center;color:var(--ink);line-height:1}
+.dateline{justify-self:end;text-align:right;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--ink-2);font-feature-settings:"palt";line-height:1.5}
+.dateline b{color:var(--accent);font-weight:600}
+.masthead__heavy{height:2px;background:var(--ink)}
+@media (max-width:640px){
+  .folio-row{grid-template-columns:1fr auto;gap:10px;padding:11px 0 9px}
+  .folio-row .tagline{display:none}
+  .dateline{font-size:.56rem}
+}
+
+/* ───────────────────────── HERO / FRONT-PAGE INTRO ───────────────────────── */
+.hero{padding:clamp(48px,8vw,104px) 0 clamp(36px,5vw,64px);display:grid;grid-template-columns:7fr 5fr;gap:clamp(28px,5vw,72px);align-items:end}
+.hero__kicker{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;color:var(--label-ink);margin-bottom:22px;display:flex;align-items:center;gap:12px}
+.hero__kicker::before{content:"";flex:0 0 30px;height:1px;background:var(--accent)}
+.hero h1{font-family:var(--font-jp);font-weight:700;font-size:clamp(2rem,4.6vw,3.7rem);line-height:1.12;letter-spacing:-.01em;color:var(--ink);font-feature-settings:"palt","ss01";text-wrap:pretty;word-break:keep-all;line-break:strict}
+.hero h1 .ac{color:var(--accent)}
+.hero h1 .lat{font-family:var(--font-sans)}
+.hero__lead{padding-left:clamp(0px,2vw,28px);border-left:1px solid var(--line);align-self:end}
+.hero__lead p{font-family:var(--font-jp);font-size:clamp(.96rem,1.2vw,1.08rem);line-height:1.85;color:var(--ink-2);max-width:36ch;text-wrap:pretty}
+.hero__lead p + p{margin-top:14px}
+.hero__count{margin-top:22px;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.16em;color:var(--label-ink);text-transform:uppercase}
+.hero__count b{color:var(--accent);font-weight:600}
+@media (max-width:880px){
+  .hero{grid-template-columns:1fr;gap:24px;align-items:start;padding-top:clamp(36px,9vw,72px)}
+  .hero__lead{padding-left:0;border-left:0;border-top:1px solid var(--line);padding-top:20px}
+  .hero__lead p{max-width:48ch}
+}
+
+/* ───────────────────────── SECTION LABEL ───────────────────────── */
+.seclabel{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:clamp(40px,5vw,64px) 0 18px}
+.seclabel .jp{font-family:var(--font-jp);font-weight:700;font-size:clamp(1.1rem,1.8vw,1.5rem);letter-spacing:-.01em;color:var(--ink)}
+.seclabel .en{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;color:var(--label-ink);white-space:nowrap}
+
+/* ───────────────────────── DIRECTION CARDS ───────────────────────── */
+.cards{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.4vw,32px);padding-top:8px}
+.card{position:relative;display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-soft);transition:transform .5s var(--ease-out),box-shadow .5s var(--ease-out),border-color .5s var(--ease-out)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);border-color:var(--line-strong)}
+.card:focus-within{border-color:var(--accent)}
+.card__body{padding:clamp(26px,3vw,44px);display:flex;flex-direction:column;min-width:0}
+.card__no{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.24em;color:var(--label-ink);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.card__no .slug{color:var(--muted-2)}
+.card__no::after{content:"";flex:1;height:1px;background:var(--line);margin-left:4px}
+.card__title{font-family:var(--font-jp);font-weight:700;font-size:clamp(1.5rem,2.6vw,2.15rem);line-height:1.18;letter-spacing:-.01em;margin-top:18px;color:var(--ink);text-wrap:balance;word-break:keep-all}
+.card__title .lat{font-family:var(--font-sans)}
+.card__arch{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;color:var(--ink-soft);margin-top:12px;line-height:1.6;font-feature-settings:"palt"}
+.card__tagline{font-family:var(--font-jp);font-size:clamp(.98rem,1.2vw,1.1rem);line-height:1.78;color:var(--ink-2);margin-top:20px;max-width:42ch;text-wrap:pretty}
+.card__why{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+.card__why .lbl{flex:0 0 auto;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);padding-top:3px}
+.card__why p{font-family:var(--font-jp);font-size:.9rem;line-height:1.7;color:var(--ink-soft);max-width:40ch}
+.card__cta{margin-top:auto;padding-top:26px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-sans);font-weight:600;font-size:.92rem;padding:11px 20px;border-radius:8px;background:var(--accent);color:#f4f1ea;border:1px solid var(--accent);transition:transform .25s var(--ease-out),background .25s var(--ease-out)}
+.btn:hover{transform:translateX(2px);background:var(--accent-bright)}
+.btn .arr{transition:transform .25s var(--ease-out)}
+.btn:hover .arr{transform:translateX(3px)}
+.btn--ghost{background:transparent;color:var(--ink-2);border-color:var(--line-strong)}
+.btn--ghost:hover{background:var(--surface-2);color:var(--ink);transform:none}
+.card__plink{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;color:var(--muted)}
+
+/* preview pane */
+.card__preview{position:relative;border-left:1px solid var(--line);background:var(--bg-2);min-width:0;display:flex;align-items:stretch;overflow:hidden}
+.card__preview img{width:100%;height:100%;object-fit:cover;object-position:center top;filter:saturate(.96) contrast(1.01)}
+.card__preview .swatches{position:absolute;left:0;right:0;bottom:0;display:flex;height:6px}
+.card__preview .swatches i{flex:1}
+.card__preview .ver{position:absolute;top:14px;left:14px;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:color-mix(in oklab,var(--paper) 78%,transparent);backdrop-filter:blur(3px);padding:5px 9px;border-radius:5px;border:1px solid var(--line)}
+.card__preview::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 60%,color-mix(in oklab,var(--ink) 6%,transparent));pointer-events:none}
+
+@media (max-width:820px){
+  .card{grid-template-columns:1fr}
+  .card__preview{border-left:0;border-top:1px solid var(--line);min-height:220px;order:-1}
+  .card__preview img{object-position:center top}
+}
+
+/* ───────────────────────── SHARED-ASSETS NOTE ───────────────────────── */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;padding-top:8px}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 24px}
+.note h3{font-family:var(--font-jp);font-weight:600;font-size:1rem;color:var(--ink);margin-bottom:8px}
+.note h3 .lat{font-family:var(--font-sans)}
+.note p{font-family:var(--font-jp);font-size:.86rem;line-height:1.72;color:var(--ink-soft)}
+.note code{font-family:var(--font-mono);font-size:.8rem;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--ink-2)}
+
+/* ───────────────────────── COLOPHON ───────────────────────── */
+.colophon{padding:clamp(36px,5vw,56px) 0 clamp(40px,6vw,72px)}
+.colophon__line{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--label-ink);display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding-top:18px}
+.colophon__line .dot{color:var(--muted-2)}
+.colophon__folio{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────── MASTHEAD ───────────────────────── -->
+<header class="masthead">
+  <div class="masthead__top"></div>
+  <div class="wrap">
+    <div class="folio-row">
+      <p class="tagline">税理士事務所のための、顧客対応AIエージェント</p>
+      <div class="wordmark">Zeiro</div>
+      <p class="dateline" id="dateline">— · <b>HOMEPAGE DIRECTIONS</b></p>
+    </div>
+  </div>
+  <div class="masthead__heavy"></div>
+</header>
+
+<main>
+  <!-- ───────────────────────── HERO ───────────────────────── -->
+  <section class="wrap hero reveal">
+    <div>
+      <div class="hero__kicker">設計案 · DESIGN DIRECTIONS · 03</div>
+      <h1>
+        ひとつのプロダクトを、<br>
+        <span class="ac">三つの語り口</span>で。
+      </h1>
+    </div>
+    <div class="hero__lead">
+      <p>同じ <span class="lat">Zeiro</span> ——受信 → 分類 → 事務所ナレッジで下書き → 税理士レビュー → 送信——を、印刷の権威・墨の映像性・実働の証明という三つの方向で組んだホームページ候補です。</p>
+      <p>それぞれ自己完結した <code style="font-family:var(--font-mono);font-size:.82em;color:var(--ink-soft)">index.html</code>。クリックで新しいタブに開きます。</p>
+      <p class="hero__count"><b>3</b> DIRECTIONS &nbsp;·&nbsp; <b>1</b> BRAND SYSTEM</p>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="rule rule--heavy reveal"></div></div>
+
+  <!-- ───────────────────────── DIRECTION CARDS ───────────────────────── -->
+  <section class="wrap">
+    <div class="seclabel reveal">
+      <span class="jp">三つの方向</span>
+      <span class="en">The Three Directions</span>
+    </div>
+    <div class="rule reveal"></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- ───────────────────────── NOTES ───────────────────────── -->
+  <section class="wrap">
+    <div class="seclabel reveal">
+      <span class="jp">共有しているもの</span>
+      <span class="en">Shared Foundation</span>
+    </div>
+    <div class="rule reveal"></div>
+    <div style="height:22px"></div>
+    <div class="notes">
+      <div class="note reveal">
+        <h3>共有アセット <span class="lat">/ assets</span></h3>
+        <p>3案は同じ <code>assets/still/*.png</code>（リデュースモーション用ポスター）と <code>assets/video/*.mp4</code> を参照します。本番のライブ演出はすべて自前で再構築。</p>
+      </div>
+      <div class="note reveal">
+        <h3>ブランドトークン</h3>
+        <p>温かいクリーム紙、深い墨、控えめな森のグリーン一色。<code>apps/web/styles/tokens.css</code> と同一の色・書体（Inter Tight ／ Noto Sans JP ／ JetBrains Mono）。</p>
+      </div>
+      <div class="note reveal">
+        <h3>守秘義務 <span class="lat">§38</span></h3>
+        <p>すべての案が <span class="lat">My Number</span> マスク・<code>jp-tokyo</code> データレジデンシー・学習しない <span class="lat">LLM</span> 契約・監査ログを訴求します。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── COLOPHON ───────────────────────── -->
+  <footer class="wrap colophon">
+    <div class="rule reveal"></div>
+    <div class="colophon__line reveal">
+      <span>税理士法 第38条 守秘義務準拠</span><span class="dot">·</span>
+      <span>データ保管 jp-tokyo</span><span class="dot">·</span>
+      <span>学習しない LLM 契約</span><span class="dot">·</span>
+      <span>監査ログ全件</span>
+    </div>
+    <div class="colophon__folio reveal" id="colophon-folio">Zeiro — Homepage Direction Gallery</div>
+  </footer>
+</main>
+
+<script>
+const VERSIONS = [
+  {
+    slug: "v1-kanpo-broadsheet",
+    no: "01",
+    title: '官報 — <span class="lat">The Daily Ledger</span>',
+    archetype: "Editorial / Swiss–Japanese print — 記録の財政ブロードシート、一列だけが生きている",
+    tagline: "記録のための財政ブロードシート。読者の目の前で、引用付きの返信を静かに組版してみせる。",
+    why: "紙面そのものが論証になる。唯一の純白プレート上で、出典付きの返信が活字のように組まれていく。",
+    poster: "assets/still/DraftStream.png",
+    swatches: ["var(--cat-deadline)","var(--cat-docs)","var(--cat-tax)","var(--cat-contract)","var(--accent)"]
+  },
+  {
+    slug: "v2-utsuwa-cinematic-ink",
+    no: "02",
+    title: '墨 — <span class="lat">Sumi (Cinematic Ink)</span>',
+    archetype: "Cinematic ink — WebGL の劇的なコントラスト一幕、その後は紙の編集的な静けさ",
+    tagline: "一滴の温かい墨が引用付きの下書きを現像し、やがて完成した紙面へと乾いていく——スクロールに従って。",
+    why: "墨の場はフェードしない、乾く。スクロールに連動してインクが端から紙へと乾き、型が反転する一筆書きの所作。",
+    poster: "assets/still/KnowledgeConstellation.png",
+    swatches: ["var(--ink)","var(--accent-bright)","var(--accent-glow)","var(--accent)","var(--accent-soft)"]
+  },
+  {
+    slug: "v3-ugoku-shoko-working-proof",
+    no: "03",
+    title: 'Zeiro — 動く証拠 <span class="lat">(Working Proof)</span>',
+    archetype: "Product-forward / show-the-work — クリーム紙上の Linear 級の抑制、ライブの流れが主役",
+    tagline: "ページは製品を説明しない。実行する——一通の本物のメールを、トリアージし、引用し、下書きし、送る。",
+    why: "説明ではなく実演。一通の実メールが分類・検索・下書き・レビューまで一筆のスクロールで流れていく。",
+    poster: "assets/still/AgentPipeline3D_f235.png",
+    swatches: ["var(--cat-deadline)","var(--cat-docs)","var(--cat-tax)","var(--cat-contract)","var(--urgent)"]
+  }
+];
+
+function cardHTML(v){
+  const sw = v.swatches.map(c=>`<i style="background:${c}"></i>`).join("");
+  return `<article class="card reveal">
+    <div class="card__body">
+      <div class="card__no">${v.no} <span class="slug">/ ${v.slug}</span></div>
+      <h2 class="card__title">${v.title}</h2>
+      <p class="card__arch">${v.archetype}</p>
+      <p class="card__tagline">${v.tagline}</p>
+      <div class="card__why">
+        <span class="lbl">なぜ違う</span>
+        <p>${v.why}</p>
+      </div>
+      <div class="card__cta">
+        <a class="btn" href="./${v.slug}/index.html" target="_blank" rel="noopener">
+          開いて見る <span class="arr">→</span>
+        </a>
+        <a class="btn btn--ghost" href="./${v.slug}/index.html" target="_blank" rel="noopener">View live</a>
+        <span class="card__plink">./${v.slug}/</span>
+      </div>
+    </div>
+    <a class="card__preview" href="./${v.slug}/index.html" target="_blank" rel="noopener" aria-label="${v.slug} を新しいタブで開く">
+      <span class="ver">${v.no} · ${v.slug.split("-")[0].toUpperCase()}</span>
+      <img src="${v.poster}" alt="${v.slug} のプレビュー" loading="lazy" decoding="async" />
+      <span class="swatches">${sw}</span>
+    </a>
+  </article>`;
+}
+
+document.getElementById("cards").innerHTML = VERSIONS.map(cardHTML).join("");
+
+// Live dateline — 2026年5月30日 金曜日 形式
+(function(){
+  const d = new Date();
+  const days = ["日","月","火","水","木","金","土"];
+  const txt = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${days[d.getDay()]}曜日`;
+  const el = document.getElementById("dateline");
+  if(el) el.innerHTML = `${txt} · <b>HOMEPAGE DIRECTIONS</b>`;
+  const f = document.getElementById("colophon-folio");
+  if(f) f.textContent = `Zeiro — Homepage Direction Gallery · ${txt} · 第38条準拠版`;
+})();
+
+// Reveal on scroll (rules draw, content rises); graceful if IO unsupported
+(function(){
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = document.querySelectorAll(".reveal, .rule");
+  if(reduce || !("IntersectionObserver" in window)){
+    items.forEach(el=>el.classList.add("is-in"));
+    return;
+  }
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add("is-in"); io.unobserve(e.target); }
+    });
+  }, {threshold:0.12, rootMargin:"0px 0px -8% 0px"});
+  items.forEach(el=>io.observe(el));
+})();
+</script>
+</body>
+</html>
