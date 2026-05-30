@@ -6,7 +6,7 @@ import { deriveSuggestion } from '@/components/inquiry/suggested-action';
 import { Thread } from '@/components/inquiry/thread';
 import { ThreadSidecarSplit } from '@/components/inquiry/thread-sidecar-split';
 import type { Turn } from '@/components/inquiry/turns';
-import { viewerScope } from '@/lib/authz';
+import { ctxCan, viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 import {
   CATEGORY_TO_ID,
@@ -158,6 +158,8 @@ export default async function InquiryDetailPage({
           inquiryStatus={inquiry.status}
           unmatchedSender={inquiry.unmatchedSender}
           assignedTo={inquiry.assignedTo}
+          canDraft={ctxCan(ctx, 'inquiry.draft')}
+          canSend={ctxCan(ctx, 'inquiry.send')}
         />
       }
       sidecar={

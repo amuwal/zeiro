@@ -26,6 +26,9 @@ type Props = {
   unmatchedSender: string | null;
   /** Currently-assigned user; null = 未割当. */
   assignedTo: { id: string; name: string } | null;
+  /** Viewer's permissions (from appRole) — gate the composer affordances. */
+  canDraft: boolean;
+  canSend: boolean;
 };
 
 const CATEGORY_JP: Record<string, string> = {
@@ -44,6 +47,8 @@ export function Thread({
   inquiryStatus,
   unmatchedSender,
   assignedTo,
+  canDraft,
+  canSend,
 }: Props) {
   const isUnmatched = inquiryStatus === 'unmatched';
   const [highlightedCite, setHighlightedCite] = useState<string | null>(null);
@@ -57,8 +62,12 @@ export function Thread({
           <b>{cat}</b>
           <span className="id">INQ-{meta.id.slice(0, 8).toUpperCase()}</span>
           <div className="actions">
-            <button type="button" className="icon-btn-sm" title="アーカイブ"><Icon name="archive" size={14} /></button>
-            <button type="button" className="icon-btn-sm" title="その他"><Icon name="more" size={14} /></button>
+            <button type="button" className="icon-btn-sm" title="アーカイブ">
+              <Icon name="archive" size={14} />
+            </button>
+            <button type="button" className="icon-btn-sm" title="その他">
+              <Icon name="more" size={14} />
+            </button>
           </div>
         </div>
 
@@ -122,6 +131,8 @@ export function Thread({
           draft={draft}
           inquiryId={meta.id}
           inquiryStatus={inquiryStatus}
+          canDraft={canDraft}
+          canSend={canSend}
         />
       )}
     </section>

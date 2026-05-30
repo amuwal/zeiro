@@ -2,9 +2,10 @@ import { RequestContext } from '@mastra/core/di';
 import {
   type AiReview,
   type CitationBlock,
+  DRAFT_GENERATION_TIMEOUT_MS,
   type DraftResult,
-  triageResultSchema,
   type TriageResult,
+  triageResultSchema,
 } from '@zeiro/core';
 import { ensureRePrefix } from '@zeiro/email';
 import { inquiryAgent } from '../mastra/agents/inquiry.js';
@@ -20,6 +21,29 @@ const TERMINAL_KEY_TO_KIND: Record<string, 'propose-draft' | 'escalate' | 'no-re
   noReplyNeeded: 'no-reply-needed',
 };
 const MAX_STEPS = 8;
+
+class AgentTimeoutError extends Error {
+  constructor(ms: number) {
+    super(`agent generation exceeded ${ms}ms`);
+    this.name = 'AgentTimeoutError';
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new AgentTimeoutError(ms)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 // Orchestrates a single inquiry: fast triage classifier first, then the
 // autonomous inquiry agent. Returns the same DraftResult shape as the legacy
@@ -41,14 +65,32 @@ export async function runInquiry(input: PipelineInput): Promise<DraftResult> {
 
   const userMessage = buildAgentMessage(input, triage);
 
-  const result = await inquiryAgent.generate(userMessage, {
-    requestContext,
-    memory: {
-      thread: input.inquiryId ?? `transient:${Date.now()}`,
-      resource: input.firmId,
-    },
-    maxSteps: MAX_STEPS,
-  });
+  // N-10: cap the agent loop at the p95 budget. On timeout we escalate to a
+  // human rather than let the inquiry hang (or burn 3 Inngest retries).
+  let result: Awaited<ReturnType<typeof inquiryAgent.generate>>;
+  try {
+    result = await withTimeout(
+      inquiryAgent.generate(userMessage, {
+        requestContext,
+        memory: {
+          thread: input.inquiryId ?? `transient:${Date.now()}`,
+          resource: input.firmId,
+        },
+        maxSteps: MAX_STEPS,
+      }),
+      DRAFT_GENERATION_TIMEOUT_MS,
+    );
+  } catch (e) {
+    if (e instanceof AgentTimeoutError) {
+      return {
+        kind: 'escalate',
+        triage,
+        reason: `AI 処理が ${Math.round(DRAFT_GENERATION_TIMEOUT_MS / 1000)} 秒以内に完了しませんでした。担当者の確認が必要です。`,
+        aiReview: defaultAiReview('human_handoff', 'low', 'agent generation timed out'),
+      };
+    }
+    throw e;
+  }
 
   const terminal = extractTerminalToolResult(result.steps);
   if (!terminal) {
@@ -57,7 +99,8 @@ export async function runInquiry(input: PipelineInput): Promise<DraftResult> {
     return {
       kind: 'escalate',
       triage,
-      reason: 'AI agent ended without selecting a terminal action (propose-draft / escalate / no-reply-needed).',
+      reason:
+        'AI agent ended without selecting a terminal action (propose-draft / escalate / no-reply-needed).',
       aiReview: defaultAiReview('human_handoff', 'low', 'no terminal tool was called'),
     };
   }
@@ -91,7 +134,9 @@ type ProposeDraftResult = {
 // enforce single-call discipline.
 function extractTerminalToolResult(steps: unknown[]): TerminalCall | null {
   for (let i = steps.length - 1; i >= 0; i--) {
-    const step = steps[i] as { toolResults?: Array<{ payload?: { toolName?: string; result?: unknown } }> };
+    const step = steps[i] as {
+      toolResults?: Array<{ payload?: { toolName?: string; result?: unknown } }>;
+    };
     const results = step?.toolResults ?? [];
     for (let j = results.length - 1; j >= 0; j--) {
       const payload = results[j]?.payload;
@@ -170,7 +215,10 @@ function buildAgentMessage(input: PipelineInput, triage: TriageResult): string {
   if (input.clientNotes) sections.push(`# 顧問先メモ (事前共有)\n${input.clientNotes}`);
   if (input.threadHistory && input.threadHistory.length > 0) {
     const turns = input.threadHistory
-      .map((m) => `--- ${m.role === 'customer' ? '顧問先' : '当事務所'} (${m.at}) ---\n${m.body.trim()}`)
+      .map(
+        (m) =>
+          `--- ${m.role === 'customer' ? '顧問先' : '当事務所'} (${m.at}) ---\n${m.body.trim()}`,
+      )
       .join('\n\n');
     sections.push(`# これまでのやり取り\n${turns}`);
   }

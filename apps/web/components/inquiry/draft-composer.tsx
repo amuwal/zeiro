@@ -27,9 +27,12 @@ type Props = {
   draft: DraftView | null;
   inquiryId: string;
   inquiryStatus: string;
+  // From the viewer's appRole: can they author/edit a draft, and may they send?
+  canDraft: boolean;
+  canSend: boolean;
 };
 
-export function DraftComposer({ draft, inquiryId, inquiryStatus }: Props) {
+export function DraftComposer({ draft, inquiryId, inquiryStatus, canDraft, canSend }: Props) {
   const { text, setText, pendingDraftBody, loadIncoming, keepMyEdits } = useDraftConflict(
     draft?.body ?? '',
   );
@@ -86,7 +89,8 @@ export function DraftComposer({ draft, inquiryId, inquiryStatus }: Props) {
         onChange={(e) => setText(e.target.value)}
         placeholder={SKELETON_PLACEHOLDER}
         rows={6}
-        disabled={busy}
+        disabled={busy || !canDraft}
+        readOnly={!canDraft}
       />
 
       {pendingDraftBody !== null && (
@@ -102,58 +106,75 @@ export function DraftComposer({ draft, inquiryId, inquiryStatus }: Props) {
         </div>
       )}
 
-      <div className="draft-composer-actions">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => run('regen', () => regenerateDraftAction(inquiryId))}
-          disabled={busy}
-        >
-          <Icon name="spark" size={12} /> {busyKind === 'regen' ? '生成中…' : '再生成'}
-        </button>
-        <button type="button" className="icon-btn-sm" title="添付" disabled={busy}>
-          <Icon name="paperclip" size={13} />
-        </button>
-        <button type="button" className="icon-btn-sm" title="ナレッジ参照" disabled={busy}>
-          <Icon name="book" size={13} />
-        </button>
-        <span className="spacer" />
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => run('reject', () => rejectDraftAction(inquiryId))}
-          disabled={busy || !hasDraft}
-        >
-          <Icon name="x" size={12} /> {busyKind === 'reject' ? '処理中…' : '却下'}
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => run('escalate', () => escalateInquiryAction(inquiryId))}
-          disabled={busy}
-        >
-          <Icon name="arrow-right" size={12} />{' '}
-          {busyKind === 'escalate' ? '転送中…' : '所長に転送'}
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => run('send', () => sendDraftAction(inquiryId))}
-          disabled={busy || !hasDraft || isEdited}
-          title={isEdited ? '編集された内容は「編集して送信」で送ってください' : undefined}
-        >
-          <Icon name="check" size={12} /> {busyKind === 'send' ? '送信中…' : 'そのまま送信'}
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => run('send', () => sendEditedDraftAction(inquiryId, text))}
-          disabled={busy || text.trim().length === 0}
-        >
-          <Icon name="send" size={12} /> {busyKind === 'send' ? '送信中…' : '編集して送信'}
-          <span className="kbd">⌘↵</span>
-        </button>
-      </div>
+      {canDraft ? (
+        <div className="draft-composer-actions">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => run('regen', () => regenerateDraftAction(inquiryId))}
+            disabled={busy}
+          >
+            <Icon name="spark" size={12} /> {busyKind === 'regen' ? '生成中…' : '再生成'}
+          </button>
+          <button type="button" className="icon-btn-sm" title="添付" disabled={busy}>
+            <Icon name="paperclip" size={13} />
+          </button>
+          <button type="button" className="icon-btn-sm" title="ナレッジ参照" disabled={busy}>
+            <Icon name="book" size={13} />
+          </button>
+          <span className="spacer" />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => run('reject', () => rejectDraftAction(inquiryId))}
+            disabled={busy || !hasDraft}
+          >
+            <Icon name="x" size={12} /> {busyKind === 'reject' ? '処理中…' : '却下'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => run('escalate', () => escalateInquiryAction(inquiryId))}
+            disabled={busy}
+          >
+            <Icon name="arrow-right" size={12} />{' '}
+            {busyKind === 'escalate' ? '転送中…' : '所長に転送'}
+          </button>
+          {canSend ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => run('send', () => sendDraftAction(inquiryId))}
+                disabled={busy || !hasDraft || isEdited}
+                title={isEdited ? '編集された内容は「編集して送信」で送ってください' : undefined}
+              >
+                <Icon name="check" size={12} /> {busyKind === 'send' ? '送信中…' : 'そのまま送信'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => run('send', () => sendEditedDraftAction(inquiryId, text))}
+                disabled={busy || text.trim().length === 0}
+              >
+                <Icon name="send" size={12} /> {busyKind === 'send' ? '送信中…' : '編集して送信'}
+                <span className="kbd">⌘↵</span>
+              </button>
+            </>
+          ) : (
+            <span className="flex items-center gap-1.5 text-[11px] text-muted">
+              <Icon name="shield" size={11} />{' '}
+              送信は所長・税理士の承認が必要です（「所長に転送」で依頼）
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="draft-composer-actions">
+          <span className="flex items-center gap-1.5 text-[11px] text-muted">
+            <Icon name="shield" size={11} /> 閲覧のみ — 編集・送信の権限がありません
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="draft-composer-error">
