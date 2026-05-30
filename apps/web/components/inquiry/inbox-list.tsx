@@ -8,7 +8,7 @@ import type { FilterState } from './shell';
 
 export type InboxItemView = {
   id: string;
-  channel: 'email' | 'form' | 'line';
+  channel: 'email' | 'form' | 'line' | 'chatwork';
   company: string;
   subject: string;
   preview: string;
@@ -23,8 +23,13 @@ export type InboxItemView = {
   turnCount?: number;
 };
 
-const CHANNEL_GLYPH: Record<string, string> = { email: 'M', form: 'F', line: 'L' };
-const CHANNEL_JP: Record<string, string> = { email: 'メール', form: 'Webフォーム', line: 'LINE' };
+const CHANNEL_GLYPH: Record<string, string> = { email: 'M', form: 'F', line: 'L', chatwork: 'C' };
+const CHANNEL_JP: Record<string, string> = {
+  email: 'メール',
+  form: 'Webフォーム',
+  line: 'LINE',
+  chatwork: 'Chatwork',
+};
 const CATEGORY_JP: Record<string, string> = {
   deadline: '期日確認',
   docs: '書類提出',

@@ -64,7 +64,7 @@ export function Sidebar({
           acc[i.channel] = (acc[i.channel] ?? 0) + 1;
           return acc;
         },
-        {} as Record<'email' | 'form' | 'line', number>,
+        {} as Record<'email' | 'form' | 'line' | 'chatwork', number>,
       ),
     }),
     [items],

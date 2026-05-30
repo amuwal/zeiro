@@ -16,6 +16,8 @@ export function normalizeChannel(raw: string | null | undefined): InboxItemView[
       return 'email';
     case 'line':
       return 'line';
+    case 'chatwork':
+      return 'chatwork';
     case 'form':
     case 'web':
     case 'webform':
@@ -101,7 +103,7 @@ export function toInitials(name: string): string {
   if (!trimmed) return '?';
   const parts = trimmed.split(/[\s ]+/);
   const first = parts[0]?.[0] ?? '?';
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
   return (first + last).toUpperCase();
 }
 
@@ -129,7 +131,8 @@ export function formatElapsed(ms: number): string {
 
 export function deriveOpenItems(aiReview: Record<string, unknown>): string[] {
   const suggestions = aiReview.suggestions;
-  if (Array.isArray(suggestions)) return suggestions.filter((s): s is string => typeof s === 'string');
+  if (Array.isArray(suggestions))
+    return suggestions.filter((s): s is string => typeof s === 'string');
   const gaps = aiReview.gaps;
   if (Array.isArray(gaps)) return gaps.filter((s): s is string => typeof s === 'string');
   return [];

@@ -99,7 +99,9 @@ export default async function InquiryDetailPage({
           ? 'メール'
           : inquiry.channel === 'line'
             ? 'LINE'
-            : 'Webフォーム',
+            : inquiry.channel === 'chatwork'
+              ? 'Chatwork'
+              : 'Webフォーム',
       threadId: `INQ-${inquiry.id.slice(0, 8).toUpperCase()}`,
       tenantIsolation: '有効',
       recording: '全イベント保存',
