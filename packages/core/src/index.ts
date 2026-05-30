@@ -20,3 +20,4 @@ export * from './schemas/client';
 export * from './schemas/import';
 export * from './schemas/inquiry';
 export * from './schemas/tenant';
+export * from './tax/deadlines';

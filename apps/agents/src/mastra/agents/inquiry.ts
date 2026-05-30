@@ -3,6 +3,7 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { DRAFT_MODEL } from '@zeiro/core';
 import { inquiryAgentPrompt } from '../prompts/inquiry';
+import { computeDeadlinesTool } from '../tools/compute-deadlines';
 import { escalateTool } from '../tools/escalate';
 import { getClientTool } from '../tools/get-client';
 import { getRecentInquiriesTool } from '../tools/get-recent-inquiries';
@@ -26,6 +27,7 @@ export const inquiryAgent = new Agent({
     searchKnowledge: searchKnowledgeTool,
     getClient: getClientTool,
     getRecentInquiries: getRecentInquiriesTool,
+    computeDeadlines: computeDeadlinesTool,
     lookupFreeeBooks: lookupFreeeBooksTool,
     proposeDraft: proposeDraftTool,
     escalate: escalateTool,
