@@ -1,0 +1,44 @@
+# Render Blueprint — Zeiro agents service (apps/agents: Mastra agent loop on Hono).
+# The Next.js app (apps/web) deploys to Vercel; this long-running, multi-tool
+# drafting loop doesn't fit Vercel's function timeouts, so it lives here.
+# Secrets (sync:false) are set per-environment, not committed.
+services:
+  - type: web
+    name: zeiro-agents
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @zeiro/agents exec tsx src/server.ts
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: FREEE_CLIENT_ID
+        sync: false
+      - key: FREEE_CLIENT_SECRET
+        sync: false
+      - key: FREEE_REDIRECT_URI
+        sync: false
+      - key: CHATWORK_CLIENT_ID
+        sync: false
+      - key: CHATWORK_CLIENT_SECRET
+        sync: false
+      - key: CHATWORK_REDIRECT_URI
+        sync: false
