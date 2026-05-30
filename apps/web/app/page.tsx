@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 export default async function HomePage() {
   const { userId } = await auth();
-  if (userId) redirect('/inbox');
+  if (userId) redirect('/home');
   return (
     <main style={{ padding: '4rem 2rem', maxWidth: 720, margin: '0 auto' }}>
       <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 32, letterSpacing: '-0.02em' }}>
