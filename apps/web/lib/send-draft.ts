@@ -14,20 +14,36 @@ import {
 } from '@zeiro/email';
 import { env } from './env';
 import { inngest } from './inngest/client';
+import { sendDraftChatwork } from './send-draft-chatwork';
 
-/**
- * Send an inquiry's latest draft to the customer via Resend. Used by both the
- * そのまま送信 button (editedBody=null → uses persisted draft.body verbatim)
- * and the 編集して送信 button (editedBody=<user input>). Writes the outbound
- * Message-ID back to the draft's metadata so the next customer reply can be
- * threaded back to this draft via findDraftBySentMessageId.
- */
-export async function sendDraftEmail(args: {
+export type SendDraftArgs = {
   firmId: string;
   userId: string;
   inquiryId: string;
   editedBody: string | null;
-}): Promise<void> {
+};
+
+/**
+ * Channel-aware send: routes the approved draft to the customer over whichever
+ * channel the inquiry arrived on. Chatwork posts back to the room; everything
+ * else replies by email. editedBody=null → send the persisted draft verbatim.
+ */
+export async function sendDraft(args: SendDraftArgs): Promise<void> {
+  const inquiry = await getInquiry(args.firmId, args.inquiryId);
+  if (!inquiry) throw new Error(`inquiry ${args.inquiryId} not found`);
+  if (inquiry.channel === 'chatwork') {
+    await sendDraftChatwork(args);
+    return;
+  }
+  await sendDraftEmail(args);
+}
+
+/**
+ * Send an inquiry's latest draft to the customer via Resend. Writes the outbound
+ * Message-ID back to the draft's metadata so the next customer reply can be
+ * threaded back to this draft via findDraftBySentMessageId.
+ */
+export async function sendDraftEmail(args: SendDraftArgs): Promise<void> {
   const [inquiry, draft, firm] = await Promise.all([
     getInquiry(args.firmId, args.inquiryId),
     getDraftByInquiry(args.firmId, args.inquiryId),

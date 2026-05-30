@@ -20,7 +20,7 @@ import type { FirmContext } from '@/lib/firm-context';
 import { requireFirmContext } from '@/lib/firm-context';
 import { inngest } from '@/lib/inngest/client';
 import { processDraft } from '@/lib/process-draft';
-import { sendDraftEmail } from '@/lib/send-draft';
+import { sendDraft } from '@/lib/send-draft';
 
 // Object-level scope check: an assigned-scope user must not act on an inquiry
 // they can't see, even if they call the action directly with a guessed id.
@@ -53,7 +53,7 @@ export async function regenerateDraftAction(inquiryId: string): Promise<void> {
 export async function sendDraftAction(inquiryId: string): Promise<void> {
   const ctx = await requireCan('inquiry.send');
   await requireVisibleInquiry(ctx, inquiryId);
-  await sendDraftEmail({ firmId: ctx.firmId, userId: ctx.userId, inquiryId, editedBody: null });
+  await sendDraft({ firmId: ctx.firmId, userId: ctx.userId, inquiryId, editedBody: null });
   revalidatePath(`/inbox/${inquiryId}`);
   revalidatePath('/inbox');
 }
@@ -62,7 +62,7 @@ export async function sendDraftAction(inquiryId: string): Promise<void> {
 export async function sendEditedDraftAction(inquiryId: string, body: string): Promise<void> {
   const ctx = await requireCan('inquiry.send');
   await requireVisibleInquiry(ctx, inquiryId);
-  await sendDraftEmail({ firmId: ctx.firmId, userId: ctx.userId, inquiryId, editedBody: body });
+  await sendDraft({ firmId: ctx.firmId, userId: ctx.userId, inquiryId, editedBody: body });
   revalidatePath(`/inbox/${inquiryId}`);
   revalidatePath('/inbox');
 }
