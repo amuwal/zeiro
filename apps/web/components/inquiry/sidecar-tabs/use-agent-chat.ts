@@ -6,6 +6,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type Status = 'idle' | 'loading' | 'streaming' | 'error';
 
+// The pipeline kicks the agent off with an internal prompt (triage summary +
+// "終端ツールを1回だけ呼んで…"). That's machine plumbing, not something a
+// reviewer should see — hide those turns so the chat reads as a clean Q&A.
+function visibleMessages(msgs: ChatMessage[]): ChatMessage[] {
+  return msgs.filter((m) => {
+    if (m.role !== 'user') return true;
+    const text = m.parts.map((p) => (p.type === 'text' ? p.text : '')).join('');
+    return !(text.includes('# triage 分類結果') || text.includes('終端ツール'));
+  });
+}
+
 export function useAgentChat(inquiryId: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<Status>('idle');
@@ -23,7 +34,7 @@ export function useAgentChat(inquiryId: string) {
       .then((r) => r.json())
       .then((j: { messages?: ChatMessage[] }) => {
         if (cancelled) return;
-        setMessages(j.messages ?? []);
+        setMessages(visibleMessages(j.messages ?? []));
         setStatus('idle');
       })
       .catch((e) => {
@@ -42,7 +53,7 @@ export function useAgentChat(inquiryId: string) {
     try {
       const r = await fetch(`/api/inquiries/${inquiryId}/chat`);
       const j: { messages?: ChatMessage[] } = await r.json();
-      setMessages(j.messages ?? []);
+      setMessages(visibleMessages(j.messages ?? []));
     } catch {
       // Silent — periodic refresh shouldn't surface errors mid-poll.
     }
@@ -132,7 +143,11 @@ async function readSSE(body: ReadableStream<Uint8Array>, onEvent: (ev: ChatStrea
   }
 }
 
-function applyStreamEvent(prev: ChatMessage[], assistantId: string, ev: ChatStreamEvent): ChatMessage[] {
+function applyStreamEvent(
+  prev: ChatMessage[],
+  assistantId: string,
+  ev: ChatStreamEvent,
+): ChatMessage[] {
   const idx = prev.findIndex((m) => m.id === assistantId);
   if (idx === -1) return prev;
   const msg = prev[idx]!;

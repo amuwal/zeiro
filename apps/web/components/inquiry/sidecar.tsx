@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { ChatTab } from './sidecar-tabs/chat-tab';
 import { ClientTab, type ClientTabData } from './sidecar-tabs/client-tab';
-import { SourcesTab, type SourceItem } from './sidecar-tabs/sources-tab';
+import { type SourceItem, SourcesTab } from './sidecar-tabs/sources-tab';
 import { StatusTab, type StatusTabData } from './sidecar-tabs/status-tab';
+
 type Tab = 'chat' | 'sources' | 'client' | 'status';
 
 type Props = {
@@ -18,14 +19,16 @@ type Props = {
 };
 
 export function Sidecar(props: Props) {
-  const [tab, setTab] = useState<Tab>('chat');
+  // Land on the evidence (which firm knowledge the draft cites) — that's the
+  // trust/value view a reviewer needs first, not the agent's internal trace.
+  const [tab, setTab] = useState<Tab>('sources');
   const [highlightedCite, setHighlightedCite] = useState<string | null>(null);
 
   const tabs: Array<{ id: Tab; label: string }> = [
-    { id: 'chat', label: 'Chat' },
-    { id: 'sources', label: 'Sources' },
-    { id: 'client', label: 'Client' },
-    { id: 'status', label: 'Status' },
+    { id: 'sources', label: '根拠' },
+    { id: 'client', label: '顧問先' },
+    { id: 'chat', label: 'AIに相談' },
+    { id: 'status', label: '状態' },
   ];
 
   return (
@@ -53,7 +56,9 @@ export function Sidecar(props: Props) {
       </header>
 
       <div className="sidecar-body" key={tab}>
-        {tab === 'chat' && <ChatTab inquiryId={props.inquiryId} inquiryStatus={props.inquiryStatus} />}
+        {tab === 'chat' && (
+          <ChatTab inquiryId={props.inquiryId} inquiryStatus={props.inquiryStatus} />
+        )}
         {tab === 'sources' && (
           <SourcesTab
             citations={props.sources}
