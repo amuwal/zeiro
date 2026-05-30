@@ -229,6 +229,32 @@ export async function getInboxCounts(firmId: string, scope?: ViewerScope): Promi
   return counts;
 }
 
+// Count of actionable leaf inquiries the user has NOT yet opened — drives the
+// inbox tab badge + the notification dot (decreases as items are opened).
+export async function countUnreadLeaves(
+  firmId: string,
+  userId: string,
+  scope?: ViewerScope,
+): Promise<number> {
+  const scopeClause =
+    scope && !scope.seeAll
+      ? Prisma.sql`AND (i.assigned_to_id = ${scope.userId}::uuid OR EXISTS (
+          SELECT 1 FROM client_assignees ca WHERE ca.client_id = i.client_id AND ca.user_id = ${scope.userId}::uuid
+        ))`
+      : Prisma.empty;
+  const rows = await getPrisma().$queryRaw<{ count: number }[]>`
+    SELECT COUNT(*)::int AS count FROM inquiries i
+    WHERE i.firm_id = ${firmId}::uuid
+      AND NOT EXISTS (SELECT 1 FROM inquiries c WHERE c.parent_inquiry_id = i.id)
+      AND i.status IN ('pending', 'drafted', 'escalated', 'unmatched')
+      AND NOT EXISTS (
+        SELECT 1 FROM inquiry_reads r WHERE r.inquiry_id = i.id AND r.user_id = ${userId}::uuid
+      )
+      ${scopeClause}
+  `;
+  return rows[0]?.count ?? 0;
+}
+
 export function getMyInquiryCount(firmId: string, userId: string): Promise<number> {
   return getPrisma().inquiry.count({
     where: { firmId, assignedToId: userId },

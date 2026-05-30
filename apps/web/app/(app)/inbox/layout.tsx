@@ -1,4 +1,4 @@
-import { listInquiryThreads } from '@zeiro/db';
+import { listInquiryThreads, listReadInquiryIds } from '@zeiro/db';
 import type { ReactNode } from 'react';
 import type { InboxItemView } from '@/components/inquiry/inbox-list';
 import { InboxShell } from '@/components/inquiry/shell';
@@ -11,7 +11,10 @@ export default async function InboxLayout({ children }: { children: ReactNode })
   // listInquiryThreads returns ONE row per conversation (the leaf — i.e. the
   // newest message in each parent_inquiry_id chain), with a `threadCount`
   // attached. Scoped to the viewer: Staff/Viewer see only their 担当 clients.
-  const threads = await listInquiryThreads(ctx.firmId, undefined, viewerScope(ctx));
+  const [threads, readIds] = await Promise.all([
+    listInquiryThreads(ctx.firmId, undefined, viewerScope(ctx)),
+    listReadInquiryIds(ctx.firmId, ctx.userId),
+  ]);
 
   const items: InboxItemView[] = threads.map((i) => {
     const analysis = (i.analysis ?? {}) as Record<string, unknown>;
@@ -27,7 +30,7 @@ export default async function InboxLayout({ children }: { children: ReactNode })
       preview: i.body.replace(/\s+/g, ' ').slice(0, 90),
       received: shortTime(i.receivedAt),
       urgent: triage.urgency === 'high',
-      unread: i.status === 'pending',
+      unread: !readIds.has(i.id),
       category: catId,
       confidence,
       lifecycle: i.status === 'sent' ? ('resolved' as const) : ('open' as const),

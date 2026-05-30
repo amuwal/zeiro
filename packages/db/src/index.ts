@@ -24,6 +24,7 @@ export * from './repositories/firm';
 export * from './repositories/firm-channel';
 export * from './repositories/ingestion-jobs';
 export * from './repositories/inquiry';
+export * from './repositories/inquiry-reads';
 export * from './repositories/integrations';
 export * from './repositories/knowledge';
 export * from './repositories/membership';

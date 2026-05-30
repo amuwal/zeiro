@@ -1,5 +1,6 @@
 import { getClientDetail, getDraftByInquiry, getInquiry } from '@zeiro/db';
 import { notFound } from 'next/navigation';
+import { MarkRead } from '@/components/inquiry/mark-read';
 import { Sidecar } from '@/components/inquiry/sidecar';
 import type { StatusTabData } from '@/components/inquiry/sidecar-tabs/status-tab';
 import { deriveSuggestion } from '@/components/inquiry/suggested-action';
@@ -137,42 +138,45 @@ export default async function InquiryDetailPage({
     : null;
 
   return (
-    <ThreadSidecarSplit
-      thread={
-        <Thread
-          meta={{
-            id: inquiry.id,
-            subject: inquiry.subject,
-            senderName,
-            senderRole: '',
-            senderCompany: inquiry.client?.name ?? '',
-            senderInitials: toInitials(senderName),
-            category:
-              (CATEGORY_TO_ID[
-                typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'
-              ] as string) ?? 'other',
-          }}
-          turns={turns}
-          draft={draftView}
-          suggestion={suggestion}
-          inquiryStatus={inquiry.status}
-          unmatchedSender={inquiry.unmatchedSender}
-          assignedTo={inquiry.assignedTo}
-          canDraft={ctxCan(ctx, 'inquiry.draft')}
-          canSend={ctxCan(ctx, 'inquiry.send')}
-        />
-      }
-      sidecar={
-        <Sidecar
-          inquiryId={inquiry.id}
-          inquiryStatus={inquiry.status}
-          lifecycleLabel={inquiry.status === 'sent' ? '完了' : '対応中'}
-          lifecycleState={inquiry.status === 'sent' ? 'resolved' : 'open'}
-          sources={sources}
-          client={toClientTab(clientDetail)}
-          status={statusTab}
-        />
-      }
-    />
+    <>
+      <MarkRead inquiryId={inquiry.id} />
+      <ThreadSidecarSplit
+        thread={
+          <Thread
+            meta={{
+              id: inquiry.id,
+              subject: inquiry.subject,
+              senderName,
+              senderRole: '',
+              senderCompany: inquiry.client?.name ?? '',
+              senderInitials: toInitials(senderName),
+              category:
+                (CATEGORY_TO_ID[
+                  typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'
+                ] as string) ?? 'other',
+            }}
+            turns={turns}
+            draft={draftView}
+            suggestion={suggestion}
+            inquiryStatus={inquiry.status}
+            unmatchedSender={inquiry.unmatchedSender}
+            assignedTo={inquiry.assignedTo}
+            canDraft={ctxCan(ctx, 'inquiry.draft')}
+            canSend={ctxCan(ctx, 'inquiry.send')}
+          />
+        }
+        sidecar={
+          <Sidecar
+            inquiryId={inquiry.id}
+            inquiryStatus={inquiry.status}
+            lifecycleLabel={inquiry.status === 'sent' ? '完了' : '対応中'}
+            lifecycleState={inquiry.status === 'sent' ? 'resolved' : 'open'}
+            sources={sources}
+            client={toClientTab(clientDetail)}
+            status={statusTab}
+          />
+        }
+      />
+    </>
   );
 }

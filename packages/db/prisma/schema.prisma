@@ -250,6 +250,21 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+// Per-user "seen" state for inquiries (WhatsApp/email-style read tracking).
+// No Prisma relations — integrity is enforced by DB-level FKs in the migration;
+// the model only needs scalar fields for upsert/lookup.
+model InquiryRead {
+  id        String   @id @default(uuid()) @db.Uuid
+  firmId    String   @map("firm_id") @db.Uuid
+  inquiryId String   @map("inquiry_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  readAt    DateTime @default(now()) @map("read_at") @db.Timestamptz()
+
+  @@unique([inquiryId, userId])
+  @@index([firmId, userId])
+  @@map("inquiry_reads")
+}
+
 model KnowledgeChunk {
   id        String                      @id @default(uuid()) @db.Uuid
   firmId    String?                     @map("firm_id") @db.Uuid

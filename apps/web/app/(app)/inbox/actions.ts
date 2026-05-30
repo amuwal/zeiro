@@ -7,6 +7,7 @@ import {
   getInquiry,
   getMembership,
   listFirmUsers,
+  markInquiryRead,
   promoteUnmatchedInquiry,
   recordAudit,
   setInquiryAssignee,
@@ -27,6 +28,17 @@ async function requireVisibleInquiry(ctx: FirmContext, inquiryId: string) {
   const inquiry = await getInquiry(ctx.firmId, inquiryId, viewerScope(ctx));
   if (!inquiry) throw new Error(`inquiry ${inquiryId} not found or not accessible`);
   return inquiry;
+}
+
+/** Mark an inquiry as seen by the current user (read/unread tracking). Fired
+ * when the detail view opens; no-op if the user can't see the inquiry. */
+export async function markInquiryReadAction(inquiryId: string): Promise<void> {
+  const ctx = await requireFirmContext();
+  const inquiry = await getInquiry(ctx.firmId, inquiryId, viewerScope(ctx));
+  if (!inquiry) return;
+  await markInquiryRead(ctx.firmId, ctx.userId, inquiryId);
+  revalidatePath('/inbox', 'layout');
+  revalidatePath('/home');
 }
 
 /** 再生成 — re-run pipeline. */

@@ -1,6 +1,6 @@
 'use server';
 
-import { listInquiryThreads } from '@zeiro/db';
+import { listInquiryThreads, listReadInquiryIds } from '@zeiro/db';
 import { viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 
@@ -16,9 +16,13 @@ export type AttentionItem = {
 // scoped to what the viewer is allowed to see.
 export async function listAttentionItems(): Promise<AttentionItem[]> {
   const ctx = await requireFirmContext();
-  const threads = await listInquiryThreads(ctx.firmId, undefined, viewerScope(ctx));
+  const [threads, readIds] = await Promise.all([
+    listInquiryThreads(ctx.firmId, undefined, viewerScope(ctx)),
+    listReadInquiryIds(ctx.firmId, ctx.userId),
+  ]);
   const rank: Record<string, number> = { escalated: 0, unmatched: 1, pending: 2 };
   return threads
+    .filter((t) => !readIds.has(t.id))
     .filter((t) => t.status === 'escalated' || t.status === 'unmatched' || t.status === 'pending')
     .sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9))
     .slice(0, 8)
