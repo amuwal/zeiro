@@ -18,10 +18,17 @@ async function main() {
   const client = await FreeeApiClient.forClient(firmId, clientId);
   const deals = await client.listRecentDeals({ limit: 3, daysBack: 365 });
   const partners = await client.listPartners({ limit: 5 });
+  const names = await client.accountItemNames().catch((e) => `ERR ${e?.message}`);
+  const invoices = await client.listInvoices({ limit: 5 }).catch((e) => `ERR ${e?.message}`);
+  const pl = await client.profitAndLoss().catch((e) => `ERR ${e?.message}`);
+  const nameCount = names instanceof Map ? names.size : names;
   process.stdout.write(
-    `OK deals=${deals.length} partners=${partners.length}\n` +
+    `OK deals=${deals.length} partners=${partners.length} accountItems=${nameCount}\n` +
       `sampleDeal=${JSON.stringify(deals[0] ?? null)}\n` +
-      `partnerNames=${JSON.stringify(partners.map((p) => p.name))}\n`,
+      `partnerNames=${JSON.stringify(partners.map((p) => p.name))}\n` +
+      `invoices=${Array.isArray(invoices) ? invoices.length : invoices}\n` +
+      `sampleInvoice=${JSON.stringify(Array.isArray(invoices) ? (invoices[0] ?? null) : invoices)}\n` +
+      `profitLoss=${JSON.stringify(pl)}\n`,
   );
 }
 
