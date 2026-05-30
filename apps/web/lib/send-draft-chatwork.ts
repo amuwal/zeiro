@@ -1,4 +1,5 @@
 import {
+  findIntegration,
   getDraftByInquiry,
   getFirmChannel,
   getInquiry,
@@ -6,33 +7,50 @@ import {
   recordAudit,
   setInquiryStatus,
 } from '@zeiro/db';
+import { ChatworkApiClient, hasAdapter, registerIntegrations } from '@zeiro/integrations';
 import { parseChatworkConfig } from './chatwork/parse';
 import { postChatworkMessage } from './chatwork/post';
+import { env } from './env';
 import { inngest } from './inngest/client';
 import type { SendDraftArgs } from './send-draft';
 
 // Posts an approved draft back to the originating Chatwork room. The room id is
 // recovered from the inquiry's messageId (`chatwork:<roomId>:<messageId>`), so a
-// reply always lands in the same room the question came from. Mirrors the email
-// path's post-send bookkeeping (status, audit, compounding-knowledge loop).
+// reply always lands in the room the question came from. Prefers the OAuth
+// connection (auto-refreshed token); falls back to the legacy pasted API token
+// so existing token-based setups keep working. Mirrors the email path's
+// post-send bookkeeping (status, audit, compounding-knowledge loop).
 export async function sendDraftChatwork(args: SendDraftArgs): Promise<void> {
-  const [inquiry, draft, channel] = await Promise.all([
+  const [inquiry, draft, channel, integration] = await Promise.all([
     getInquiry(args.firmId, args.inquiryId),
     getDraftByInquiry(args.firmId, args.inquiryId),
     getFirmChannel(args.firmId, 'chatwork'),
+    findIntegration(args.firmId, 'chatwork'),
   ]);
   if (!inquiry) throw new Error(`inquiry ${args.inquiryId} not found`);
   if (!draft) throw new Error(`no draft for inquiry ${args.inquiryId}`);
-  const config = parseChatworkConfig(channel?.config);
-  if (!channel?.enabled || !config) {
-    throw new Error('cannot send reply: Chatwork channel not configured');
-  }
   const roomId = inquiry.messageId.split(':')[1];
   if (!roomId) throw new Error('cannot resolve Chatwork room from inquiry');
 
   const bodyToSend = args.editedBody ?? draft.body;
   const wasEdited = args.editedBody !== null && args.editedBody !== draft.body;
-  const messageId = await postChatworkMessage(config.apiToken, roomId, bodyToSend);
+
+  registerIntegrations(env);
+  let messageId: string;
+  let via: 'oauth' | 'token';
+  if (integration && hasAdapter('chatwork')) {
+    messageId = await ChatworkApiClient.postMessage(args.firmId, roomId, bodyToSend);
+    via = 'oauth';
+  } else {
+    const config = parseChatworkConfig(channel?.config);
+    if (!config?.apiToken) {
+      throw new Error(
+        'cannot send reply: Chatwork is not connected (OAuth) and no API token is set',
+      );
+    }
+    messageId = await postChatworkMessage(config.apiToken, roomId, bodyToSend);
+    via = 'token';
+  }
 
   await patchDraftMetadata(args.firmId, draft.id, {
     sentAt: new Date().toISOString(),
@@ -47,6 +65,7 @@ export async function sendDraftChatwork(args: SendDraftArgs): Promise<void> {
     action: 'draft.sent',
     metadata: {
       channel: 'chatwork',
+      via,
       roomId,
       chatworkMessageId: messageId,
       edited: wasEdited,

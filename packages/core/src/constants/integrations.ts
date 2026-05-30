@@ -2,7 +2,7 @@
 // of truth for the registry keys, binding `provider` args, and audit metadata.
 // DB columns stay loose strings (per CLAUDE.md loose-DB/tight-Zod); this union is
 // the application-boundary guarantee that a provider id is real.
-export const PROVIDER_IDS = ['freee', 'moneyforward'] as const;
+export const PROVIDER_IDS = ['freee', 'moneyforward', 'chatwork'] as const;
 
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 

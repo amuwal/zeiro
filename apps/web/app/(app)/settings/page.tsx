@@ -12,6 +12,7 @@ import {
 import { headers } from 'next/headers';
 import { CopyButton } from '@/components/onboarding/copy-button';
 import { ChatworkChannelForm } from '@/components/settings/chatwork-channel-form';
+import { ChatworkConnectButton } from '@/components/settings/chatwork-connect-button';
 import { EmailInboundSection } from '@/components/settings/email-inbound-section';
 import { FreeeSection } from '@/components/settings/freee-section';
 import { InviteMemberForm } from '@/components/settings/invite-member-form';
@@ -56,6 +57,7 @@ export default async function SettingsPage({
     inboxCounts,
     freeeIntegration,
     chatworkChannel,
+    chatworkIntegration,
   ] = await Promise.all([
     getFirmChannel(firmId, 'line'),
     getFirmChannel(firmId, 'web'),
@@ -71,6 +73,7 @@ export default async function SettingsPage({
     getInboxCounts(firmId),
     findIntegration(firmId, 'freee'),
     getFirmChannel(firmId, 'chatwork'),
+    findIntegration(firmId, 'chatwork'),
   ]);
   const canConfigureOAuth = Boolean(
     env.FREEE_CLIENT_ID && env.FREEE_CLIENT_SECRET && env.FREEE_REDIRECT_URI,
@@ -99,6 +102,10 @@ export default async function SettingsPage({
   const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
   const chatworkWebhookUrl = `${baseUrl}/api/channels/chatwork/${firmId}`;
   const chatworkConfig = parseChatworkConfig(chatworkChannel?.config);
+  const chatworkConnected = chatworkIntegration?.status === 'active';
+  const chatworkOAuthConfigured = Boolean(
+    env.CHATWORK_CLIENT_ID && env.CHATWORK_CLIENT_SECRET && env.CHATWORK_REDIRECT_URI,
+  );
   const contactUrl = `${baseUrl}/contact/${firmId}`;
   const actorTier = asTier(actorMembership?.tier);
   void session; // keep the auth() side-effect; member identification now uses firmContext.userId
@@ -233,15 +240,33 @@ export default async function SettingsPage({
             </p>
           </header>
 
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+              返信用アカウント連携 (OAuth)
+            </div>
+            <p style={{ color: 'var(--muted)', fontSize: 12, margin: '0 0 8px' }}>
+              下書きの返信投稿に使うアカウントを OAuth で連携します (推奨)。未連携の場合は下の
+              フォームの API トークンでも投稿できます。受信用の Webhook トークンと連携アカウントID
+              は下のフォームで設定してください。
+            </p>
+            <ChatworkConnectButton
+              connected={chatworkConnected}
+              configured={chatworkOAuthConfigured}
+            />
+          </div>
+
           <details>
             <summary style={{ cursor: 'pointer', color: 'var(--ink-2)' }}>セットアップ手順</summary>
             <ol style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: 'var(--ink-2)' }}>
-              <li>Chatwork の API トークンを発行し、下のフォームに貼り付け</li>
+              <li>
+                上の「Chatworkと連携」で返信用アカウントを OAuth 連携 (または下のフォームに API
+                トークンを貼り付け)
+              </li>
               <li>
                 Webhook 設定 (メッセージ作成) で下記 URL を登録し、発行された Webhook
-                トークンを貼り付け
+                トークンを下のフォームに貼り付け
               </li>
-              <li>連携アカウントの ID を入力 (自分の投稿を取り込まないため)</li>
+              <li>連携アカウントの ID を下のフォームに入力 (自分の投稿を取り込まないため)</li>
               <li>各顧問先の編集画面で対応する Chatwork ルームID を設定</li>
             </ol>
           </details>

@@ -5,6 +5,12 @@ export * from './core/errors';
 export { getAdapter, hasAdapter, listRegisteredProviders, registerAdapter } from './core/registry';
 export * from './core/types';
 export { completeOAuthFlow, startOAuthFlow } from './oauth';
+export {
+  ChatworkAdapter,
+  ChatworkApiClient,
+  isChatworkRegistered,
+  registerChatwork,
+} from './providers/chatwork';
 export type {
   FreeeCompanyMini,
   FreeeDeal,
