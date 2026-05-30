@@ -62,11 +62,14 @@ export class FreeeAdapter extends BaseIntegrationAdapter {
     });
     if (!res.ok) return {};
     const json = (await res.json()) as {
-      companies?: Array<{ id: number; name: string; role: string }>;
+      companies?: Array<{ id: number; name: string; display_name?: string; role: string }>;
     };
+    // freee leaves `name` empty for many 事業所 and puts the human label in
+    // `display_name` (e.g. "開発用テスト事業所") — prefer it so the 事業所 picker /
+    // binding UI never shows a blank.
     const companies = (json.companies ?? []).map((c) => ({
       id: String(c.id),
-      name: c.name,
+      name: c.display_name || c.name || String(c.id),
       role: c.role,
     }));
     return { companies, companiesFetchedAt: new Date().toISOString() };

@@ -7,6 +7,20 @@ type Props = {
   unmatchedCount: number;
 };
 
+const summaryStyle: React.CSSProperties = {
+  cursor: 'pointer',
+  color: 'var(--ink-2)',
+  fontSize: 13,
+  fontWeight: 500,
+};
+const stepsStyle: React.CSSProperties = {
+  marginTop: 10,
+  fontSize: 13,
+  lineHeight: 1.85,
+  color: 'var(--ink-2)',
+  paddingLeft: '1.1rem',
+};
+
 export function EmailInboundSection({ inboundAddress, unmatchedCount }: Props) {
   return (
     <section className="kb-section">
@@ -14,7 +28,10 @@ export function EmailInboundSection({ inboundAddress, unmatchedCount }: Props) {
         <h2>メール受信</h2>
         <p>
           顧問先からのメールを自動で問い合わせとして取り込み、AI が下書きを生成します。
-          このアドレスを名刺・契約書・サインなどでお客様に共有してください。
+          おすすめは、事務所の既存アドレス (info@ など) からこの受信アドレスへ
+          <strong>自動転送</strong>
+          を設定する方法です。顧問先はこれまで通り事務所のアドレスに送るだけで、
+          アドレス変更の案内は不要です。名刺やサインにこの受信アドレスを直接記載しても構いません。
         </p>
       </header>
 
@@ -25,6 +42,30 @@ export function EmailInboundSection({ inboundAddress, unmatchedCount }: Props) {
         </div>
         <CopyButton text={inboundAddress} />
       </div>
+
+      <details>
+        <summary style={summaryStyle}>メール転送の設定方法 (Gmail / Outlook)</summary>
+        <div style={{ marginTop: 8 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 4px' }}>Gmail</p>
+          <ol style={stepsStyle}>
+            <li>設定 (⚙) →「メール転送と POP/IMAP」→「転送先アドレスを追加」</li>
+            <li>上記の受信アドレスを入力して追加</li>
+            <li>
+              確認メールが Zeiro 側に届くため、受信トレイの「未登録 (新規)」に表示される確認コード /
+              リンクで承認する
+            </li>
+            <li>「受信メールを … に転送する」を選択して保存 (フィルタで全件転送も可)</li>
+          </ol>
+          <p style={{ fontSize: 12, color: 'var(--muted)', margin: '8px 0 4px' }}>
+            Outlook / Microsoft 365
+          </p>
+          <ol style={stepsStyle}>
+            <li>設定 → メール → ルール →「新しいルールを追加」</li>
+            <li>条件「すべてのメッセージに適用」</li>
+            <li>アクション「転送先」に上記の受信アドレスを指定して保存</li>
+          </ol>
+        </div>
+      </details>
 
       <div className="kb-inline-info">
         <span className="kb-inline-info-icon">
