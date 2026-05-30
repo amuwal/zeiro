@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { KpiCard } from '@/components/analytics/kpi-card';
 import { EmptyRow, SectionCard, StatTile } from '@/components/dashboard/dashboard-parts';
 import { SetupChecklist } from '@/components/onboarding/setup-checklist';
+import { TestInquiryButton } from '@/components/onboarding/test-inquiry-button';
 import { CategoryStripe } from '@/components/ui/category-pill';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { StatusChip } from '@/components/ui/status-chip';
@@ -73,16 +74,43 @@ export default async function HomePage() {
               <span className={`role-chip role-${ctx.role}`}>{roleLabel(ctx.role)}</span>
             </h1>
             <p className="dash-sub">
-              Zeiro は顧問先からの問い合わせを自動で分類し、事務所のナレッジに基づいた返信の下書きを作成します。税理士は確認して送信するだけです。
+              Zeiro
+              は顧問先からの問い合わせを自動で分類し、事務所のナレッジに基づいた返信の下書きを作成します。税理士は確認して送信するだけです。
             </p>
           </div>
         </header>
         <ol className="dash-flow">
-          <FlowStep n={1} icon="inbox" title="受信" sub="顧問先からのメール・LINE・Webフォームを自動取込" />
-          <FlowStep n={2} icon="spark" title="AIが分類・下書き" sub="5カテゴリに分類し、ナレッジを引用した下書きを生成" />
-          <FlowStep n={3} icon="check" title="税理士がレビュー" sub="内容を確認・編集。判断が必要な案件はエスカレーション" />
-          <FlowStep n={4} icon="send" title="送信" sub="そのまま送信、または編集して送信。全操作を監査ログに記録" />
+          <FlowStep
+            n={1}
+            icon="inbox"
+            title="受信"
+            sub="顧問先からのメール・LINE・Webフォームを自動取込"
+          />
+          <FlowStep
+            n={2}
+            icon="spark"
+            title="AIが分類・下書き"
+            sub="5カテゴリに分類し、ナレッジを引用した下書きを生成"
+          />
+          <FlowStep
+            n={3}
+            icon="check"
+            title="税理士がレビュー"
+            sub="内容を確認・編集。判断が必要な案件はエスカレーション"
+          />
+          <FlowStep
+            n={4}
+            icon="send"
+            title="送信"
+            sub="そのまま送信、または編集して送信。全操作を監査ログに記録"
+          />
         </ol>
+        <div className="mt-4 flex flex-col gap-1.5">
+          <TestInquiryButton />
+          <span className="text-[12px] text-muted">
+            サンプルの問い合わせを送って、AIの下書きをその場で確認できます。
+          </span>
+        </div>
         {ctxCan(ctx, 'member.manage') && <SetupChecklist />}
       </div>
     );

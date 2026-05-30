@@ -1,5 +1,6 @@
 import { getClientDetail, getDraftByInquiry, getInquiry } from '@zeiro/db';
 import { notFound } from 'next/navigation';
+import { DraftPoller } from '@/components/inquiry/draft-poller';
 import { MarkRead } from '@/components/inquiry/mark-read';
 import { Sidecar } from '@/components/inquiry/sidecar';
 import type { StatusTabData } from '@/components/inquiry/sidecar-tabs/status-tab';
@@ -142,6 +143,7 @@ export default async function InquiryDetailPage({
   return (
     <>
       <MarkRead inquiryId={inquiry.id} />
+      <DraftPoller inquiryId={inquiry.id} status={inquiry.status} />
       <ThreadSidecarSplit
         thread={
           <Thread
