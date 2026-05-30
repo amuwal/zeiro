@@ -5,17 +5,9 @@ export type ClientTabData = {
   id: string;
   initials: string;
   company: string;
-  contactName: string;
-  contactRole: string;
-  tags: string[];
-  contract: string;
-  monthlyFee: number;
-  since: string;
-  fiscalYearEnd: string;
-  industry: string;
+  contractLabel: string;
+  profileRows: Array<{ k: string; v: string }>;
   lifetimeInquiries: number;
-  avgFirstReplyMin: number;
-  openCount: number;
   note: string;
 };
 
@@ -34,14 +26,7 @@ export function ClientTab({ data }: { data: ClientTabData | null }) {
           <div className="client-snap-pic">{data.initials}</div>
           <div className="client-snap-body">
             <div className="client-snap-name">{data.company}</div>
-            <div className="client-snap-sub">
-              {data.contactName} · {data.contactRole}
-            </div>
-            <div className="client-snap-tags">
-              {data.tags.map((t) => (
-                <span key={t} className="tag-mini">{t}</span>
-              ))}
-            </div>
+            <div className="client-snap-sub">{data.contractLabel}</div>
           </div>
         </div>
         <Link href={`/clients/${data.id}`} className="open-profile">
@@ -50,39 +35,43 @@ export function ClientTab({ data }: { data: ClientTabData | null }) {
       </section>
 
       <section className="sc-block">
-        <div className="sc-block-head"><span>契約サマリー</span></div>
-        <div className="kv-card">
-          <div className="kv-line"><span className="k">顧問プラン</span><span className="v">{data.contract}</span></div>
-          <div className="kv-line"><span className="k">月額</span><span className="v mono">¥{data.monthlyFee.toLocaleString()}</span></div>
-          <div className="kv-line"><span className="k">契約開始</span><span className="v mono">{data.since}</span></div>
-          <div className="kv-line"><span className="k">事業年度</span><span className="v">{data.fiscalYearEnd}決算</span></div>
-          <div className="kv-line"><span className="k">業種</span><span className="v">{data.industry}</span></div>
+        <div className="sc-block-head">
+          <span>顧問先プロフィール</span>
         </div>
+        {data.profileRows.length > 0 ? (
+          <div className="kv-card">
+            {data.profileRows.map((row) => (
+              <div key={row.k} className="kv-line">
+                <span className="k">{row.k}</span>
+                <span className="v">{row.v}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Link href={`/clients/${data.id}`} className="open-profile">
+            プロフィール未設定 — 決算月や顧問料を登録すると下書き精度が上がります{' '}
+            <Icon name="arrow-right" size={11} />
+          </Link>
+        )}
       </section>
 
       <section className="sc-block">
-        <div className="sc-block-head"><span>取引履歴</span></div>
-        <div className="stat-row">
-          <div className="stat-cell">
-            <div className="stat-num">{data.lifetimeInquiries}</div>
-            <div className="stat-lbl">累計問合せ</div>
-          </div>
-          <div className="stat-cell">
-            <div className="stat-num">
-              {data.avgFirstReplyMin}<span className="unit">m</span>
-            </div>
-            <div className="stat-lbl">平均初動</div>
-          </div>
-          <div className="stat-cell">
-            <div className="stat-num">{data.openCount}</div>
-            <div className="stat-lbl">未対応</div>
+        <div className="sc-block-head">
+          <span>取引履歴</span>
+        </div>
+        <div className="kv-card">
+          <div className="kv-line">
+            <span className="k">累計問合せ</span>
+            <span className="v mono">{data.lifetimeInquiries}</span>
           </div>
         </div>
       </section>
 
       {data.note && (
         <section className="sc-block">
-          <div className="sc-block-head"><span>担当者メモ</span></div>
+          <div className="sc-block-head">
+            <span>担当者メモ</span>
+          </div>
           <p className="note-box">{data.note}</p>
         </section>
       )}

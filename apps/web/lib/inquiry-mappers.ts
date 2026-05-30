@@ -1,3 +1,4 @@
+import type { ClientProfile } from '@zeiro/core';
 import type { InboxItemView } from '@/components/inquiry/inbox-list';
 import type { ClientTabData } from '@/components/inquiry/sidecar-tabs/client-tab';
 import type { SourceItem } from '@/components/inquiry/sidecar-tabs/sources-tab';
@@ -33,7 +34,48 @@ export type ClientDetail = {
   contractType: string;
   inquiryCount: number;
   notes: string | null;
+  profile?: ClientProfile | null;
 };
+
+const CONTRACT_LABEL: Record<string, string> = {
+  monthly: '顧問契約',
+  spot: 'スポット',
+  prospect: '見込み客',
+  unverified: '未確認',
+};
+const ENTITY_LABEL: Record<string, string> = {
+  corporation: '法人',
+  sole_proprietor: '個人事業主',
+};
+const CONSUMPTION_TAX_LABEL: Record<string, string> = {
+  taxable: '課税事業者',
+  simplified: '簡易課税',
+  exempt: '免税事業者',
+};
+
+// Build the kv rows shown in the sidecar — only fields the firm has actually set,
+// so the reviewer sees exactly the same context the drafting agent used (and
+// blanks read as "unset" rather than fabricated zeros).
+function profileRows(p: ClientProfile | null | undefined): Array<{ k: string; v: string }> {
+  if (!p) return [];
+  const rows: Array<{ k: string; v: string }> = [];
+  if (typeof p.monthlyFee === 'number') {
+    rows.push({ k: '顧問料', v: `¥${p.monthlyFee.toLocaleString()}/月` });
+  }
+  if (typeof p.fiscalMonth === 'number') rows.push({ k: '決算月', v: `${p.fiscalMonth}月` });
+  if (p.entityType) rows.push({ k: '事業形態', v: ENTITY_LABEL[p.entityType] ?? p.entityType });
+  if (p.consumptionTax) {
+    rows.push({ k: '消費税', v: CONSUMPTION_TAX_LABEL[p.consumptionTax] ?? p.consumptionTax });
+  }
+  if (typeof p.invoiceRegistered === 'boolean') {
+    rows.push({ k: 'インボイス', v: p.invoiceRegistered ? '登録済' : '未登録' });
+  }
+  if (typeof p.withholding === 'boolean') {
+    rows.push({ k: '源泉徴収', v: p.withholding ? 'あり' : 'なし' });
+  }
+  if (p.engagementScope) rows.push({ k: '契約範囲', v: p.engagementScope });
+  return rows;
+}
 
 export function toClientTab(detail: ClientDetail | null): ClientTabData | null {
   if (!detail) return null;
@@ -41,17 +83,9 @@ export function toClientTab(detail: ClientDetail | null): ClientTabData | null {
     id: detail.id,
     initials: toInitials(detail.name),
     company: detail.name,
-    contactName: detail.name,
-    contactRole: detail.contractType,
-    tags: [detail.contractType],
-    contract: detail.contractType,
-    monthlyFee: 0,
-    since: '—',
-    fiscalYearEnd: '—',
-    industry: '—',
+    contractLabel: CONTRACT_LABEL[detail.contractType] ?? detail.contractType,
+    profileRows: profileRows(detail.profile),
     lifetimeInquiries: detail.inquiryCount,
-    avgFirstReplyMin: 0,
-    openCount: 0,
     note: detail.notes ?? '',
   };
 }
