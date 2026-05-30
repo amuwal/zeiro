@@ -1,9 +1,20 @@
+import { type AppRole, roleLabel } from '@zeiro/core';
 import Link from 'next/link';
 import { Icon } from '@/components/ui/icon';
 import { Tabs } from './tabs';
 import { UserMenu } from './user-menu';
 
-export function Topbar({ inboxCount, admin }: { inboxCount: number; admin: boolean }) {
+export function Topbar({
+  inboxCount,
+  role,
+  canViewAudit,
+  canViewAnalytics,
+}: {
+  inboxCount: number;
+  role: AppRole;
+  canViewAudit: boolean;
+  canViewAnalytics: boolean;
+}) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -11,8 +22,15 @@ export function Topbar({ inboxCount, admin }: { inboxCount: number; admin: boole
         zeiro
         <span className="brand-tag">tax-office agent</span>
       </div>
-      <Tabs inboxCount={inboxCount} admin={admin} />
+      <Tabs
+        inboxCount={inboxCount}
+        canViewAudit={canViewAudit}
+        canViewAnalytics={canViewAnalytics}
+      />
       <div className="user-cluster">
+        <span className={`role-chip role-${role}`} title="あなたの役割">
+          {roleLabel(role)}
+        </span>
         <button type="button" className="icon-btn" aria-label="検索">
           <Icon name="search" size={15} />
         </button>

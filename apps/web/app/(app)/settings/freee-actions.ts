@@ -3,19 +3,18 @@
 import { recordAudit } from '@zeiro/db';
 import { getAdapter, registerFreee } from '@zeiro/integrations';
 import { revalidatePath } from 'next/cache';
+import { requireCan } from '@/lib/authz';
 import { env } from '@/lib/env';
-import { requireAdminFirm } from '@/lib/team-guard';
 
 ensureFreeeRegistered();
 
 export async function disconnectFreee(): Promise<void> {
-  const guard = await requireAdminFirm();
-  if (!guard.ok) throw new Error(guard.message);
+  const { firmId, userId } = await requireCan('integration.manage');
   const adapter = getAdapter('freee');
-  await adapter.disconnect(guard.ctx.firmId);
+  await adapter.disconnect(firmId);
   await recordAudit({
-    firmId: guard.ctx.firmId,
-    actorId: guard.ctx.userId,
+    firmId,
+    actorId: userId,
     inquiryId: null,
     action: 'integration.disconnected',
     metadata: { provider: 'freee' },

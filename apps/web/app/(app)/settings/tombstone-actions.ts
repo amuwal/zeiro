@@ -3,8 +3,8 @@
 import { searchClients, tombstoneClient } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { ctxCan } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
-import { isAdminRole } from '@/lib/team';
 import type { TombstoneExecuteState, TombstoneSearchState } from './tombstone-state';
 
 const searchSchema = z.object({
@@ -19,7 +19,7 @@ const executeSchema = z.object({
 
 async function requireAdmin() {
   const ctx = await requireFirmContext();
-  if (!isAdminRole(ctx.role)) {
+  if (!ctxCan(ctx, 'client.tombstone')) {
     return { ok: false as const, message: '権限がありません (所長のみ)' };
   }
   return { ok: true as const, ctx };

@@ -6,6 +6,7 @@ import { ClientImportsBanner } from '@/components/clients/client-imports-banner'
 import { ClientList } from '@/components/clients/client-list';
 import { ClientStats } from '@/components/clients/client-stats';
 import { Icon } from '@/components/ui/icon';
+import { ctxCan, viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 
 type SearchParams = {
@@ -20,9 +21,11 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { firmId } = await requireFirmContext();
+  const ctx = await requireFirmContext();
+  const firmId = ctx.firmId;
+  const canManage = ctxCan(ctx, 'client.manage');
   const [items, imports, params] = await Promise.all([
-    listClientsRich(firmId),
+    listClientsRich(firmId, viewerScope(ctx)),
     listClientImports(firmId, 6),
     searchParams,
   ]);
@@ -39,17 +42,21 @@ export default async function ClientsPage({
         <div>
           <div className="kb-title">顧問先</div>
           <div className="kb-sub">
-            事務所の顧問先一覧 — {items.length}件 (アーカイブ {archived}件)
+            {canManage
+              ? `事務所の顧問先一覧 — ${items.length}件 (アーカイブ ${archived}件)`
+              : `担当顧問先 — ${items.length}件`}
           </div>
         </div>
-        <div className="btn-cluster">
-          <Link href="/clients/import" className="btn btn-secondary">
-            <Icon name="upload" size={13} /> 一括取り込み
-          </Link>
-          <Link href="/clients/new" className="btn btn-primary">
-            <Icon name="user" size={13} /> 新規顧問先
-          </Link>
-        </div>
+        {canManage && (
+          <div className="btn-cluster">
+            <Link href="/clients/import" className="btn btn-secondary">
+              <Icon name="upload" size={13} /> 一括取り込み
+            </Link>
+            <Link href="/clients/new" className="btn btn-primary">
+              <Icon name="user" size={13} /> 新規顧問先
+            </Link>
+          </div>
+        )}
       </div>
 
       <ClientFlashBanner deleted={params.deleted === '1'} />

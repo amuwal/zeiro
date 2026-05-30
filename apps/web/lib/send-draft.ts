@@ -30,7 +30,7 @@ export async function sendDraftEmail(args: {
 }): Promise<void> {
   const [inquiry, draft, firm] = await Promise.all([
     getInquiry(args.firmId, args.inquiryId),
-    getDraftByInquiry(args.inquiryId),
+    getDraftByInquiry(args.firmId, args.inquiryId),
     getFirm(args.firmId),
   ]);
   if (!inquiry) throw new Error(`inquiry ${args.inquiryId} not found`);
@@ -67,7 +67,7 @@ export async function sendDraftEmail(args: {
     tags: { idempotencyKey: draft.id, firmId: args.firmId, inquiryId: args.inquiryId },
   });
 
-  await patchDraftMetadata(draft.id, {
+  await patchDraftMetadata(args.firmId, draft.id, {
     sentAt: new Date().toISOString(),
     channel: inquiry.channel,
     outboundMessageId: result.outboundMessageId,

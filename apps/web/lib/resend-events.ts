@@ -88,14 +88,14 @@ async function applyOne(event: ResendEvent): Promise<boolean> {
   // via the References chain in process-inbound's findParentInquiryId.
   const sentMessageId = readMessageIdHeader(event.data.headers);
   if (sentMessageId) {
-    await patchDraftMetadata(draftId, { sentMessageId });
+    await patchDraftMetadata(firmId, draftId, { sentMessageId });
   }
 
   switch (event.type) {
     case 'email.sent':
-      return handleSent(draftId, event);
+      return handleSent(firmId, draftId, event);
     case 'email.delivered':
-      return handleDelivered(draftId, event);
+      return handleDelivered(firmId, draftId, event);
     case 'email.bounced':
     case 'email.failed':
       return handleFailure(firmId, draftId, inquiryId, event, 'draft.bounced');
@@ -119,16 +119,20 @@ function readTag(tags: Record<string, string> | undefined, name: string): string
   return tags?.[name] ?? null;
 }
 
-async function handleSent(draftId: string, event: ResendEvent): Promise<boolean> {
-  await patchDraftMetadata(draftId, {
+async function handleSent(firmId: string, draftId: string, event: ResendEvent): Promise<boolean> {
+  await patchDraftMetadata(firmId, draftId, {
     sentAcknowledgedAt: event.created_at ?? new Date().toISOString(),
     providerEventId: event.data.email_id,
   });
   return true;
 }
 
-async function handleDelivered(draftId: string, event: ResendEvent): Promise<boolean> {
-  await patchDraftMetadata(draftId, {
+async function handleDelivered(
+  firmId: string,
+  draftId: string,
+  event: ResendEvent,
+): Promise<boolean> {
+  await patchDraftMetadata(firmId, draftId, {
     deliveredAt: event.created_at ?? new Date().toISOString(),
     providerEventId: event.data.email_id,
   });
@@ -149,7 +153,7 @@ async function handleFailure(
     failureReason: reason,
     providerEventId: event.data.email_id,
   };
-  await patchDraftMetadata(draftId, failure);
+  await patchDraftMetadata(firmId, draftId, failure);
   await setInquiryStatus(firmId, inquiryId, 'escalated');
   await recordAudit({
     firmId,

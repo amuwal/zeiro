@@ -2,16 +2,16 @@ import { listInquiryThreads } from '@zeiro/db';
 import type { ReactNode } from 'react';
 import type { InboxItemView } from '@/components/inquiry/inbox-list';
 import { InboxShell } from '@/components/inquiry/shell';
+import { viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 import { CATEGORY_TO_ID, normalizeChannel, shortTime } from '@/lib/inquiry-mappers';
 
 export default async function InboxLayout({ children }: { children: ReactNode }) {
-  const { firmId } = await requireFirmContext();
+  const ctx = await requireFirmContext();
   // listInquiryThreads returns ONE row per conversation (the leaf — i.e. the
   // newest message in each parent_inquiry_id chain), with a `threadCount`
-  // attached. Raw listInquiries would surface every reply as its own list
-  // entry and inflate every count.
-  const threads = await listInquiryThreads(firmId);
+  // attached. Scoped to the viewer: Staff/Viewer see only their 担当 clients.
+  const threads = await listInquiryThreads(ctx.firmId, undefined, viewerScope(ctx));
 
   const items: InboxItemView[] = threads.map((i) => {
     const analysis = (i.analysis ?? {}) as Record<string, unknown>;

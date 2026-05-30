@@ -3,7 +3,7 @@
 import { deleteBinding, recordAudit, upsertBinding } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireFirmContext } from '@/lib/firm-context';
+import { requireCan } from '@/lib/authz';
 
 const bindSchema = z.object({
   clientId: z.string().uuid(),
@@ -12,7 +12,7 @@ const bindSchema = z.object({
 });
 
 export async function bindClientToFreee(formData: FormData): Promise<void> {
-  const ctx = await requireFirmContext();
+  const ctx = await requireCan('integration.manage');
   const parsed = bindSchema.safeParse({
     clientId: formData.get('clientId'),
     externalId: formData.get('externalId'),
@@ -44,7 +44,7 @@ export async function bindClientToFreee(formData: FormData): Promise<void> {
 const unbindSchema = z.object({ clientId: z.string().uuid() });
 
 export async function unbindClientFromFreee(formData: FormData): Promise<void> {
-  const ctx = await requireFirmContext();
+  const ctx = await requireCan('integration.manage');
   const parsed = unbindSchema.safeParse({ clientId: formData.get('clientId') });
   if (!parsed.success) throw new Error('invalid input');
   await deleteBinding(ctx.firmId, parsed.data.clientId, 'freee');

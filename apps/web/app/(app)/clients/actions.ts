@@ -19,6 +19,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { requireCan } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 import { inngest } from '@/lib/inngest/client';
 import type { ClientFormState, DeleteClientState } from './state';
@@ -27,7 +28,7 @@ export async function createClientAction(
   _prev: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const promoteInquiryId = emptyToNull(formData.get('promoteInquiryId'));
   const fromEmailFlow = promoteInquiryId !== null;
   const parsed = clientCreateInputSchema.safeParse({
@@ -114,7 +115,7 @@ export async function updateClientAction(
   _prev: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const id = readId(formData);
   const parsed = updateInputSchema.safeParse({
     name: formData.get('name'),
@@ -144,7 +145,7 @@ export async function updateClientAction(
 }
 
 export async function archiveClientAction(formData: FormData): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const id = readId(formData);
   await archiveClient(firmId, id, userId);
   await recordAudit({
@@ -159,7 +160,7 @@ export async function archiveClientAction(formData: FormData): Promise<void> {
 }
 
 export async function unarchiveClientAction(formData: FormData): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const id = readId(formData);
   await unarchiveClient(firmId, id);
   await recordAudit({
@@ -177,7 +178,7 @@ export async function deleteClientAction(
   _prev: DeleteClientState,
   formData: FormData,
 ): Promise<DeleteClientState> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const id = readId(formData);
   const result = await deleteClient(firmId, id);
   if (!result.ok) {
@@ -207,7 +208,7 @@ export async function uploadClientImport(
   _prev: ImportUploadState,
   formData: FormData,
 ): Promise<ImportUploadState> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const file = formData.get('file');
   if (!(file instanceof File) || file.size === 0) {
     return { error: 'CSV または Excel ファイルを選択してください' };
@@ -255,7 +256,7 @@ const confirmPayloadSchema = z.object({
 // Always redirects on success or failure — errors surface via the
 // /clients/import/[id] page when the import row's status flips to failed.
 export async function confirmClientImport(formData: FormData): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const importId = formData.get('importId');
   if (typeof importId !== 'string') throw new Error('importId required');
 
@@ -267,6 +268,7 @@ export async function confirmClientImport(formData: FormData): Promise<void> {
     rows = confirmPayloadSchema.parse(JSON.parse(payloadRaw)).rows;
   } catch {
     await failClientImport({
+      firmId,
       importId,
       errorCode: 'invalid_payload',
       errorMessage: '行データの形式が不正です',
@@ -290,7 +292,7 @@ export async function confirmClientImport(formData: FormData): Promise<void> {
   // also block them, but explicit handling gives an honest summary count.
   const existingEmails = await listClientEmails(firmId);
 
-  await markClientImportImporting(importId);
+  await markClientImportImporting(firmId, importId);
 
   let imported = 0;
   let skipped = 0;
@@ -316,7 +318,7 @@ export async function confirmClientImport(formData: FormData): Promise<void> {
     }
   }
 
-  await completeClientImport({ importId, importedCount: imported, skippedCount: skipped });
+  await completeClientImport({ firmId, importId, importedCount: imported, skippedCount: skipped });
   await recordAudit({
     firmId,
     actorId: userId,
@@ -337,12 +339,13 @@ export async function confirmClientImport(formData: FormData): Promise<void> {
 }
 
 export async function cancelClientImport(formData: FormData): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const importId = formData.get('importId');
   if (typeof importId !== 'string') return;
   const importRow = await getClientImport(firmId, importId);
   if (!importRow) return;
   await failClientImport({
+    firmId,
     importId,
     errorCode: 'cancelled',
     errorMessage: '取り込みをキャンセルしました',

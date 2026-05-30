@@ -2,7 +2,8 @@
 
 import { getFirmChannel, linkClientLineUserId, recordAudit, upsertFirmChannel } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
-import { requireFirmContext } from '@/lib/firm-context';
+import { ctxCan } from '@/lib/authz';
+import { type FirmContext, requireFirmContext } from '@/lib/firm-context';
 import { parseLineConfig } from '@/lib/line/parse';
 
 export type SaveLineState = { error: string | null; ok: boolean };
@@ -11,8 +12,9 @@ export async function saveLineChannel(
   _prev: SaveLineState,
   formData: FormData,
 ): Promise<SaveLineState> {
-  const { firmId, userId, role } = await requireFirmContext();
-  if (!isAdmin(role)) return { error: '権限がありません (所長のみ設定可能)', ok: false };
+  const guard = await guardChannelManage();
+  if (!guard.ok) return { error: guard.message, ok: false };
+  const { firmId, userId } = guard.ctx;
 
   const submittedSecret = readField(formData, 'channelSecret');
   const submittedToken = readField(formData, 'channelAccessToken');
@@ -56,8 +58,9 @@ export async function saveWebChannel(
   _prev: SaveWebState,
   formData: FormData,
 ): Promise<SaveWebState> {
-  const { firmId, userId, role } = await requireFirmContext();
-  if (!isAdmin(role)) return { error: '権限がありません (所長のみ設定可能)', ok: false };
+  const guard = await guardChannelManage();
+  if (!guard.ok) return { error: guard.message, ok: false };
+  const { firmId, userId } = guard.ctx;
 
   const enabled = formData.get('enabled') === 'on';
 
@@ -85,8 +88,9 @@ export async function linkLineUserId(
   _prev: LinkLineState,
   formData: FormData,
 ): Promise<LinkLineState> {
-  const { firmId, userId, role } = await requireFirmContext();
-  if (!isAdmin(role)) return { error: '権限がありません (所長のみ)', linked: null };
+  const guard = await guardChannelManage();
+  if (!guard.ok) return { error: guard.message, linked: null };
+  const { firmId, userId } = guard.ctx;
 
   const lineUserId = readField(formData, 'lineUserId');
   const clientId = readField(formData, 'clientId');
@@ -121,6 +125,12 @@ function readField(formData: FormData, name: string): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function isAdmin(role: string): boolean {
-  return role.toLowerCase().includes('admin');
+type ChannelManageGuard = { ok: false; message: string } | { ok: true; ctx: FirmContext };
+
+async function guardChannelManage(): Promise<ChannelManageGuard> {
+  const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'channel.manage')) {
+    return { ok: false, message: '権限がありません (所長のみ設定可能)' };
+  }
+  return { ok: true, ctx };
 }

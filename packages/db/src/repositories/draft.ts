@@ -47,9 +47,12 @@ export async function createDraft(input: DraftInsert): Promise<DraftWithCitation
   return hydrate(row);
 }
 
-export async function getDraftByInquiry(inquiryId: string): Promise<DraftWithCitations | null> {
+export async function getDraftByInquiry(
+  firmId: string,
+  inquiryId: string,
+): Promise<DraftWithCitations | null> {
   const row = await getPrisma().draft.findFirst({
-    where: { inquiryId },
+    where: { firmId, inquiryId },
     orderBy: { createdAt: 'desc' },
   });
   return row ? hydrate(row) : null;
@@ -72,11 +75,12 @@ function readBlocks(metadata: Prisma.JsonValue): CitationBlock[] | null {
 }
 
 export async function patchDraftMetadata(
+  firmId: string,
   draftId: string,
   patch: Record<string, unknown>,
 ): Promise<boolean> {
-  const current = await getPrisma().draft.findUnique({
-    where: { id: draftId },
+  const current = await getPrisma().draft.findFirst({
+    where: { id: draftId, firmId },
     select: { metadata: true },
   });
   if (!current) return false;
@@ -85,10 +89,17 @@ export async function patchDraftMetadata(
       ? (current.metadata as Record<string, unknown>)
       : {};
   const merged = { ...existing, ...patch } as Prisma.InputJsonValue;
-  await getPrisma().draft.update({ where: { id: draftId }, data: { metadata: merged } });
+  await getPrisma().draft.updateMany({
+    where: { id: draftId, firmId },
+    data: { metadata: merged },
+  });
   return true;
 }
 
+// Tenant-discovery lookups (like findFirmByInboundAddress): they resolve a
+// globally-unique external Message-ID to a draft so the caller can THEN derive
+// the firm. No firmId is available at call time by design; they return only
+// {id, inquiryId} (no content), and the caller scopes everything downstream.
 export async function findDraftByOutboundMessageId(
   outboundMessageId: string,
 ): Promise<{ id: string; inquiryId: string } | null> {

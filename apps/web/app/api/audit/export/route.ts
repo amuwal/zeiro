@@ -2,9 +2,9 @@ import { auditActionEnum } from '@zeiro/core';
 import { listAuditEvents, listFirmUsers } from '@zeiro/db';
 import { NextResponse } from 'next/server';
 import { resolveWindow } from '@/lib/analytics-window';
+import { ctxCan } from '@/lib/authz';
 import { csvRow } from '@/lib/csv';
 import { requireFirmContext } from '@/lib/firm-context';
-import { isAdminRole } from '@/lib/team';
 
 const SYSTEM_ACTOR_ID = '00000000-0000-0000-0000-000000000000';
 const MAX_ROWS = 10_000;
@@ -12,7 +12,7 @@ const BATCH_SIZE = 500;
 
 export async function GET(request: Request) {
   const ctx = await requireFirmContext();
-  if (!isAdminRole(ctx.role)) {
+  if (!ctxCan(ctx, 'audit.view')) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 

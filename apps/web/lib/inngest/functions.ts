@@ -73,7 +73,7 @@ export const autoAddKnowledgeFn = inngest.createFunction(
       const { firmId, inquiryId, draftId } = event.data;
       const [inquiry, draft, sentBody] = await Promise.all([
         getInquiry(firmId, inquiryId),
-        getDraftByInquiry(inquiryId),
+        getDraftByInquiry(firmId, inquiryId),
         findLatestSentBody(firmId, inquiryId),
       ]);
       if (!inquiry || !draft) return { skipped: 'missing' };
@@ -228,8 +228,9 @@ export const clientImportParseFn = inngest.createFunction(
     concurrency: { key: 'event.data.firmId', limit: 2 },
     retries: 1,
     onFailure: async ({ event, error }) => {
-      const { importId } = event.data.event.data as { importId: string };
+      const { firmId, importId } = event.data.event.data as { firmId: string; importId: string };
       await failClientImport({
+        firmId,
         importId,
         errorCode: 'parser_failed',
         errorMessage: error.message,
@@ -239,19 +240,20 @@ export const clientImportParseFn = inngest.createFunction(
   { event: 'clients.import_uploaded' },
   async ({ event, step }) =>
     step.run('parse', async () => {
-      const { importId } = event.data;
-      const loaded = await loadClientImportBytes(importId);
+      const { firmId, importId } = event.data;
+      const loaded = await loadClientImportBytes(firmId, importId);
       if (!loaded) return { skipped: 'already-processed' };
-      await claimClientImport(importId);
+      await claimClientImport(firmId, importId);
       try {
         const { preview, rawRowCount } = await parseImportFile({
           filename: loaded.row.filename,
           buffer: loaded.bytes,
         });
-        await setClientImportPreview({ importId, preview, rawRowCount });
+        await setClientImportPreview({ firmId, importId, preview, rawRowCount });
         return { ok: true, rows: preview.rows.length, rawRowCount };
       } catch (e) {
         await failClientImport({
+          firmId,
           importId,
           errorCode: 'parser_failed',
           errorMessage: (e as Error).message,

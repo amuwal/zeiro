@@ -54,28 +54,33 @@ export async function createClientImport(input: CreateInput): Promise<ClientImpo
   return shape(row);
 }
 
+// Worker-side functions take firmId for tenant safety: they run in Inngest jobs
+// off the request thread, so they can't rely on a page-level firm check. The
+// 'clients.import_uploaded' event carries firmId — always pass it through.
 export async function loadClientImportBytes(
+  firmId: string,
   importId: string,
 ): Promise<{ row: ClientImport; bytes: Buffer } | null> {
-  const row = await getPrisma().clientImport.findUnique({ where: { id: importId } });
-  if (!row || !row.bytes) return null;
+  const row = await getPrisma().clientImport.findFirst({ where: { id: importId, firmId } });
+  if (!row?.bytes) return null;
   return { row: shape(row), bytes: Buffer.from(row.bytes) };
 }
 
-export async function claimClientImport(importId: string): Promise<void> {
-  await getPrisma().clientImport.update({
-    where: { id: importId },
+export async function claimClientImport(firmId: string, importId: string): Promise<void> {
+  await getPrisma().clientImport.updateMany({
+    where: { id: importId, firmId },
     data: { status: 'parsing', startedAt: new Date() },
   });
 }
 
 export async function setClientImportPreview(input: {
+  firmId: string;
   importId: string;
   preview: ImportPreview;
   rawRowCount: number;
 }): Promise<void> {
-  await getPrisma().clientImport.update({
-    where: { id: input.importId },
+  await getPrisma().clientImport.updateMany({
+    where: { id: input.importId, firmId: input.firmId },
     data: {
       status: 'preview',
       parsed: input.preview as unknown as Prisma.InputJsonValue,
@@ -107,20 +112,21 @@ export async function listClientImports(firmId: string, limit = 10): Promise<Cli
   return rows.map(shape);
 }
 
-export async function markClientImportImporting(importId: string): Promise<void> {
-  await getPrisma().clientImport.update({
-    where: { id: importId },
+export async function markClientImportImporting(firmId: string, importId: string): Promise<void> {
+  await getPrisma().clientImport.updateMany({
+    where: { id: importId, firmId },
     data: { status: 'importing' },
   });
 }
 
 export async function completeClientImport(input: {
+  firmId: string;
   importId: string;
   importedCount: number;
   skippedCount: number;
 }): Promise<void> {
-  await getPrisma().clientImport.update({
-    where: { id: input.importId },
+  await getPrisma().clientImport.updateMany({
+    where: { id: input.importId, firmId: input.firmId },
     data: {
       status: 'complete',
       importedCount: input.importedCount,
@@ -131,12 +137,13 @@ export async function completeClientImport(input: {
 }
 
 export async function failClientImport(input: {
+  firmId: string;
   importId: string;
   errorCode: string;
   errorMessage: string;
 }): Promise<void> {
-  await getPrisma().clientImport.update({
-    where: { id: input.importId },
+  await getPrisma().clientImport.updateMany({
+    where: { id: input.importId, firmId: input.firmId },
     data: {
       status: 'failed',
       errorCode: input.errorCode,

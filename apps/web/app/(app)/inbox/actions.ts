@@ -14,45 +14,59 @@ import {
 } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { ctxCan, requireCan, viewerScope } from '@/lib/authz';
+import type { FirmContext } from '@/lib/firm-context';
 import { requireFirmContext } from '@/lib/firm-context';
 import { inngest } from '@/lib/inngest/client';
 import { processDraft } from '@/lib/process-draft';
 import { sendDraftEmail } from '@/lib/send-draft';
 
+// Object-level scope check: an assigned-scope user must not act on an inquiry
+// they can't see, even if they call the action directly with a guessed id.
+async function requireVisibleInquiry(ctx: FirmContext, inquiryId: string) {
+  const inquiry = await getInquiry(ctx.firmId, inquiryId, viewerScope(ctx));
+  if (!inquiry) throw new Error(`inquiry ${inquiryId} not found or not accessible`);
+  return inquiry;
+}
+
 /** 再生成 — re-run pipeline. */
 export async function regenerateDraftAction(inquiryId: string): Promise<void> {
-  const { firmId } = await requireFirmContext();
-  await processDraft(firmId, inquiryId);
+  const ctx = await requireCan('inquiry.draft');
+  await requireVisibleInquiry(ctx, inquiryId);
+  await processDraft(ctx.firmId, inquiryId);
   revalidatePath(`/inbox/${inquiryId}`);
 }
 
 /** そのまま送信 — send the persisted draft as-is. */
 export async function sendDraftAction(inquiryId: string): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
-  await sendDraftEmail({ firmId, userId, inquiryId, editedBody: null });
+  const ctx = await requireCan('inquiry.send');
+  await requireVisibleInquiry(ctx, inquiryId);
+  await sendDraftEmail({ firmId: ctx.firmId, userId: ctx.userId, inquiryId, editedBody: null });
   revalidatePath(`/inbox/${inquiryId}`);
   revalidatePath('/inbox');
 }
 
 /** 編集して送信 — send the user-edited body (from the composer textarea). */
 export async function sendEditedDraftAction(inquiryId: string, body: string): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
-  await sendDraftEmail({ firmId, userId, inquiryId, editedBody: body });
+  const ctx = await requireCan('inquiry.send');
+  await requireVisibleInquiry(ctx, inquiryId);
+  await sendDraftEmail({ firmId: ctx.firmId, userId: ctx.userId, inquiryId, editedBody: body });
   revalidatePath(`/inbox/${inquiryId}`);
   revalidatePath('/inbox');
 }
 
 /** 却下 — mark the draft rejected; the inquiry goes back to a state where a
- * fresh draft can be generated. */
-export async function rejectDraftAction(inquiryId: string): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
-  await setInquiryStatus(firmId, inquiryId, 'rejected');
+ * fresh draft can be generated. A reason is captured for the audit trail. */
+export async function rejectDraftAction(inquiryId: string, reason?: string): Promise<void> {
+  const ctx = await requireCan('inquiry.reject');
+  await requireVisibleInquiry(ctx, inquiryId);
+  await setInquiryStatus(ctx.firmId, inquiryId, 'rejected');
   await recordAudit({
-    firmId,
-    actorId: userId,
+    firmId: ctx.firmId,
+    actorId: ctx.userId,
     inquiryId,
     action: 'draft.rejected',
-    metadata: { via: 'composer' },
+    metadata: { via: 'composer', ...(reason?.trim() ? { reason: reason.trim() } : {}) },
   });
   revalidatePath(`/inbox/${inquiryId}`);
 }
@@ -60,17 +74,16 @@ export async function rejectDraftAction(inquiryId: string): Promise<void> {
 /** 所長に転送 — escalate the inquiry to the assignee's supervisor (or oldest
  * admin if no chain). */
 export async function escalateInquiryAction(inquiryId: string): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
-  const inquiry = await getInquiry(firmId, inquiryId);
-  if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
-  const fromUserId = inquiry.assignedToId ?? userId;
-  const target = await findEscalationTarget(firmId, fromUserId);
+  const ctx = await requireCan('inquiry.draft');
+  const inquiry = await requireVisibleInquiry(ctx, inquiryId);
+  const fromUserId = inquiry.assignedToId ?? ctx.userId;
+  const target = await findEscalationTarget(ctx.firmId, fromUserId);
   if (!target) throw new Error('no escalation target available in this firm');
-  await setInquiryAssignee(firmId, inquiryId, target);
-  await setInquiryStatus(firmId, inquiryId, 'escalated');
+  await setInquiryAssignee(ctx.firmId, inquiryId, target);
+  await setInquiryStatus(ctx.firmId, inquiryId, 'escalated');
   await recordAudit({
-    firmId,
-    actorId: userId,
+    firmId: ctx.firmId,
+    actorId: ctx.userId,
     inquiryId,
     action: 'inquiry.assigned',
     metadata: { assigneeId: target, fromUserId, reason: 'escalated_via_composer' },
@@ -82,38 +95,33 @@ export async function escalateInquiryAction(inquiryId: string): Promise<void> {
 export async function listFirmAssigneesAction() {
   const { firmId } = await requireFirmContext();
   const users = await listFirmUsers(firmId);
-  return users.map((u) => ({ id: u.id, name: u.name, tier: u.tier }));
+  return users.map((u) => ({ id: u.id, name: u.name, appRole: u.appRole }));
 }
 
-/** 担当変更 — reassign the inquiry. Permitted for admins (anyone → anyone)
- * and the current assignee (handing off). Pass null to unassign. */
+/** 担当変更 — reassign the inquiry. Permitted for owner/reviewer (anyone →
+ * anyone) and the current assignee handing off. Pass null to unassign. */
 export async function reassignInquiryAction(
   inquiryId: string,
   assigneeUserId: string | null,
 ): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
-  const [inquiry, actor] = await Promise.all([
-    getInquiry(firmId, inquiryId),
-    getMembership(userId, firmId),
-  ]);
-  if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
-  if (!actor) throw new Error('actor membership missing');
+  const ctx = await requireFirmContext();
+  const inquiry = await requireVisibleInquiry(ctx, inquiryId);
 
-  const isAdmin = actor.tier === 'admin' || actor.role.toLowerCase().includes('admin');
-  const isCurrentAssignee = inquiry.assignedToId === userId;
-  if (!isAdmin && !isCurrentAssignee) {
+  const canReassignAny = ctxCan(ctx, 'inquiry.reassign');
+  const isCurrentAssignee = inquiry.assignedToId === ctx.userId;
+  if (!canReassignAny && !isCurrentAssignee) {
     throw new Error('not authorized to reassign this inquiry');
   }
 
   if (assigneeUserId) {
-    const targetMembership = await getMembership(assigneeUserId, firmId);
+    const targetMembership = await getMembership(assigneeUserId, ctx.firmId);
     if (!targetMembership) throw new Error('target user is not a member of this firm');
   }
 
-  await setInquiryAssignee(firmId, inquiryId, assigneeUserId);
+  await setInquiryAssignee(ctx.firmId, inquiryId, assigneeUserId);
   await recordAudit({
-    firmId,
-    actorId: userId,
+    firmId: ctx.firmId,
+    actorId: ctx.userId,
     inquiryId,
     action: 'inquiry.assigned',
     metadata: {
@@ -127,15 +135,14 @@ export async function reassignInquiryAction(
 }
 
 /** 顧問先として登録 — promote an unmatched inquiry by creating a new client
- * from the sender's email + the user-supplied display name. Re-queues the
- * inquiry through the pipeline so the agent can draft against the now-known
- * client. */
+ * from the sender's email. Triage of unmatched senders is an owner/reviewer
+ * task (client.manage). Re-queues the inquiry through the pipeline. */
 export async function promoteUnmatchedAction(
   inquiryId: string,
   name: string,
   contractType: ClientContractType,
 ): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const inquiry = await getInquiry(firmId, inquiryId);
   if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
   if (!inquiry.unmatchedSender) {
@@ -176,10 +183,9 @@ export async function promoteUnmatchedAction(
   revalidatePath(`/inbox/${inquiryId}`);
 }
 
-/** 破棄 — mark an unmatched inquiry rejected (sender wasn't a real prospect:
- * spam, mis-addressed, etc.). */
+/** 破棄 — mark an unmatched inquiry rejected (spam / mis-addressed). */
 export async function rejectUnmatchedAction(inquiryId: string): Promise<void> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('client.manage');
   const inquiry = await getInquiry(firmId, inquiryId);
   if (!inquiry) throw new Error(`inquiry ${inquiryId} not found`);
   await setInquiryStatus(firmId, inquiryId, 'rejected');

@@ -14,7 +14,8 @@ export type AdminGuard =
 
 export async function requireAdminFirm(): Promise<AdminGuard> {
   const ctx = await requireFirmContext();
-  if (!isAdminRole(ctx.role)) {
+  // Member management is owner-only (ctx.role is the appRole, not the Clerk role).
+  if (ctx.role !== 'owner') {
     return { ok: false, message: '権限がありません (所長のみ)' };
   }
   const { userId: actorClerkUserId } = await auth();

@@ -1,8 +1,9 @@
 import { recordAudit } from '@zeiro/db';
 import { registerFreee, startOAuthFlow } from '@zeiro/integrations';
 import { NextResponse } from 'next/server';
+import { ctxCan } from '@/lib/authz';
 import { env } from '@/lib/env';
-import { requireAdminFirm } from '@/lib/team-guard';
+import { requireFirmContext } from '@/lib/firm-context';
 
 ensureFreeeRegistered();
 
@@ -11,8 +12,10 @@ export async function POST(
   context: { params: Promise<{ provider: string }> },
 ): Promise<Response> {
   const { provider } = await context.params;
-  const guard = await requireAdminFirm();
-  if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: 403 });
+  const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'integration.manage')) {
+    return NextResponse.json({ error: '権限がありません (所長のみ)' }, { status: 403 });
+  }
 
   if (provider !== 'freee') {
     return NextResponse.json({ error: `unknown provider: ${provider}` }, { status: 400 });
@@ -26,12 +29,12 @@ export async function POST(
 
   const { authorizationUrl } = await startOAuthFlow({
     provider,
-    firmId: guard.ctx.firmId,
+    firmId: ctx.firmId,
   });
 
   await recordAudit({
-    firmId: guard.ctx.firmId,
-    actorId: guard.ctx.userId,
+    firmId: ctx.firmId,
+    actorId: ctx.userId,
     inquiryId: null,
     action: 'integration.oauth_started',
     metadata: { provider },

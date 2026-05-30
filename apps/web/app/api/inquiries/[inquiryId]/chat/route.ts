@@ -1,5 +1,6 @@
-import { requireFirmContext } from '@/lib/firm-context';
+import { ctxCan } from '@/lib/authz';
 import { env } from '@/lib/env';
+import { requireFirmContext } from '@/lib/firm-context';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,9 @@ type Params = Promise<{ inquiryId: string }>;
 
 export async function GET(_req: Request, { params }: { params: Params }) {
   const { inquiryId } = await params;
-  const { firmId } = await requireFirmContext();
+  const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'inquiry.draft')) return new Response('forbidden', { status: 403 });
+  const { firmId } = ctx;
   const url = `${env.AGENTS_BASE_URL}/api/inquiries/${encodeURIComponent(inquiryId)}/chat?firmId=${encodeURIComponent(firmId)}`;
   const upstream = await fetch(url);
   return new Response(upstream.body, {
@@ -19,7 +22,9 @@ export async function GET(_req: Request, { params }: { params: Params }) {
 
 export async function POST(req: Request, { params }: { params: Params }) {
   const { inquiryId } = await params;
-  const { firmId } = await requireFirmContext();
+  const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'inquiry.draft')) return new Response('forbidden', { status: 403 });
+  const { firmId } = ctx;
   const body = await req.text();
   const url = `${env.AGENTS_BASE_URL}/api/inquiries/${encodeURIComponent(inquiryId)}/chat?firmId=${encodeURIComponent(firmId)}`;
   const upstream = await fetch(url, {

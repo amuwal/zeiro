@@ -4,6 +4,7 @@ import {
   type ImportedClient,
   type ImportPreview,
   importPreviewSchema,
+  maskMyNumber,
 } from '@zeiro/core';
 import * as XLSX from 'xlsx';
 
@@ -185,7 +186,11 @@ function readGrid(buffer: Buffer): string[][] {
       raw: false,
     });
     for (const row of rows) {
-      all.push(row.map((cell) => String(cell ?? '').trim()));
+      // Mask My Number at the cell level — before the grid is sent to Claude
+      // for parsing AND before any of it is persisted to the preview JSON.
+      // 顧問先 exports routinely carry 個人番号 in a notes column (税理士法 §38 /
+      // マイナンバー法 N-02). This mirrors what the email/web inbound paths do.
+      all.push(row.map((cell) => maskMyNumber(String(cell ?? '').trim()).masked));
     }
   }
   return all;

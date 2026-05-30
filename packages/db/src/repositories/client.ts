@@ -1,4 +1,9 @@
+import { Prisma } from '@prisma/client';
 import { getPrisma } from '../server';
+
+// See inquiry.ts ViewerScope — assigned-only users see only clients they are a
+// 担当者 of. Undefined = full access.
+export type ClientViewerScope = { userId: string; seeAll: boolean };
 
 export function findClientByEmail(firmId: string, email: string) {
   return getPrisma().client.findUnique({
@@ -16,9 +21,12 @@ export function getClient(firmId: string, id: string) {
   return getPrisma().client.findFirstOrThrow({ where: { id, firmId } });
 }
 
-export function listClients(firmId: string) {
+export function listClients(firmId: string, scope?: ClientViewerScope) {
   return getPrisma().client.findMany({
-    where: { firmId },
+    where: {
+      firmId,
+      ...(scope && !scope.seeAll ? { assignees: { some: { userId: scope.userId } } } : {}),
+    },
     select: { id: true, name: true, lineUserId: true },
     orderBy: { name: 'asc' },
   });
@@ -108,7 +116,16 @@ export type ClientListRow = {
   lastContactAt: string | null;
 };
 
-export async function listClientsRich(firmId: string): Promise<ClientListRow[]> {
+export async function listClientsRich(
+  firmId: string,
+  scope?: ClientViewerScope,
+): Promise<ClientListRow[]> {
+  const scopeClause =
+    scope && !scope.seeAll
+      ? Prisma.sql`AND EXISTS (
+          SELECT 1 FROM client_assignees ca WHERE ca.client_id = c.id AND ca.user_id = ${scope.userId}::uuid
+        )`
+      : Prisma.empty;
   return getPrisma().$queryRaw<ClientListRow[]>`
     SELECT
       c.id,
@@ -129,6 +146,7 @@ export async function listClientsRich(firmId: string): Promise<ClientListRow[]> 
     FROM clients c
     LEFT JOIN users u ON u.id = c.assigned_tax_accountant_id
     WHERE c.firm_id = ${firmId}::uuid
+      ${scopeClause}
     ORDER BY c.name ASC
   `;
 }
@@ -139,7 +157,17 @@ export type ClientDetail = ClientListRow & {
   archivedBy: string | null;
 };
 
-export async function getClientDetail(firmId: string, id: string): Promise<ClientDetail | null> {
+export async function getClientDetail(
+  firmId: string,
+  id: string,
+  scope?: ClientViewerScope,
+): Promise<ClientDetail | null> {
+  const scopeClause =
+    scope && !scope.seeAll
+      ? Prisma.sql`AND EXISTS (
+          SELECT 1 FROM client_assignees ca WHERE ca.client_id = c.id AND ca.user_id = ${scope.userId}::uuid
+        )`
+      : Prisma.empty;
   const rows = await getPrisma().$queryRaw<ClientDetail[]>`
     SELECT
       c.id,
@@ -163,6 +191,7 @@ export async function getClientDetail(firmId: string, id: string): Promise<Clien
     FROM clients c
     LEFT JOIN users u ON u.id = c.assigned_tax_accountant_id
     WHERE c.firm_id = ${firmId}::uuid AND c.id = ${id}::uuid
+      ${scopeClause}
     LIMIT 1
   `;
   return rows[0] ?? null;

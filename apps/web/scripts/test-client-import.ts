@@ -19,7 +19,6 @@ import {
   completeClientImport,
   createClient,
   createClientImport,
-  failClientImport,
   getClientImport,
   getPrisma,
   listClientEmails,
@@ -121,7 +120,7 @@ async function main() {
   }
 
   log('\n— confirming import (writing to clients) —');
-  await markClientImportImporting(importRow.id);
+  await markClientImportImporting(FIRM_ID, importRow.id);
   const existingEmails = await listClientEmails(FIRM_ID);
   let imported = 0;
   let skipped = 0;
@@ -151,6 +150,7 @@ async function main() {
     }
   }
   await completeClientImport({
+    firmId: FIRM_ID,
     importId: importRow.id,
     importedCount: imported,
     skippedCount: skipped,

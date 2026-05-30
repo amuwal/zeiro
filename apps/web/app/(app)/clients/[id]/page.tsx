@@ -14,6 +14,7 @@ import { ClientEditForm } from '@/components/clients/client-edit-form';
 import { ClientInquiryHistory } from '@/components/clients/client-inquiry-history';
 import { FreeeBindingCard } from '@/components/clients/freee-binding';
 import { Icon } from '@/components/ui/icon';
+import { ctxCan, viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 
 type SearchParams = { created?: string };
@@ -25,11 +26,14 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<SearchParams>;
 }) {
-  const { firmId } = await requireFirmContext();
+  const ctx = await requireFirmContext();
+  const firmId = ctx.firmId;
   const { id } = await params;
   const flash = await searchParams;
+  const canManage = ctxCan(ctx, 'client.manage');
+  const canManageIntegration = ctxCan(ctx, 'integration.manage');
   const [client, users, inquiries, freeeIntegration, freeeBinding] = await Promise.all([
-    getClientDetail(firmId, id),
+    getClientDetail(firmId, id, viewerScope(ctx)),
     listFirmUsers(firmId),
     listInquiriesByClient(firmId, id),
     findIntegration(firmId, 'freee'),
@@ -38,11 +42,13 @@ export default async function ClientDetailPage({
   if (!client) notFound();
 
   const freeeCompanies =
-    ((freeeIntegration?.metadata as Record<string, unknown> | undefined)?.companies as Array<{
-      id: string;
-      name: string;
-      role: string;
-    }> | undefined) ?? [];
+    ((freeeIntegration?.metadata as Record<string, unknown> | undefined)?.companies as
+      | Array<{
+          id: string;
+          name: string;
+          role: string;
+        }>
+      | undefined) ?? [];
 
   return (
     <div className="kb-pane cl-detail-pane anim-stagger">
@@ -62,26 +68,32 @@ export default async function ClientDetailPage({
         <ClientArchiveBanner clientId={client.id} archivedAt={client.archivedAt} />
       )}
 
-      <ClientEditForm client={client} users={users.map((u) => ({ id: u.id, name: u.name }))} />
+      {canManage && (
+        <ClientEditForm client={client} users={users.map((u) => ({ id: u.id, name: u.name }))} />
+      )}
 
-      <FreeeBindingCard
-        clientId={client.id}
-        isFirmConnected={Boolean(freeeIntegration && freeeIntegration.status === 'active')}
-        companies={freeeCompanies}
-        binding={
-          freeeBinding
-            ? { externalId: freeeBinding.externalId, externalName: freeeBinding.externalName }
-            : null
-        }
-      />
+      {canManageIntegration && (
+        <FreeeBindingCard
+          clientId={client.id}
+          isFirmConnected={Boolean(freeeIntegration && freeeIntegration.status === 'active')}
+          companies={freeeCompanies}
+          binding={
+            freeeBinding
+              ? { externalId: freeeBinding.externalId, externalName: freeeBinding.externalName }
+              : null
+          }
+        />
+      )}
 
       <ClientInquiryHistory inquiries={inquiries} />
 
-      <ClientDangerZone
-        clientId={client.id}
-        archived={Boolean(client.archivedAt)}
-        inquiryCount={client.inquiryCount}
-      />
+      {canManage && (
+        <ClientDangerZone
+          clientId={client.id}
+          archived={Boolean(client.archivedAt)}
+          inquiryCount={client.inquiryCount}
+        />
+      )}
     </div>
   );
 }

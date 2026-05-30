@@ -13,6 +13,7 @@ import {
 } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { requireCan } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 import { inngest } from '@/lib/inngest/client';
 import { preflight } from '@/lib/knowledge/preflight';
@@ -28,7 +29,7 @@ export async function ingestKnowledgeAction(
   _prev: IngestState,
   formData: FormData,
 ): Promise<IngestState> {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('knowledge.edit');
 
   const source = formData.get('source');
   if (typeof source !== 'string' || !source.trim()) {
@@ -107,7 +108,7 @@ export async function ingestKnowledgeAction(
 }
 
 export async function flagChunk(formData: FormData) {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('knowledge.flagReview');
   const chunkId = readField(formData, 'chunkId');
   const reason = readField(formData, 'reason') ?? '法改正の可能性';
   if (!chunkId) throw new Error('chunkId required');
@@ -126,7 +127,7 @@ export async function flagChunk(formData: FormData) {
 }
 
 export async function unflagChunk(formData: FormData) {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('knowledge.flagReview');
   const chunkId = readField(formData, 'chunkId');
   if (!chunkId) throw new Error('chunkId required');
 
@@ -149,10 +150,7 @@ export async function bulkFlagBySearch(
   _prev: BulkFlagState,
   formData: FormData,
 ): Promise<BulkFlagState> {
-  const { firmId, userId, role } = await requireFirmContext();
-  if (!role.toLowerCase().includes('admin')) {
-    return { error: '権限がありません (所長のみ法改正フラグを操作可能)', flagged: 0 };
-  }
+  const { firmId, userId } = await requireCan('knowledge.flagReview');
 
   const query = readField(formData, 'query');
   const reason = readField(formData, 'reason') ?? '法改正の可能性';
@@ -181,7 +179,7 @@ export async function bulkFlagBySearch(
 // flow for new firms that want to bring in their own knowledge first and turn
 // on the shared FAQ later (or vice versa).
 export async function toggleAllGlobalSources(formData: FormData) {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('knowledge.edit');
   const next = readField(formData, 'next');
   if (next !== 'disabled' && next !== 'enabled') throw new Error('next must be disabled|enabled');
 
@@ -216,7 +214,7 @@ export async function revalidateKnowledge() {
 // it at any time; both directions are audited so admins can later see which
 // sources a firm has chosen to suppress and when.
 export async function toggleGlobalSource(formData: FormData) {
-  const { firmId, userId } = await requireFirmContext();
+  const { firmId, userId } = await requireCan('knowledge.edit');
   const source = readField(formData, 'source');
   const next = readField(formData, 'next');
   if (!source) throw new Error('source required');

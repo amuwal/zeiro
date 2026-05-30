@@ -54,9 +54,24 @@ export async function createInquiry(input: InquiryInsert): Promise<CreateInquiry
   }
 }
 
-export function listInquiries(firmId: string, status?: InquiryStatus) {
+// Visibility scope for assigned-only users (Staff/Viewer). `seeAll` true → no
+// filter. Otherwise the user sees an inquiry only if they're its assignee or a
+// 担当者 of its client. Undefined scope = full access (system / server jobs).
+export type ViewerScope = { userId: string; seeAll: boolean };
+
+function scopeWhere(scope: ViewerScope | undefined): Prisma.InquiryWhereInput {
+  if (!scope || scope.seeAll) return {};
+  return {
+    OR: [
+      { assignedToId: scope.userId },
+      { client: { assignees: { some: { userId: scope.userId } } } },
+    ],
+  };
+}
+
+export function listInquiries(firmId: string, status?: InquiryStatus, scope?: ViewerScope) {
   return getPrisma().inquiry.findMany({
-    where: { firmId, ...(status ? { status } : {}) },
+    where: { firmId, ...(status ? { status } : {}), ...scopeWhere(scope) },
     include: {
       client: { select: { name: true, primaryEmail: true } },
       assignedTo: { select: { id: true, name: true } },
@@ -75,8 +90,9 @@ export type InquiryThreadRow = InquiryRow & { threadCount: number };
 export async function listInquiryThreads(
   firmId: string,
   status?: InquiryStatus,
+  scope?: ViewerScope,
 ): Promise<InquiryThreadRow[]> {
-  const all = await listInquiries(firmId);
+  const all = await listInquiries(firmId, undefined, scope);
   const childOf = new Map<string, true>();
   for (const inq of all) {
     if (inq.parentInquiryId) childOf.set(inq.parentInquiryId, true);
@@ -115,9 +131,9 @@ export async function listRecentInquiriesForClient(
   return rows.reverse();
 }
 
-export function getInquiry(firmId: string, id: string) {
+export function getInquiry(firmId: string, id: string, scope?: ViewerScope) {
   return getPrisma().inquiry.findFirst({
-    where: { id, firmId },
+    where: { id, firmId, ...scopeWhere(scope) },
     include: {
       client: { select: { name: true, primaryEmail: true, lineUserId: true } },
       assignedTo: { select: { id: true, name: true } },
@@ -175,9 +191,15 @@ export type InboxCounts = {
   unmatched: number;
 };
 
-export async function getInboxCounts(firmId: string): Promise<InboxCounts> {
+export async function getInboxCounts(firmId: string, scope?: ViewerScope): Promise<InboxCounts> {
   // Count by thread (leaf inquiry) so the sidebar matches what's actually shown
   // in the inbox list. A long conversation that's "sent" appears once, not N times.
+  const scopeClause =
+    scope && !scope.seeAll
+      ? Prisma.sql`AND (i.assigned_to_id = ${scope.userId}::uuid OR EXISTS (
+          SELECT 1 FROM client_assignees ca WHERE ca.client_id = i.client_id AND ca.user_id = ${scope.userId}::uuid
+        ))`
+      : Prisma.empty;
   const rows = await getPrisma().$queryRaw<{ status: string; count: number }[]>`
     SELECT i.status, COUNT(*)::int AS count
     FROM inquiries i
@@ -185,6 +207,7 @@ export async function getInboxCounts(firmId: string): Promise<InboxCounts> {
       AND NOT EXISTS (
         SELECT 1 FROM inquiries c WHERE c.parent_inquiry_id = i.id
       )
+      ${scopeClause}
     GROUP BY i.status
   `;
   const counts: InboxCounts = {

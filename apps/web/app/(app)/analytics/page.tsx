@@ -1,4 +1,5 @@
 import { listRecentComplianceEvents } from '@zeiro/db';
+import { redirect } from 'next/navigation';
 import { AuditEvents } from '@/components/analytics/audit-events';
 import { CategoryDistribution } from '@/components/analytics/category-distribution';
 import { KpiCard, type KpiInput } from '@/components/analytics/kpi-card';
@@ -12,6 +13,7 @@ import {
   TARGET_ESCALATION_PCT,
 } from '@/lib/analytics';
 import { resolveWindow } from '@/lib/analytics-window';
+import { ctxCan } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 
 type SearchParams = { window?: string };
@@ -21,10 +23,12 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { firmId, role } = await requireFirmContext();
+  const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'analytics.viewFirm')) redirect('/home');
+  const { firmId } = ctx;
   const params = await searchParams;
   const resolution = resolveWindow(params.window);
-  const admin = role.toLowerCase().includes('admin');
+  const admin = ctxCan(ctx, 'audit.view');
 
   const [analytics, distribution, complianceEvents] = await Promise.all([
     getWindowAnalytics(firmId, resolution),

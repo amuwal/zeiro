@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { AuditFilters } from '@/components/audit/audit-filters';
 import { AuditTable } from '@/components/audit/audit-table';
 import { resolveWindow } from '@/lib/analytics-window';
+import { ctxCan } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 
 const PAGE_SIZE = 50;
@@ -16,9 +17,9 @@ type SearchParams = {
 };
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const { firmId, role } = await requireFirmContext();
-  const admin = role.toLowerCase().includes('admin');
-  if (!admin) notFound();
+  const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'audit.view')) notFound();
+  const { firmId } = ctx;
 
   const params = await searchParams;
   const action = parseAction(params.action);

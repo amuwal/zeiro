@@ -1,13 +1,11 @@
 'use client';
 
+import { type AppRole, roleLabel } from '@zeiro/core';
 import { useEffect, useRef, useState, useTransition } from 'react';
-import {
-  listFirmAssigneesAction,
-  reassignInquiryAction,
-} from '@/app/(app)/inbox/actions';
+import { listFirmAssigneesAction, reassignInquiryAction } from '@/app/(app)/inbox/actions';
 import { Icon } from '@/components/ui/icon';
 
-type Assignee = { id: string; name: string; tier: string };
+type Assignee = { id: string; name: string; appRole: string };
 
 type Props = {
   inquiryId: string;
@@ -96,7 +94,9 @@ export function AssigneePicker({ inquiryId, currentAssigneeId, currentAssigneeNa
             >
               <Icon name="user" size={11} />
               <span>{a.name}</span>
-              {a.tier === 'admin' && <span className="tier-tag">所長</span>}
+              {(a.appRole === 'owner' || a.appRole === 'reviewer') && (
+                <span className="tier-tag">{roleLabel(a.appRole as AppRole)}</span>
+              )}
             </button>
           ))}
         </div>

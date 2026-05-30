@@ -12,6 +12,7 @@ import {
 } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { ctxCan } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 import { asTier, TIERS } from '@/lib/team';
 import { ensureNotLastAdmin, extractClerkError, requireAdminFirm } from '@/lib/team-guard';
@@ -206,6 +207,9 @@ export async function setMemberTier(
   formData: FormData,
 ): Promise<TeamActionState> {
   const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'member.manage')) {
+    return { status: 'error', message: '権限がありません (所長のみ)' };
+  }
   const parsed = tierOpSchema.safeParse({
     targetUserId: formData.get('targetUserId'),
     tier: formData.get('tier'),
@@ -278,6 +282,9 @@ export async function setMemberSupervisor(
   formData: FormData,
 ): Promise<TeamActionState> {
   const ctx = await requireFirmContext();
+  if (!ctxCan(ctx, 'member.manage')) {
+    return { status: 'error', message: '権限がありません (所長のみ)' };
+  }
   const parsed = supervisorOpSchema.safeParse({
     targetUserId: formData.get('targetUserId'),
     supervisorUserId: formData.get('supervisorUserId') ?? '',

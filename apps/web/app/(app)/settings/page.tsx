@@ -36,8 +36,9 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<SettingsSearchParams>;
 }) {
-  const { firmId, userId, role } = await requireFirmContext();
-  const admin = role.toLowerCase().includes('admin');
+  const ctx = await requireFirmContext();
+  const { firmId, userId } = ctx;
+  const isOwner = ctx.role === 'owner';
   const flash = await searchParams;
   const [
     channel,
@@ -55,8 +56,8 @@ export default async function SettingsPage({
     getFirmChannel(firmId, 'line'),
     getFirmChannel(firmId, 'web'),
     buildBaseUrl(),
-    admin ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
-    admin ? listClients(firmId) : Promise.resolve([]),
+    isOwner ? listUnmatchedLineEvents(firmId) : Promise.resolve([]),
+    isOwner ? listClients(firmId) : Promise.resolve([]),
     // Everyone in the firm can SEE the tree; edit affordances are gated by
     // `canEditTier` / `canEditSupervisor` per row.
     listFirmTree(firmId),
@@ -87,9 +88,9 @@ export default async function SettingsPage({
           }>) ?? [],
         connectedAt: freeeIntegration.createdAt.toISOString(),
       }
-    : ({ status: 'not_connected' as const });
+    : { status: 'not_connected' as const };
   const invitations =
-    admin && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
+    isOwner && firm.clerkOrgId ? await listPendingInvitations(firm.clerkOrgId).catch(() => []) : [];
   const webhookUrl = `${baseUrl}/api/channels/line/${firmId}`;
   const contactUrl = `${baseUrl}/contact/${firmId}`;
   const actorTier = asTier(actorMembership?.tier);
@@ -109,7 +110,7 @@ export default async function SettingsPage({
         unmatchedCount={inboxCounts.unmatched}
       />
 
-      {admin && (
+      {isOwner && (
         <FreeeSection
           view={freeeView}
           canConfigureOAuth={canConfigureOAuth}
@@ -190,7 +191,7 @@ export default async function SettingsPage({
 
         <ChannelStatus channel={channel} />
 
-        {admin ? (
+        {isOwner ? (
           <LineChannelForm configured={Boolean(channel)} enabled={channel?.enabled ?? false} />
         ) : (
           <div style={{ color: 'var(--muted)', fontSize: 13 }}>
@@ -219,10 +220,10 @@ export default async function SettingsPage({
           members={treeMembers}
           currentUserId={userId}
           currentUserTier={actorTier}
-          isAdmin={admin}
+          isAdmin={isOwner}
         />
 
-        {admin && (
+        {isOwner && (
           <>
             {invitations.length > 0 && (
               <div className="team-pending">
@@ -238,11 +239,13 @@ export default async function SettingsPage({
         )}
       </section>
 
-      {admin && <TombstoneSection />}
+      {isOwner && <TombstoneSection />}
 
-      {admin && <WebChannelSection enabled={webChannel?.enabled ?? false} shareUrl={contactUrl} />}
+      {isOwner && (
+        <WebChannelSection enabled={webChannel?.enabled ?? false} shareUrl={contactUrl} />
+      )}
 
-      {admin && (
+      {isOwner && (
         <section
           style={{
             background: 'var(--surface)',

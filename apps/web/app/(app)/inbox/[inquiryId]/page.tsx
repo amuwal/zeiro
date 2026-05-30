@@ -1,11 +1,12 @@
 import { getClientDetail, getDraftByInquiry, getInquiry } from '@zeiro/db';
 import { notFound } from 'next/navigation';
-import type { StatusTabData } from '@/components/inquiry/sidecar-tabs/status-tab';
 import { Sidecar } from '@/components/inquiry/sidecar';
+import type { StatusTabData } from '@/components/inquiry/sidecar-tabs/status-tab';
 import { deriveSuggestion } from '@/components/inquiry/suggested-action';
 import { Thread } from '@/components/inquiry/thread';
 import { ThreadSidecarSplit } from '@/components/inquiry/thread-sidecar-split';
 import type { Turn } from '@/components/inquiry/turns';
+import { viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
 import {
   CATEGORY_TO_ID,
@@ -24,16 +25,15 @@ export default async function InquiryDetailPage({
   params: Promise<{ inquiryId: string }>;
 }) {
   const { inquiryId } = await params;
-  const { firmId } = await requireFirmContext();
+  const ctx = await requireFirmContext();
+  const firmId = ctx.firmId;
 
   const [inquiry, draft] = await Promise.all([
-    getInquiry(firmId, inquiryId),
-    getDraftByInquiry(inquiryId),
+    getInquiry(firmId, inquiryId, viewerScope(ctx)),
+    getDraftByInquiry(firmId, inquiryId),
   ]);
   if (!inquiry) notFound();
-  const clientDetail = inquiry.clientId
-    ? await getClientDetail(firmId, inquiry.clientId)
-    : null;
+  const clientDetail = inquiry.clientId ? await getClientDetail(firmId, inquiry.clientId) : null;
 
   const inqAnalysis = (inquiry.analysis ?? {}) as Record<string, unknown>;
   const inqTriage = (inqAnalysis.triage ?? {}) as Record<string, unknown>;
@@ -43,7 +43,8 @@ export default async function InquiryDetailPage({
   const sources = mapCitationsToSources(draft?.citations);
 
   const confidence = typeof inqTriage.confidence === 'number' ? inqTriage.confidence : 0.5;
-  const recommendation = typeof inqAiReview.recommendation === 'string' ? inqAiReview.recommendation : null;
+  const recommendation =
+    typeof inqAiReview.recommendation === 'string' ? inqAiReview.recommendation : null;
   const reasoning = typeof inqAiReview.reasoning === 'string' ? inqAiReview.reasoning : '';
   const isUrgent = inqTriage.urgency === 'high';
 
@@ -78,14 +79,26 @@ export default async function InquiryDetailPage({
         state: draft ? 'done' : 'now',
       },
       ...(draft
-        ? [{ time: shortTime(draft.createdAt), label: '下書き生成', sub: `${sources.length}件参照`, state: 'done' as const }]
+        ? [
+            {
+              time: shortTime(draft.createdAt),
+              label: '下書き生成',
+              sub: `${sources.length}件参照`,
+              state: 'done' as const,
+            },
+          ]
         : []),
       ...(inquiry.status === 'sent'
         ? [{ time: '—', label: '送信完了', sub: 'アーカイブ可能', state: 'done' as const }]
         : [{ time: '—', label: '送信', sub: '承認待ち', state: 'pending' as const }]),
     ],
     audit: {
-      channel: inquiry.channel === 'email' ? 'メール' : inquiry.channel === 'line' ? 'LINE' : 'Webフォーム',
+      channel:
+        inquiry.channel === 'email'
+          ? 'メール'
+          : inquiry.channel === 'line'
+            ? 'LINE'
+            : 'Webフォーム',
       threadId: `INQ-${inquiry.id.slice(0, 8).toUpperCase()}`,
       tenantIsolation: '有効',
       recording: '全イベント保存',
@@ -135,7 +148,9 @@ export default async function InquiryDetailPage({
             senderCompany: inquiry.client?.name ?? '',
             senderInitials: toInitials(senderName),
             category:
-              (CATEGORY_TO_ID[typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'] as string) ?? 'other',
+              (CATEGORY_TO_ID[
+                typeof inqTriage.category === 'string' ? inqTriage.category : 'その他'
+              ] as string) ?? 'other',
           }}
           turns={turns}
           draft={draftView}
