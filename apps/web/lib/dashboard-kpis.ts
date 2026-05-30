@@ -23,6 +23,9 @@ export function buildKpiCards(a: Awaited<ReturnType<typeof getWindowAnalytics>>)
       ? '—'
       : formatDeltaPct(pctDelta(responseCurrent, responsePrevious));
   const responseDeltaIsGood = responseCurrent <= responsePrevious;
+  // Show minutes for sane values; fall back to hours so a large figure reads as
+  // "2.5時間" rather than a jarring "150分"+.
+  const respInHours = responseCurrent >= 120;
 
   const totalDelta = formatDeltaPct(pctDelta(a.current.total, a.previous.total));
   const totalDeltaIsUp = a.current.total >= a.previous.total;
@@ -56,9 +59,9 @@ export function buildKpiCards(a: Awaited<ReturnType<typeof getWindowAnalytics>>)
     },
     {
       label: '平均一次対応時間',
-      value: responseCurrent,
+      value: respInHours ? responseCurrent / 60 : responseCurrent,
       decimals: 1,
-      unit: '分',
+      unit: respInHours ? '時間' : '分',
       target: '目標 3分以下',
       delta: responseDelta,
       deltaUp: responseCurrent >= responsePrevious,

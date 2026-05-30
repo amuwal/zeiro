@@ -60,6 +60,34 @@ export default async function HomePage() {
 
   const needsAction = counts.drafted + counts.escalated + counts.pending + counts.unmatched;
 
+  // Empty firm: KPIs and the queue would be meaningless. Lead with what Zeiro
+  // does + how the flow works + setup, so the app's purpose is clear without
+  // any data.
+  if (counts.all === 0) {
+    return (
+      <div className="kb-pane anim-stagger">
+        <header className="dash-head">
+          <div>
+            <h1 className="dash-greeting">
+              {me?.name ? `${me.name} さん、ようこそ` : 'ようこそ'}
+              <span className={`role-chip role-${ctx.role}`}>{roleLabel(ctx.role)}</span>
+            </h1>
+            <p className="dash-sub">
+              Zeiro は顧問先からの問い合わせを自動で分類し、事務所のナレッジに基づいた返信の下書きを作成します。税理士は確認して送信するだけです。
+            </p>
+          </div>
+        </header>
+        <ol className="dash-flow">
+          <FlowStep n={1} icon="inbox" title="受信" sub="顧問先からのメール・LINE・Webフォームを自動取込" />
+          <FlowStep n={2} icon="spark" title="AIが分類・下書き" sub="5カテゴリに分類し、ナレッジを引用した下書きを生成" />
+          <FlowStep n={3} icon="check" title="税理士がレビュー" sub="内容を確認・編集。判断が必要な案件はエスカレーション" />
+          <FlowStep n={4} icon="send" title="送信" sub="そのまま送信、または編集して送信。全操作を監査ログに記録" />
+        </ol>
+        {ctxCan(ctx, 'member.manage') && <SetupChecklist />}
+      </div>
+    );
+  }
+
   return (
     <div className="kb-pane anim-stagger">
       <header className="dash-head">
@@ -156,6 +184,29 @@ export default async function HomePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function FlowStep({
+  n,
+  icon,
+  title,
+  sub,
+}: {
+  n: number;
+  icon: IconName;
+  title: string;
+  sub: string;
+}) {
+  return (
+    <li className="dash-flow-step">
+      <span className="dash-flow-glyph">
+        <Icon name={icon} size={16} />
+        <span className="dash-flow-n">{n}</span>
+      </span>
+      <span className="dash-flow-title">{title}</span>
+      <span className="dash-flow-sub">{sub}</span>
+    </li>
   );
 }
 
