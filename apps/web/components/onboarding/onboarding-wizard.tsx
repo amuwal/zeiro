@@ -1,231 +1,151 @@
 'use client';
 
-import Link from 'next/link';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useState, useTransition } from 'react';
-import {
-  completeOnboardingAction,
-  type FirmProfileState,
-  saveFirmProfileAction,
-} from '@/app/onboarding/actions';
-import { CopyButton } from '@/components/onboarding/copy-button';
-import { sendTestInquiryAction } from '@/components/onboarding/test-inquiry-action';
-import { Icon, type IconName } from '@/components/ui/icon';
+import { useDeferredValue, useState, useTransition } from 'react';
+import { completeOnboardingAction, saveFirmProfileAction } from '@/app/onboarding/actions';
+import { OnboardingPreview } from '@/components/onboarding/onboarding-preview';
+import { DoneStep, InboxStep, ProfileStep } from '@/components/onboarding/onboarding-steps';
+import { Logo } from '@/components/ui/logo';
 
-const STEPS = ['事務所プロフィール', '受信トレイ', '準備完了'];
-const initial: FirmProfileState = { ok: false, error: null };
+const SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
+
+const stepV = {
+  enter: (d: number) => ({ opacity: 0, x: d >= 0 ? 24 : -24 }),
+  center: {
+    opacity: 1,
+    x: 0,
+    transition: { ...SPRING, staggerChildren: 0.05, delayChildren: 0.04 },
+  },
+  exit: (d: number) => ({ opacity: 0, x: d >= 0 ? -24 : 24, transition: { duration: 0.16 } }),
+};
 
 type Props = { firmName: string; signature: string; inboundAddress: string };
 
-export function OnboardingWizard({ firmName, signature, inboundAddress }: Props) {
+export function OnboardingWizard({
+  firmName: initialName,
+  signature: initialSig,
+  inboundAddress,
+}: Props) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [state, action, saving] = useActionState(saveFirmProfileAction, initial);
+  const [[step, dir], setStep] = useState<[number, number]>([0, 0]);
+  const [firmName, setFirmName] = useState(initialName);
+  const [signature, setSignature] = useState(initialSig);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, startSave] = useTransition();
   const [leaving, startLeave] = useTransition();
+  const previewName = useDeferredValue(firmName);
+  const previewSig = useDeferredValue(signature);
 
-  // Advance the moment the profile saves.
-  useEffect(() => {
-    if (state.ok) setStep((s) => (s === 0 ? 1 : s));
-  }, [state.ok]);
+  const go = (next: number) => setStep([next, next >= step ? 1 : -1]);
+  // Advance imperatively on a successful save. The previous useActionState +
+  // effect approach skipped the 2nd save (ok stayed true → effect dep unchanged);
+  // calling the action directly and advancing here always works.
+  const handleSave = (formData: FormData) => {
+    startSave(async () => {
+      const res = await saveFirmProfileAction(formData);
+      if (res.ok) {
+        setError(null);
+        setStep([1, 1]);
+      } else {
+        setError(res.error);
+      }
+    });
+  };
 
-  function finish(go: string, test?: boolean) {
+  function finish(target: string, test?: boolean) {
     startLeave(async () => {
       await completeOnboardingAction().catch(() => {});
       if (test) {
+        const { sendTestInquiryAction } = await import(
+          '@/components/onboarding/test-inquiry-action'
+        );
         const { inquiryId } = await sendTestInquiryAction();
         router.push(`/inbox/${inquiryId}`);
-      } else {
-        router.push(go);
-      }
+      } else router.push(target);
     });
   }
 
   return (
-    <div className="w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-surface shadow-lg anim-stagger">
-      <div className="px-9 pt-8">
-        <div className="flex items-center gap-2">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex flex-1 flex-col gap-1.5">
-              <div
-                className={`h-1 rounded-full transition-[background-color,opacity] duration-500 ease-out ${
-                  i <= step ? 'bg-accent' : 'bg-line'
-                }`}
-              />
-              <span
-                className={`text-[11px] transition-colors duration-300 ${
-                  i === step ? 'font-medium text-accent-ink' : 'text-muted'
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
+    <motion.div
+      initial={{ opacity: 0, y: 14, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ ...SPRING, stiffness: 220 }}
+      className="grid w-full max-w-[940px] grid-cols-1 overflow-hidden rounded-[18px] border border-line bg-surface shadow-lg lg:grid-cols-[minmax(0,440px)_1fr]"
+    >
+      <div className="flex min-w-0 flex-col gap-7 p-8 lg:p-10">
+        <div className="flex items-center justify-between">
+          <Logo size={24} wordmarkClassName="text-[15px]" />
+          <span className="font-mono text-[11px] text-muted">
+            <span className="font-semibold text-ink">0{step + 1}</span> / 03
+          </span>
         </div>
-      </div>
-
-      <div key={step} className="wiz-step px-9 pb-9 pt-7">
-        {step === 0 && (
-          <Step
-            icon="spark"
-            title="Zeiro へようこそ"
-            sub="まず、顧問先に表示される事務所情報を設定します。ここで入力した名称が返信の差出人・署名に使われます。"
-          >
-            <form action={action} className="flex flex-col gap-4">
-              <Field label="事務所名" hint="例: さくら税理士事務所">
-                <input
-                  name="name"
-                  defaultValue={firmName}
-                  required
-                  autoFocus
-                  className="w-full rounded-md border border-line bg-bg-2 px-3 py-2.5 text-[14px] text-ink outline-none transition-colors focus:border-accent"
-                  placeholder="さくら税理士事務所"
-                />
-              </Field>
-              <Field label="担当者署名" hint="任意 — 返信の結びに使います">
-                <input
-                  name="signature"
-                  defaultValue={signature}
-                  className="w-full rounded-md border border-line bg-bg-2 px-3 py-2.5 text-[14px] text-ink outline-none transition-colors focus:border-accent"
-                  placeholder="例: 税理士 佐藤 太郎"
-                />
-              </Field>
-              {state.error && <p className="text-[12px] text-urgent">{state.error}</p>}
-              <button type="submit" disabled={saving} className="btn btn-primary mt-1 w-fit">
-                {saving ? '保存中…' : '保存して次へ'} <Icon name="arrow-right" size={14} />
-              </button>
-            </form>
-          </Step>
-        )}
-
-        {step === 1 && (
-          <Step
-            icon="inbox"
-            title="受信トレイをつなぐ"
-            sub="顧問先のメールをこの専用アドレスへ自動転送すると、AI が下書きを作成します。顧問先はこれまで通り事務所のアドレスに送るだけです。"
-          >
-            <div className="flex items-center justify-between gap-3 rounded-md border border-line bg-bg-2 px-4 py-3">
-              <code className="truncate font-mono text-[13px] text-ink-2">{inboundAddress}</code>
-              <CopyButton text={inboundAddress} />
-            </div>
-            <p className="mt-3 text-[12px] text-muted">
-              Gmail / Outlook の自動転送の手順は、設定 → メール受信 で確認できます。
-            </p>
-            <div className="mt-6 flex items-center gap-3">
-              <BackButton onClick={() => setStep(0)} />
-              <button type="button" onClick={() => setStep(2)} className="btn btn-primary">
-                次へ <Icon name="arrow-right" size={14} />
-              </button>
-            </div>
-          </Step>
-        )}
-
-        {step === 2 && (
-          <Step
-            icon="check"
-            title="準備完了です"
-            sub="サンプルの問い合わせを送って、AI の下書きがその場で作られる様子を確認しましょう。"
-          >
-            <button
-              type="button"
-              disabled={leaving}
-              onClick={() => finish('/home', true)}
-              className="btn btn-primary w-full justify-center py-3"
+        <Progress step={step} />
+        <div className="min-h-[300px]">
+          <AnimatePresence mode="wait" custom={dir} initial={false}>
+            <motion.div
+              key={step}
+              custom={dir}
+              variants={stepV}
+              initial="enter"
+              animate="center"
+              exit="exit"
             >
-              <Icon name="spark" size={15} />
-              {leaving ? 'AI が下書き中…' : 'テスト問い合わせを送って試す'}
-            </button>
-
-            <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <NextCard href="/clients/import" icon="upload" label="顧問先を取り込む" />
-              <NextCard href="/knowledge/new" icon="book" label="ナレッジを追加" />
-              <NextCard href="/settings" icon="settings" label="freee を連携" />
-            </div>
-
-            <div className="mt-6 flex items-center gap-3">
-              <BackButton onClick={() => setStep(1)} />
-              <button
-                type="button"
-                disabled={leaving}
-                onClick={() => finish('/home')}
-                className="text-[13px] font-medium text-accent transition hover:underline disabled:opacity-60"
-              >
-                ダッシュボードへ進む →
-              </button>
-            </div>
-          </Step>
-        )}
+              {step === 0 && (
+                <ProfileStep
+                  firmName={firmName}
+                  signature={signature}
+                  onFirmName={setFirmName}
+                  onSignature={setSignature}
+                  action={handleSave}
+                  saving={saving}
+                  error={error}
+                />
+              )}
+              {step === 1 && (
+                <InboxStep
+                  inboundAddress={inboundAddress}
+                  onBack={() => go(0)}
+                  onNext={() => go(2)}
+                />
+              )}
+              {step === 2 && (
+                <DoneStep
+                  leaving={leaving}
+                  onBack={() => go(1)}
+                  onTest={() => finish('/home', true)}
+                  onDashboard={() => finish('/home')}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <p className="mt-auto border-t border-line pt-4 text-[11.5px] leading-relaxed text-muted">
+          守秘義務を遵守 ・ データは国内（東京）に保管 ・ 送信前に税理士が確認
+        </p>
       </div>
-    </div>
+
+      <div className="hidden border-l border-line bg-gradient-to-br from-accent-soft to-bg-2 lg:block">
+        <OnboardingPreview step={step} firmName={previewName} signature={previewSig} />
+      </div>
+    </motion.div>
   );
 }
 
-function Step({
-  icon,
-  title,
-  sub,
-  children,
-}: {
-  icon: IconName;
-  title: string;
-  sub: string;
-  children: React.ReactNode;
-}) {
+function Progress({ step }: { step: number }) {
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <span className="grid h-10 w-10 place-items-center rounded-md bg-accent-soft text-accent">
-          <Icon name={icon} size={18} />
+    <div className="flex gap-1.5">
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-line">
+          <motion.span
+            className="block h-full rounded-full bg-ink"
+            initial={false}
+            animate={{ scaleX: i <= step ? 1 : 0 }}
+            style={{ originX: 0 }}
+            transition={SPRING}
+          />
         </span>
-        <h1 className="mt-4 font-sans text-[20px] font-semibold tracking-[-0.01em] text-ink">
-          {title}
-        </h1>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{sub}</p>
-      </div>
-      {children}
+      ))}
     </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="flex items-baseline gap-2">
-        <span className="text-[13px] font-medium text-ink">{label}</span>
-        <span className="text-[11px] text-muted">{hint}</span>
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function BackButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="text-[13px] text-muted transition-colors hover:text-ink"
-    >
-      戻る
-    </button>
-  );
-}
-
-function NextCard({ href, icon, label }: { href: string; icon: IconName; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-2 rounded-md border border-line bg-bg-2 px-3 py-2.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent-ink"
-    >
-      <Icon name={icon} size={14} />
-      {label}
-    </Link>
   );
 }

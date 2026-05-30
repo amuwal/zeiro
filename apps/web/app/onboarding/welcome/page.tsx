@@ -13,7 +13,7 @@ export default async function WelcomePage() {
   const firm = await findFirmByClerkOrgId(orgId);
   if (!firm) {
     return (
-      <main className="grid min-h-screen place-items-center bg-bg p-8">
+      <main className="grid min-h-screen place-items-center bg-gradient-to-br from-bg via-bg to-accent-soft p-6">
         <div className="w-full max-w-[560px]">
           <Provisioning />
         </div>
@@ -26,7 +26,7 @@ export default async function WelcomePage() {
   if (settings.onboardingCompleted === true) redirect('/home');
 
   return (
-    <main className="grid min-h-screen place-items-center bg-bg p-8">
+    <main className="grid min-h-screen place-items-center bg-gradient-to-br from-bg via-bg to-accent-soft p-6">
       <OnboardingWizard
         firmName={firm.name}
         signature={typeof settings.signature === 'string' ? settings.signature : ''}

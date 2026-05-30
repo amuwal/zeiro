@@ -9,6 +9,8 @@ import {
   sendEditedDraftAction,
 } from '@/app/(app)/inbox/actions';
 import { Icon } from '@/components/ui/icon';
+import { ComposerMeta } from './composer-meta';
+import { DraftDrafting } from './draft-drafting';
 import { SentDraftView } from './sent-draft-view';
 import { useDraftConflict } from './use-draft-conflict';
 
@@ -48,6 +50,7 @@ export function DraftComposer({ draft, inquiryId, inquiryStatus, canDraft, canSe
   }, [text]);
 
   const hasDraft = draft !== null;
+  const isDrafting = !hasDraft && inquiryStatus === 'pending';
   const isSent = inquiryStatus === 'sent';
   const isEdited = hasDraft && text.trim() !== draft.body.trim();
 
@@ -82,16 +85,20 @@ export function DraftComposer({ draft, inquiryId, inquiryStatus, canDraft, canSe
         <span className="gen-time">{draft?.time ?? '—'}</span>
       </div>
 
-      <textarea
-        ref={ta}
-        className="draft-editor"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={SKELETON_PLACEHOLDER}
-        rows={6}
-        disabled={busy || !canDraft}
-        readOnly={!canDraft}
-      />
+      {isDrafting ? (
+        <DraftDrafting />
+      ) : (
+        <textarea
+          ref={ta}
+          className="draft-editor"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={SKELETON_PLACEHOLDER}
+          rows={6}
+          disabled={busy || !canDraft}
+          readOnly={!canDraft}
+        />
+      )}
 
       {pendingDraftBody !== null && (
         <div className="draft-composer-toast">
@@ -112,9 +119,10 @@ export function DraftComposer({ draft, inquiryId, inquiryStatus, canDraft, canSe
             type="button"
             className="btn btn-ghost"
             onClick={() => run('regen', () => regenerateDraftAction(inquiryId))}
-            disabled={busy}
+            disabled={busy || isDrafting}
           >
-            <Icon name="spark" size={12} /> {busyKind === 'regen' ? '生成中…' : '再生成'}
+            <Icon name="spark" size={12} />{' '}
+            {busyKind === 'regen' || isDrafting ? '生成中…' : '再生成'}
           </button>
           <button type="button" className="icon-btn-sm" title="添付" disabled={busy}>
             <Icon name="paperclip" size={13} />
@@ -182,19 +190,7 @@ export function DraftComposer({ draft, inquiryId, inquiryStatus, canDraft, canSe
         </div>
       )}
 
-      <div className="composer-meta">
-        <div className="group">
-          <span className="item">
-            <Icon name="shield" size={11} /> <b>テナント分離</b> 有効
-          </span>
-          <span className="item">
-            <Icon name="clock" size={11} /> 一次対応 <b>—</b>
-          </span>
-        </div>
-        <span className="item">
-          監査ログ <b>記録中</b>
-        </span>
-      </div>
+      <ComposerMeta />
     </div>
   );
 }

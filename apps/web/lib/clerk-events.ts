@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { type AppRole, asAppRole, defaultsForRole } from '@zeiro/core';
 import {
   findFirmByClerkOrgId,
@@ -83,7 +84,7 @@ async function onOrgUpserted(data: unknown): Promise<void> {
   await upsertFirmFromClerk({
     clerkOrgId: o.id,
     name: o.name,
-    inboundAddress: defaultInboundAddress(o.slug ?? o.id),
+    inboundAddress: defaultInboundAddress(),
   });
 }
 
@@ -100,7 +101,7 @@ async function onMembershipUpserted(data: unknown): Promise<void> {
   const firm = await upsertFirmFromClerk({
     clerkOrgId: m.organization.id,
     name: m.organization.name,
-    inboundAddress: defaultInboundAddress(m.organization.slug ?? m.organization.id),
+    inboundAddress: defaultInboundAddress(),
   });
 
   // Reconcile with the in-app tier the settings UI may have set previously:
@@ -150,7 +151,10 @@ function composeName(first?: string | null, last?: string | null): string {
   return [first, last].filter(Boolean).join(' ').trim();
 }
 
-function defaultInboundAddress(slug: string): string {
-  const local = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  return `inquiry-${local}@${env.OUTBOUND_FROM_DOMAIN}`;
+// Short, clean, unique local part. Deliberately NOT derived from the org name —
+// the old slug form was long and leaked the firm's identity in the address (§38).
+// Only set on firm create (upsert ignores it on update), so a fresh token is fine.
+function defaultInboundAddress(): string {
+  const token = randomUUID().replace(/-/g, '').slice(0, 8);
+  return `inquiry-${token}@${env.OUTBOUND_FROM_DOMAIN}`;
 }

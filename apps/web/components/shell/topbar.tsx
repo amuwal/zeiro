@@ -1,6 +1,7 @@
 import { type AppRole, roleLabel } from '@zeiro/core';
 import Link from 'next/link';
 import { Icon } from '@/components/ui/icon';
+import { Logo } from '@/components/ui/logo';
 import { NotificationBell } from './notification-bell';
 import { Tabs } from './tabs';
 import { UserMenu } from './user-menu';
@@ -20,11 +21,10 @@ export function Topbar({
 }) {
   return (
     <header className="topbar">
-      <div className="brand">
-        <div className="brand-mark">z</div>
-        zeiro
+      <Link href="/home" className="brand">
+        <Logo size={22} wordmarkClassName="text-[15px]" />
         <span className="brand-tag">tax-office agent</span>
-      </div>
+      </Link>
       <Tabs
         inboxCount={inboxCount}
         canViewAudit={canViewAudit}

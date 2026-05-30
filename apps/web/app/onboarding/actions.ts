@@ -9,10 +9,7 @@ export type FirmProfileState = { ok: boolean; error: string | null };
 // Step 1 of onboarding: capture the real 事務所名 (overrides the Clerk org name,
 // which would otherwise appear in every client-facing draft) + an optional 担当者
 // 署名. Owner-only.
-export async function saveFirmProfileAction(
-  _prev: FirmProfileState,
-  formData: FormData,
-): Promise<FirmProfileState> {
+export async function saveFirmProfileAction(formData: FormData): Promise<FirmProfileState> {
   const { firmId } = await requireCan('member.manage');
   const name = String(formData.get('name') ?? '').trim();
   const signature = String(formData.get('signature') ?? '').trim();

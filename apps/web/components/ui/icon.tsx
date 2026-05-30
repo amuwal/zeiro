@@ -26,6 +26,7 @@ export type IconName =
   | 'chevron-down'
   | 'shield'
   | 'upload'
+  | 'building'
   | 'doc';
 
 const PATHS: Record<IconName, JSX.Element> = {
@@ -148,6 +149,15 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
       <path d="M14 2v6h6" />
       <path d="M9 13h6M9 17h6" />
+    </>
+  ),
+  building: (
+    <>
+      <path d="M3 21h18" />
+      <path d="M6 21V4h9v17" />
+      <path d="M15 21V9h4v12" />
+      <path d="M9 8h3M9 12h3M9 16h3" />
+      <path d="M16.5 13h1M16.5 17h1" />
     </>
   ),
 };
