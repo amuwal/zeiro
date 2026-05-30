@@ -30,10 +30,7 @@ export class FreeeAdapter extends BaseIntegrationAdapter {
     this.redirectUri = args.redirectUri;
   }
 
-  async exchangeCodeForTokens(args: {
-    code: string;
-    codeVerifier?: string;
-  }): Promise<TokenSet> {
+  async exchangeCodeForTokens(args: { code: string; codeVerifier?: string }): Promise<TokenSet> {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       client_id: this.clientId,
@@ -64,7 +61,9 @@ export class FreeeAdapter extends BaseIntegrationAdapter {
       headers: { authorization: `Bearer ${tokens.accessToken}`, accept: 'application/json' },
     });
     if (!res.ok) return {};
-    const json = (await res.json()) as { companies?: Array<{ id: number; name: string; role: string }> };
+    const json = (await res.json()) as {
+      companies?: Array<{ id: number; name: string; role: string }>;
+    };
     const companies = (json.companies ?? []).map((c) => ({
       id: String(c.id),
       name: c.name,

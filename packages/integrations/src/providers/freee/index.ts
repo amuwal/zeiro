@@ -2,7 +2,14 @@ import { registerAdapter } from '../../core/registry';
 import { FreeeAdapter } from './adapter';
 
 export { FreeeAdapter } from './adapter';
-export { FreeeApiClient, type FreeeDeal, type FreeePartner, type FreeeCompanyMini } from './api-client';
+export {
+  FreeeApiClient,
+  type FreeeCompanyMini,
+  type FreeeDeal,
+  type FreeeInvoice,
+  type FreeePartner,
+  type FreeeProfitAndLoss,
+} from './api-client';
 
 let registered = false;
 

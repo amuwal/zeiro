@@ -5,36 +5,25 @@ import {
   RateLimitError,
 } from '../../core/errors';
 import { getAdapter } from '../../core/registry';
+import type {
+  FreeeAccountItem,
+  FreeeCompanyMini,
+  FreeeDeal,
+  FreeeInvoice,
+  FreeePartner,
+  FreeeProfitAndLoss,
+  FreeeTrialBalanceLine,
+} from './types';
+
+export type {
+  FreeeCompanyMini,
+  FreeeDeal,
+  FreeeInvoice,
+  FreeePartner,
+  FreeeProfitAndLoss,
+} from './types';
 
 const FREEE_API = 'https://api.freee.co.jp';
-
-export type FreeeDeal = {
-  id: number;
-  issue_date: string;
-  amount: number;
-  type: 'income' | 'expense';
-  status: string;
-  partner_id: number | null;
-  ref_number: string | null;
-  details?: Array<{
-    account_item_id: number;
-    amount: number;
-    description: string | null;
-  }>;
-};
-
-export type FreeePartner = {
-  id: number;
-  name: string;
-  shortcut1: string | null;
-  contact_name: string | null;
-};
-
-export type FreeeCompanyMini = {
-  id: number;
-  name: string;
-  role: string;
-};
 
 export class FreeeApiClient {
   constructor(
@@ -53,10 +42,7 @@ export class FreeeApiClient {
     return json.companies;
   }
 
-  async listRecentDeals(opts: {
-    daysBack?: number;
-    limit?: number;
-  } = {}): Promise<FreeeDeal[]> {
+  async listRecentDeals(opts: { daysBack?: number; limit?: number } = {}): Promise<FreeeDeal[]> {
     const since = new Date();
     since.setDate(since.getDate() - (opts.daysBack ?? 90));
     const json = await this.get<{ deals: FreeeDeal[] }>('/api/1/deals', {
@@ -77,8 +63,53 @@ export class FreeeApiClient {
 
   async findPartnerByName(name: string): Promise<FreeePartner | null> {
     const partners = await this.listPartners({ limit: 100 });
-    const target = partners.find((p) => p.name.includes(name) || (p.shortcut1 ?? '').includes(name));
+    const target = partners.find(
+      (p) => p.name.includes(name) || (p.shortcut1 ?? '').includes(name),
+    );
     return target ?? null;
+  }
+
+  async listInvoices(opts: { limit?: number; unpaidOnly?: boolean } = {}): Promise<FreeeInvoice[]> {
+    const query: Record<string, string> = {
+      company_id: this.companyId,
+      limit: String(opts.limit ?? 20),
+    };
+    if (opts.unpaidOnly) query.payment_status = 'unsettled';
+    const json = await this.get<{ invoices: FreeeInvoice[] }>('/api/1/invoices', query);
+    return json.invoices;
+  }
+
+  // Maps account_item_id → name so transaction lines read as 勘定科目 names in
+  // citations instead of opaque numeric ids.
+  async accountItemNames(): Promise<Map<number, string>> {
+    const json = await this.get<{ account_items: FreeeAccountItem[] }>('/api/1/account_items', {
+      company_id: this.companyId,
+    });
+    return new Map(json.account_items.map((a) => [a.id, a.name]));
+  }
+
+  // Current-period P/L summary (omitting fiscal_year defaults to the company's
+  // current fiscal year). Returns only non-zero lines so the agent gets a compact
+  // 売上/費用/利益 picture rather than the full chart of accounts.
+  async profitAndLoss(): Promise<FreeeProfitAndLoss> {
+    const json = await this.get<{
+      trial_pl: {
+        fiscal_year?: number;
+        start_month?: number;
+        end_month?: number;
+        balances?: FreeeTrialBalanceLine[];
+      };
+    }>('/api/1/reports/trial_pl', { company_id: this.companyId });
+    const pl = json.trial_pl;
+    const lines = (pl.balances ?? [])
+      .filter((b) => b.closing_balance !== 0 && b.account_item_name)
+      .map((b) => ({ name: b.account_item_name, balance: b.closing_balance }));
+    return {
+      fiscalYear: pl.fiscal_year ?? null,
+      startMonth: pl.start_month ?? null,
+      endMonth: pl.end_month ?? null,
+      lines,
+    };
   }
 
   private async get<T>(path: string, query?: Record<string, string>): Promise<T> {
@@ -96,7 +127,12 @@ export class FreeeApiClient {
         const { markIntegrationStatus, findIntegration } = await import('@zeiro/db');
         const row = await findIntegration(this.firmId, 'freee');
         if (row) {
-          await markIntegrationStatus(this.firmId, row.id, 'revoked', 'persistent 401 after refresh');
+          await markIntegrationStatus(
+            this.firmId,
+            row.id,
+            'revoked',
+            'persistent 401 after refresh',
+          );
         }
         throw new IntegrationRevokedError(row?.id ?? '?', 'freee');
       }

@@ -1,8 +1,14 @@
-export * from './core/errors';
-export * from './core/types';
-export { encrypt, decrypt } from './core/encryption';
 export { BaseIntegrationAdapter } from './core/base-adapter';
+export { decrypt, encrypt } from './core/encryption';
+export * from './core/errors';
 export { getAdapter, listRegisteredProviders, registerAdapter } from './core/registry';
-export { startOAuthFlow, completeOAuthFlow } from './oauth';
-export { registerFreee, FreeeApiClient, FreeeAdapter, isFreeeRegistered } from './providers/freee';
-export type { FreeeDeal, FreeePartner, FreeeCompanyMini } from './providers/freee';
+export * from './core/types';
+export { completeOAuthFlow, startOAuthFlow } from './oauth';
+export type {
+  FreeeCompanyMini,
+  FreeeDeal,
+  FreeeInvoice,
+  FreeePartner,
+  FreeeProfitAndLoss,
+} from './providers/freee';
+export { FreeeAdapter, FreeeApiClient, isFreeeRegistered, registerFreee } from './providers/freee';
