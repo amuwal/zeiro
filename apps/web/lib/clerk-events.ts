@@ -1,3 +1,4 @@
+import { type AppRole, asAppRole, defaultsForRole } from '@zeiro/core';
 import {
   findFirmByClerkOrgId,
   findUserByClerkUserId,
@@ -37,6 +38,8 @@ const membershipPayload = z.object({
     last_name: z.string().nullable().optional(),
   }),
   role: z.string(),
+  // Clerk copies the invitation's publicMetadata onto the membership on accept.
+  public_metadata: z.record(z.string(), z.unknown()).nullish(),
 });
 
 export type ClerkEvent = { type: string; data: unknown };
@@ -108,7 +111,29 @@ async function onMembershipUpserted(data: unknown): Promise<void> {
     clerkRole: m.role,
     currentTier: existing ? asTier(existing.tier) : null,
   });
-  await upsertMembership({ userId: user.id, firmId: firm.id, role: m.role, tier });
+
+  // appRole is OUR authoritative axis — only set it when first creating the
+  // membership (from the invitation's publicMetadata, else derived from the
+  // Clerk role). On later updates we preserve whatever the owner set in-app.
+  const authz = existing
+    ? {}
+    : initialAuthz(m.role, (m.public_metadata ?? undefined) as Record<string, unknown> | undefined);
+  await upsertMembership({ userId: user.id, firmId: firm.id, role: m.role, tier, ...authz });
+}
+
+function initialAuthz(
+  clerkRole: string,
+  publicMetadata: Record<string, unknown> | undefined,
+): { appRole: AppRole; canSend: boolean; clientScope: string } {
+  const fromInvite = publicMetadata?.appRole;
+  const role: AppRole =
+    typeof fromInvite === 'string'
+      ? asAppRole(fromInvite)
+      : clerkRole.toLowerCase().includes('admin')
+        ? 'owner'
+        : 'staff';
+  const defaults = defaultsForRole(role);
+  return { appRole: role, canSend: defaults.canSend, clientScope: defaults.clientScope };
 }
 
 async function onMembershipRemoved(data: unknown): Promise<void> {

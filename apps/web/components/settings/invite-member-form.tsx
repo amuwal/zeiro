@@ -1,5 +1,6 @@
 'use client';
 
+import { APP_ROLES, roleLabel } from '@zeiro/core';
 import { useActionState } from 'react';
 import { inviteMember } from '@/app/(app)/settings/team-actions';
 import { initialTeamState } from '@/app/(app)/settings/team-state';
@@ -35,9 +36,12 @@ export function InviteMemberForm() {
         <label htmlFor="invite-role" style={labelStyle}>
           役割
         </label>
-        <select id="invite-role" name="role" defaultValue="org:member" style={inputStyle}>
-          <option value="org:member">メンバー</option>
-          <option value="org:admin">所長 (管理者)</option>
+        <select id="invite-role" name="appRole" defaultValue="staff" style={inputStyle}>
+          {APP_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {roleLabel(r)}
+            </option>
+          ))}
         </select>
       </div>
 

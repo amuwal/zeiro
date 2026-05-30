@@ -2,6 +2,26 @@ import { Prisma } from '@prisma/client';
 import type { ClientContractType, ClientSource } from '@zeiro/core';
 import { getPrisma } from '../server';
 
+// Keep client_assignees (the source of truth for assigned-scope visibility) in
+// sync with the denormalized clients.assigned_tax_accountant_id "primary"
+// pointer. Without this, setting a 担当税理士 on a client wouldn't let that user
+// (if Staff/Viewer) actually see the client's inbox.
+export async function syncPrimaryAssignee(
+  firmId: string,
+  clientId: string,
+  userId: string | null,
+): Promise<void> {
+  const prisma = getPrisma();
+  await prisma.clientAssignee.deleteMany({ where: { firmId, clientId, role: 'primary' } });
+  if (userId) {
+    await prisma.clientAssignee.upsert({
+      where: { clientId_userId: { clientId, userId } },
+      update: { role: 'primary' },
+      create: { firmId, clientId, userId, role: 'primary' },
+    });
+  }
+}
+
 export type LinkLineResult = { ok: true } | { ok: false; reason: 'not_found' | 'already_linked' };
 
 export async function linkClientLineUserId(
@@ -105,6 +125,9 @@ export async function createClient(
       },
       select: { id: true },
     });
+    if (input.assignedTaxAccountantId) {
+      await syncPrimaryAssignee(firmId, row.id, input.assignedTaxAccountantId);
+    }
     return { ok: true, id: row.id };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -137,6 +160,9 @@ export async function updateClient(
       ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
     },
   });
+  if (patch.assignedTaxAccountantId !== undefined) {
+    await syncPrimaryAssignee(firmId, id, patch.assignedTaxAccountantId);
+  }
 }
 
 async function patchClientMetadata(

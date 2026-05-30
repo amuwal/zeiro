@@ -1,13 +1,16 @@
 'use server';
 
 import { clerkClient } from '@clerk/nextjs/server';
+import { appRoleSchema, asAppRole, clerkRoleForAppRole, clientScopeSchema } from '@zeiro/core';
 import {
   countAdmins,
+  countOwners,
   getMembership,
   listFirmTree,
   recordAudit,
   setMembershipSupervisor,
   setMembershipTier,
+  updateMembershipAuthz,
   wouldCreateSupervisorCycle,
 } from '@zeiro/db';
 import { revalidatePath } from 'next/cache';
@@ -26,16 +29,13 @@ import {
 } from '@/lib/tree-authz';
 import type { TeamActionState } from './team-state';
 
-const clerkRoleEnum = z.enum(['org:admin', 'org:member']);
-
 const inviteSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
-  role: clerkRoleEnum,
+  appRole: appRoleSchema,
 });
 
 const memberOpSchema = z.object({
   clerkUserId: z.string().trim().min(1),
-  role: clerkRoleEnum.optional(),
 });
 
 const invitationOpSchema = z.object({
@@ -51,17 +51,21 @@ export async function inviteMember(
 
   const parsed = inviteSchema.safeParse({
     email: formData.get('email'),
-    role: formData.get('role'),
+    appRole: formData.get('appRole'),
   });
   if (!parsed.success) return { status: 'error', message: '入力内容を確認してください' };
 
+  // The intended appRole rides on the Clerk invitation's publicMetadata; when
+  // the invitee accepts, the Clerk webhook copies it onto the membership and
+  // clerk-events applies it. Clerk's own role is just the billing-admin mirror.
   try {
     const cc = await clerkClient();
     await cc.organizations.createOrganizationInvitation({
       organizationId: guard.organizationId,
       emailAddress: parsed.data.email,
-      role: parsed.data.role,
+      role: clerkRoleForAppRole(parsed.data.appRole),
       inviterUserId: guard.actorClerkUserId,
+      publicMetadata: { appRole: parsed.data.appRole },
     });
   } catch (e) {
     return { status: 'error', message: extractClerkError(e) };
@@ -72,43 +76,60 @@ export async function inviteMember(
     actorId: guard.ctx.userId,
     inquiryId: null,
     action: 'member.invited',
-    metadata: { email: parsed.data.email, role: parsed.data.role },
+    metadata: { email: parsed.data.email, appRole: parsed.data.appRole },
   });
   revalidatePath('/settings');
   return { status: 'success', message: `${parsed.data.email} に招待を送信しました` };
 }
 
-export async function changeMemberRole(
+const setRoleSchema = z.object({
+  clerkUserId: z.string().trim().min(1),
+  targetUserId: z.string().uuid(),
+  appRole: appRoleSchema,
+  canSend: z.boolean(),
+  clientScope: clientScopeSchema,
+});
+
+// The primary role editor: sets the authoritative appRole + the per-user
+// can_send / client_scope flags, and mirrors owner ⟷ Clerk org:admin. Owner-only.
+export async function setMemberRole(
   _prev: TeamActionState,
   formData: FormData,
 ): Promise<TeamActionState> {
   const guard = await requireAdminFirm();
   if (!guard.ok) return { status: 'error', message: guard.message };
 
-  const parsed = memberOpSchema.safeParse({
+  const parsed = setRoleSchema.safeParse({
     clerkUserId: formData.get('clerkUserId'),
-    role: formData.get('role'),
+    targetUserId: formData.get('targetUserId'),
+    appRole: formData.get('appRole'),
+    canSend: formData.get('canSend') === 'on' || formData.get('canSend') === 'true',
+    clientScope: formData.get('clientScope'),
   });
-  if (!parsed.success || !parsed.data.role) {
-    return { status: 'error', message: '入力内容を確認してください' };
-  }
-  if (parsed.data.clerkUserId === guard.actorClerkUserId) {
-    return { status: 'error', message: '自分自身の権限は変更できません' };
+  if (!parsed.success) return { status: 'error', message: '入力内容を確認してください' };
+
+  const target = await getMembership(parsed.data.targetUserId, guard.ctx.firmId);
+  if (!target) return { status: 'error', message: 'メンバーが見つかりません' };
+
+  if (asAppRole(target.appRole) === 'owner' && parsed.data.appRole !== 'owner') {
+    const owners = await countOwners(guard.ctx.firmId);
+    if (owners <= 1) return { status: 'error', message: '最後の所長は降格できません' };
   }
 
-  const safety = await ensureNotLastAdmin(
-    guard.ctx.firmId,
-    parsed.data.clerkUserId,
-    parsed.data.role,
-  );
-  if (!safety.ok) return { status: 'error', message: safety.message };
+  await updateMembershipAuthz({
+    firmId: guard.ctx.firmId,
+    userId: parsed.data.targetUserId,
+    appRole: parsed.data.appRole,
+    canSend: parsed.data.canSend,
+    clientScope: parsed.data.clientScope,
+  });
 
   try {
     const cc = await clerkClient();
     await cc.organizations.updateOrganizationMembership({
       organizationId: guard.organizationId,
       userId: parsed.data.clerkUserId,
-      role: parsed.data.role,
+      role: clerkRoleForAppRole(parsed.data.appRole),
     });
   } catch (e) {
     return { status: 'error', message: extractClerkError(e) };
@@ -119,10 +140,15 @@ export async function changeMemberRole(
     actorId: guard.ctx.userId,
     inquiryId: null,
     action: 'member.role_changed',
-    metadata: { targetClerkUserId: parsed.data.clerkUserId, newRole: parsed.data.role },
+    metadata: {
+      targetUserId: parsed.data.targetUserId,
+      appRole: parsed.data.appRole,
+      canSend: parsed.data.canSend,
+      clientScope: parsed.data.clientScope,
+    },
   });
   revalidatePath('/settings');
-  return { status: 'success', message: '権限を更新しました' };
+  return { status: 'success', message: '役割を更新しました' };
 }
 
 export async function removeMember(
