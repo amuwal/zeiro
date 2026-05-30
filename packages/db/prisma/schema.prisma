@@ -166,6 +166,7 @@ model Client {
   name                    String
   primaryEmail            String  @map("primary_email") @db.Citext
   lineUserId              String? @map("line_user_id")
+  chatworkRoomId          String? @map("chatwork_room_id")
   contractType            String  @map("contract_type")
   assignedTaxAccountantId String? @map("assigned_tax_accountant_id") @db.Uuid
   notes                   String?
@@ -179,6 +180,7 @@ model Client {
 
   @@unique([firmId, primaryEmail])
   @@unique([firmId, lineUserId])
+  @@unique([firmId, chatworkRoomId])
   @@map("clients")
 }
 

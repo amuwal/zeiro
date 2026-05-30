@@ -17,6 +17,25 @@ export function findClientByLineUserId(firmId: string, lineUserId: string) {
   });
 }
 
+export function findClientByChatworkRoomId(firmId: string, chatworkRoomId: string) {
+  return getPrisma().client.findUnique({
+    where: { firmId_chatworkRoomId: { firmId, chatworkRoomId } },
+  });
+}
+
+// Binds a 顧問先 to its Chatwork room (one room per client). firmId-scoped update
+// so a firm can never touch another firm's client.
+export async function setClientChatworkRoom(
+  firmId: string,
+  clientId: string,
+  chatworkRoomId: string | null,
+): Promise<void> {
+  await getPrisma().client.updateMany({
+    where: { id: clientId, firmId },
+    data: { chatworkRoomId },
+  });
+}
+
 export function getClient(firmId: string, id: string) {
   return getPrisma().client.findFirstOrThrow({ where: { id, firmId } });
 }
