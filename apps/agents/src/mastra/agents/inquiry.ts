@@ -7,6 +7,7 @@ import { computeDeadlinesTool } from '../tools/compute-deadlines';
 import { escalateTool } from '../tools/escalate';
 import { getClientTool } from '../tools/get-client';
 import { getRecentInquiriesTool } from '../tools/get-recent-inquiries';
+import { listReceivedDocumentsTool } from '../tools/list-received-documents';
 import { lookupFreeeBooksTool } from '../tools/lookup-freee-books';
 import { noReplyNeededTool } from '../tools/no-reply-needed';
 import { proposeDraftTool } from '../tools/propose-draft';
@@ -28,6 +29,7 @@ export const inquiryAgent = new Agent({
     getClient: getClientTool,
     getRecentInquiries: getRecentInquiriesTool,
     computeDeadlines: computeDeadlinesTool,
+    listReceivedDocuments: listReceivedDocumentsTool,
     lookupFreeeBooks: lookupFreeeBooksTool,
     proposeDraft: proposeDraftTool,
     escalate: escalateTool,

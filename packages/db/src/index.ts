@@ -16,6 +16,7 @@ export * from './repositories/analytics';
 export * from './repositories/audit';
 export * from './repositories/client';
 export * from './repositories/client-assignees';
+export * from './repositories/client-documents';
 export * from './repositories/client-imports';
 export * from './repositories/client-integration-bindings';
 export * from './repositories/client-mutations';
