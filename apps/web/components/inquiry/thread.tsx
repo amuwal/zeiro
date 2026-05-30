@@ -96,7 +96,7 @@ export function Thread({
           </span>
           <button type="button" className={`thread-suggest-pill suggest-${suggestion.tone}`}>
             <Icon name="spark" size={10} />
-            <b>{suggestion.verb}</b>
+            <b>{suggestion.jp}</b>
             <span className="conf">{Math.round(suggestion.confidence * 100)}%</span>
           </button>
           <AssigneePicker

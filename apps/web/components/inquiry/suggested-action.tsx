@@ -67,22 +67,20 @@ export function SuggestedActionCard({ suggestion }: { suggestion: SuggestionView
   return (
     <div className={`suggest suggest-${s.tone}`}>
       <div className="suggest-head">
-        <span className="suggest-label">SUGGESTED ACTION</span>
+        <span className="suggest-label">推奨アクション</span>
         <span className="suggest-conf">
           <i style={{ width: `${s.confidence * 100}%` }} />
           {Math.round(s.confidence * 100)}%
         </span>
       </div>
-      <div className="suggest-verb">
-        {s.verb} <span className="jp">— {s.jp}</span>
-      </div>
+      <div className="suggest-verb">{s.jp}</div>
       <div className="suggest-reason">{s.reason}</div>
       <div className="suggest-actions">
         <button type="button" className="btn btn-secondary">
           <Icon name="more" size={11} /> 別案
         </button>
         <button type="button" className="btn btn-primary">
-          <Icon name="arrow-right" size={11} /> {s.verb}
+          <Icon name="arrow-right" size={11} /> {s.jp}
         </button>
       </div>
     </div>
