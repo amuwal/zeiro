@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { ClientContractType, ClientSource } from '@zeiro/core';
+import type { ClientContractType, ClientProfile, ClientSource } from '@zeiro/core';
 import { getPrisma } from '../server';
 
 // Keep client_assignees (the source of truth for assigned-scope visibility) in
@@ -165,6 +165,16 @@ export async function updateClient(
   if (patch.assignedTaxAccountantId !== undefined) {
     await syncPrimaryAssignee(firmId, id, patch.assignedTaxAccountantId);
   }
+}
+
+// Persist the tax-context profile under metadata.profile (full-object replace —
+// the edit form submits the complete profile each save).
+export async function setClientProfile(
+  firmId: string,
+  id: string,
+  profile: ClientProfile,
+): Promise<void> {
+  await patchClientMetadata(firmId, id, { profile });
 }
 
 async function patchClientMetadata(

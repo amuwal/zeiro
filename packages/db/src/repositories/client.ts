@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import type { ClientProfile } from '@zeiro/core';
 import { getPrisma } from '../server';
 
 // See inquiry.ts ViewerScope — assigned-only users see only clients they are a
@@ -175,6 +176,7 @@ export type ClientDetail = ClientListRow & {
   createdBy: string | null;
   archivedBy: string | null;
   chatworkRoomId: string | null;
+  profile: ClientProfile | null;
 };
 
 export async function getClientDetail(
@@ -203,6 +205,7 @@ export async function getClientDetail(
       c.metadata->>'archivedBy' AS "archivedBy",
       c.metadata->>'createdAt' AS "createdAt",
       c.metadata->>'createdBy' AS "createdBy",
+      c.metadata->'profile' AS "profile",
       c.notes AS "notes",
       (SELECT COUNT(*)::int FROM inquiries i WHERE i.client_id = c.id) AS "inquiryCount",
       (

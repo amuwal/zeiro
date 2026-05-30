@@ -1,6 +1,10 @@
 'use server';
 
-import { clientContractTypeSchema, clientCreateInputSchema } from '@zeiro/core';
+import {
+  clientContractTypeSchema,
+  clientCreateInputSchema,
+  clientProfileSchema,
+} from '@zeiro/core';
 import {
   archiveClient,
   completeClientImport,
@@ -13,6 +17,7 @@ import {
   markClientImportImporting,
   promoteAllUnmatchedFromSender,
   recordAudit,
+  setClientProfile,
   unarchiveClient,
   updateClient,
 } from '@zeiro/db';
@@ -112,6 +117,28 @@ const updateInputSchema = z.object({
   chatworkRoomId: z.string().max(120).nullable(),
 });
 
+function profileFromForm(formData: FormData) {
+  const num = (v: FormDataEntryValue | null) => {
+    const s = typeof v === 'string' ? v.trim() : '';
+    return s === '' ? undefined : Number(s);
+  };
+  const str = (v: FormDataEntryValue | null) => {
+    const s = typeof v === 'string' ? v.trim() : '';
+    return s === '' ? undefined : s;
+  };
+  const tri = (v: FormDataEntryValue | null) =>
+    v === 'true' ? true : v === 'false' ? false : undefined;
+  return clientProfileSchema.safeParse({
+    fiscalMonth: num(formData.get('fiscalMonth')),
+    entityType: str(formData.get('entityType')),
+    consumptionTax: str(formData.get('consumptionTax')),
+    invoiceRegistered: tri(formData.get('invoiceRegistered')),
+    withholding: tri(formData.get('withholding')),
+    monthlyFee: num(formData.get('monthlyFee')),
+    engagementScope: str(formData.get('engagementScope')),
+  });
+}
+
 export async function updateClientAction(
   _prev: ClientFormState,
   formData: FormData,
@@ -130,6 +157,10 @@ export async function updateClientAction(
   }
 
   await updateClient(firmId, id, parsed.data);
+  const profileParsed = profileFromForm(formData);
+  if (profileParsed.success) {
+    await setClientProfile(firmId, id, profileParsed.data);
+  }
   await recordAudit({
     firmId,
     actorId: userId,
