@@ -49,6 +49,24 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 // autonomous inquiry agent. Returns the same DraftResult shape as the legacy
 // pipeline so the web side doesn't change.
 export async function runInquiry(input: PipelineInput): Promise<DraftResult> {
+  // Degenerate input (empty body — e.g. an attachment-only or malformed mail)
+  // must not crash the triage model call; hand it to a human instead of
+  // leaving the inquiry stuck in "processing".
+  if (!input.body || input.body.trim().length === 0) {
+    const triage: TriageResult = {
+      category: 'その他',
+      urgency: 'medium',
+      confidence: 0,
+      requiresTaxJudgment: false,
+    };
+    return {
+      kind: 'escalate',
+      triage,
+      reason: '本文が空のため自動処理できませんでした。担当者が内容を確認してください。',
+      aiReview: defaultAiReview('human_handoff', 'low', 'empty inquiry body'),
+    };
+  }
+
   const triage = await runTriage(input.body);
 
   const requestContext = new RequestContext<{

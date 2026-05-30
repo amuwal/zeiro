@@ -3,6 +3,9 @@ export const CONTRACT_LABELS: Record<string, string> = {
   spot: '単発',
   prospect: '見込み',
   unverified: '未確認',
+  // legacy/imported tiers kept so they never render raw English
+  premium: 'プレミアム顧問',
+  standard: '顧問契約',
 };
 
 export const CONTRACT_OPTIONS = [
