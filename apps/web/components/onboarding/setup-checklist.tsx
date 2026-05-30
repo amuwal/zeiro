@@ -1,6 +1,7 @@
 import {
   findIntegration,
   getFirm,
+  getInboxCounts,
   listClientsRich,
   listFirmUsers,
   listKnowledgeChunks,
@@ -34,6 +35,7 @@ import { requireFirmContext } from '@/lib/firm-context';
 type Props = {
   firmId?: string;
   inboundAddress?: string;
+  inquiryReceived?: boolean;
   clientCount?: number;
   memberCount?: number;
   knowledgeCount?: number;
@@ -52,6 +54,7 @@ type StepState = {
 
 type SetupData = {
   inboundAddress: string;
+  inquiryReceived: boolean;
   clientCount: number;
   memberCount: number;
   knowledgeCount: number;
@@ -59,10 +62,19 @@ type SetupData = {
 };
 
 function fromProps(props: Props): SetupData | null {
-  const { firmId, inboundAddress, clientCount, memberCount, knowledgeCount, freeeActive } = props;
+  const {
+    firmId,
+    inboundAddress,
+    inquiryReceived,
+    clientCount,
+    memberCount,
+    knowledgeCount,
+    freeeActive,
+  } = props;
   if (
     firmId === undefined ||
     inboundAddress === undefined ||
+    inquiryReceived === undefined ||
     clientCount === undefined ||
     memberCount === undefined ||
     knowledgeCount === undefined ||
@@ -70,7 +82,7 @@ function fromProps(props: Props): SetupData | null {
   ) {
     return null;
   }
-  return { inboundAddress, clientCount, memberCount, knowledgeCount, freeeActive };
+  return { inboundAddress, inquiryReceived, clientCount, memberCount, knowledgeCount, freeeActive };
 }
 
 async function resolveData(props: Props): Promise<SetupData> {
@@ -78,15 +90,17 @@ async function resolveData(props: Props): Promise<SetupData> {
   if (fromCaller) return fromCaller;
 
   const ctx = await requireFirmContext();
-  const [firm, clients, members, chunks, freee] = await Promise.all([
+  const [firm, clients, members, chunks, freee, counts] = await Promise.all([
     getFirm(ctx.firmId),
     listClientsRich(ctx.firmId),
     listFirmUsers(ctx.firmId),
     listKnowledgeChunks(ctx.firmId),
     findIntegration(ctx.firmId, 'freee'),
+    getInboxCounts(ctx.firmId),
   ]);
   return {
     inboundAddress: firm.inboundAddress,
+    inquiryReceived: counts.all > 0,
     clientCount: clients.length,
     memberCount: members.length,
     knowledgeCount: chunks.length,
@@ -102,9 +116,9 @@ export async function SetupChecklist(props: Props) {
       num: 1,
       icon: 'inbox',
       title: '受信アドレスを共有',
-      sub: '顧問先からの問い合わせをこのアドレスへ転送',
+      sub: '顧問先からのメールをこのアドレスへ転送（最初の1通で完了）',
       href: '/settings',
-      done: true,
+      done: data.inquiryReceived,
     },
     {
       num: 2,
@@ -150,12 +164,10 @@ export async function SetupChecklist(props: Props) {
         <span className="text-[11px] font-medium text-muted">{completed}/5 完了</span>
       </header>
 
-      {steps[0]?.done && (
-        <div className="flex items-center justify-between gap-3 border-b border-line bg-bg-2 px-4 py-2.5">
-          <code className="truncate font-mono text-[12px] text-ink-2">{data.inboundAddress}</code>
-          <CopyButton text={data.inboundAddress} />
-        </div>
-      )}
+      <div className="flex items-center justify-between gap-3 border-b border-line bg-bg-2 px-4 py-2.5">
+        <code className="truncate font-mono text-[12px] text-ink-2">{data.inboundAddress}</code>
+        <CopyButton text={data.inboundAddress} />
+      </div>
 
       <ul className="flex flex-col">
         {steps.map((step) => (

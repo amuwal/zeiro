@@ -20,6 +20,7 @@ import { PendingLineLinks } from '@/components/settings/pending-line-links';
 import { TeamTree } from '@/components/settings/team-tree';
 import { TombstoneSection } from '@/components/settings/tombstone-section';
 import { WebChannelSection } from '@/components/settings/web-channel-section';
+import { ConfidentialityTrust } from '@/components/trust/confidentiality';
 import { env } from '@/lib/env';
 import { requireFirmContext } from '@/lib/firm-context';
 import { asTier } from '@/lib/team';
@@ -104,6 +105,8 @@ export default async function SettingsPage({
           <div className="kb-sub">事務所の連携・チャネル設定 (所長のみ編集可)</div>
         </div>
       </div>
+
+      <ConfidentialityTrust />
 
       <EmailInboundSection
         inboundAddress={firm.inboundAddress}
