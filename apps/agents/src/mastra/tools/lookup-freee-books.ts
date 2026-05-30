@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
-import { TenantIsolationError } from '@zeiro/core/errors';
 import { maskMyNumber } from '@zeiro/core';
+import { TenantIsolationError } from '@zeiro/core/errors';
+import { recordAudit } from '@zeiro/db';
 import {
   ClientBindingMissingError,
   FreeeApiClient,
@@ -10,6 +11,21 @@ import {
   TokenRefreshError,
 } from '@zeiro/integrations';
 import { z } from 'zod';
+
+// Agent-driven freee reads run as the system actor; we audit WHO (system, on
+// behalf of the firm) accessed WHICH client's books and HOW MUCH — never the
+// transaction contents (税理士法 §38).
+const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
+
+async function auditAccess(firmId: string, clientId: string, scope: string, rows: number) {
+  await recordAudit({
+    firmId,
+    actorId: SYSTEM_ACTOR,
+    inquiryId: null,
+    action: 'integration.freee_data_accessed',
+    metadata: { provider: 'freee', clientId, scope, rows },
+  });
+}
 
 const inputSchema = z.object({
   scope: z.enum(['recent_transactions', 'partners']),
@@ -53,6 +69,7 @@ export const lookupFreeeBooksTool = createTool({
           daysBack: input.daysBack ?? 90,
           limit: input.limit ?? 10,
         });
+        await auditAccess(firmId, clientId, 'recent_transactions', deals.length);
         return {
           ok: true,
           data: { deals: deals.map(redactDeal) },
@@ -62,9 +79,11 @@ export const lookupFreeeBooksTool = createTool({
       // partners scope
       if (input.partnerNameContains) {
         const partner = await client.findPartnerByName(input.partnerNameContains);
+        await auditAccess(firmId, clientId, 'partner_search', partner ? 1 : 0);
         return { ok: true, data: { partner: partner ? redactPartner(partner) : null } };
       }
       const partners = await client.listPartners({ limit: input.limit ?? 10 });
+      await auditAccess(firmId, clientId, 'partners', partners.length);
       return { ok: true, data: { partners: partners.map(redactPartner) } };
     } catch (e) {
       return interpretError(e);

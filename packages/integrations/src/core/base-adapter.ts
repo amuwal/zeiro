@@ -2,6 +2,7 @@ import {
   type IntegrationRow,
   findIntegration,
   markIntegrationStatus,
+  updateIntegrationMetadata,
   updateIntegrationTokens,
   upsertIntegration,
 } from '@zeiro/db';
@@ -49,7 +50,20 @@ export abstract class BaseIntegrationAdapter {
       url.searchParams.set('code_challenge', args.codeChallenge);
       url.searchParams.set('code_challenge_method', 'S256');
     }
+    for (const [k, v] of Object.entries(this.config.extraAuthParams ?? {})) {
+      url.searchParams.set(k, v);
+    }
     return url.toString();
+  }
+
+  // Re-fetch provider-side metadata (e.g. the 事業所 list) for an already-
+  // connected firm without re-doing OAuth. Refreshes the token if needed.
+  async refreshMetadata(firmId: string): Promise<Record<string, unknown>> {
+    const accessToken = await this.getAccessToken(firmId);
+    const metadata = await this.safeFetchMetadata({ accessToken });
+    const row = await this.requireIntegration(firmId);
+    await updateIntegrationMetadata(firmId, row.id, metadata);
+    return metadata;
   }
 
   generatePkcePair(): { verifier: string; challenge: string } {

@@ -14,6 +14,9 @@ export class FreeeAdapter extends BaseIntegrationAdapter {
     scope: 'read',
     usesPkce: true,
     refreshSafetyWindowSec: 300,
+    // Force freee's 事業所 picker so the firm explicitly chooses which company
+    // to grant — required when an account can see multiple 事業所.
+    extraAuthParams: { prompt: 'select_company' },
   };
 
   protected readonly clientId: string;

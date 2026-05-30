@@ -9,8 +9,14 @@ import { assertMutableInquiry } from './state-guard';
 const inputSchema = z.object({
   relevantSourceIds: z
     .array(z.string().uuid())
-    .min(1)
+    .default([])
     .describe('search-knowledge で取得した hits のうち、引用根拠として使う chunk の id 配列'),
+  freeeFacts: z
+    .array(z.object({ label: z.string(), value: z.string() }))
+    .default([])
+    .describe(
+      'lookup-freee-books で取得した取引・取引先データのうち、回答の根拠にする事実。例: {label:"2026年3月 経費合計", value:"¥1,234,567"}。ここに渡すと freee データが引用付きで下書きに反映される。',
+    ),
   instructionForDrafter: z
     .string()
     .min(1)
@@ -46,12 +52,31 @@ export const proposeDraftTool = createTool({
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing');
 
-    const chunks = await getKnowledgeChunksByIds(firmId, input.relevantSourceIds);
-    if (chunks.length === 0) {
+    const sourceIds = input.relevantSourceIds ?? [];
+    const facts = input.freeeFacts ?? [];
+    const chunks = sourceIds.length > 0 ? await getKnowledgeChunksByIds(firmId, sourceIds) : [];
+    if (sourceIds.length > 0 && chunks.length === 0) {
       // The agent referenced ids that don't resolve in this firm. Fail loud
       // so the agent's next turn can switch to escalate rather than a draft
       // grounded on nothing.
       throw new Error('relevantSourceIds did not match any accessible knowledge chunk');
+    }
+
+    // freee facts become first-class citable documents alongside knowledge
+    // chunks, so a draft that quotes the client's accounting data carries a
+    // verifiable citation (source: "freee会計データ") — not an un-grounded number.
+    const freeeDocs = facts.map((f) => ({
+      source: 'freee会計データ',
+      content: `${f.label}: ${f.value}`,
+    }));
+    const documents = [
+      ...chunks.map((c) => ({ source: c.source, content: c.content })),
+      ...freeeDocs,
+    ];
+    if (documents.length === 0) {
+      // Nothing to ground on — refuse rather than hallucinate. The agent's
+      // next turn should escalate.
+      throw new Error('propose-draft called with neither knowledge sources nor freee facts');
     }
 
     const subject = ctx?.requestContext?.get('subject');
@@ -64,7 +89,7 @@ export const proposeDraftTool = createTool({
       apiKey,
       systemPrompt: draftPrompt,
       userMessage,
-      documents: chunks.map((c) => ({ source: c.source, content: c.content })),
+      documents,
     });
 
     return {

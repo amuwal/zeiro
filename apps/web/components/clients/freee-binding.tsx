@@ -3,6 +3,7 @@ import {
   unbindClientFromFreee,
 } from '@/app/(app)/clients/[id]/freee-binding-actions';
 import { Icon } from '@/components/ui/icon';
+import { FreeeBindingTest } from './freee-binding-test';
 
 type CompanyMini = { id: string; name: string; role: string };
 
@@ -57,6 +58,8 @@ export function FreeeBindingCard({ clientId, isFirmConnected, companies, binding
           </form>
         </div>
       )}
+
+      {binding && <FreeeBindingTest clientId={clientId} />}
 
       <form action={bindClientToFreee} className="cl-freee-bind-form">
         <input type="hidden" name="clientId" value={clientId} />

@@ -6,6 +6,9 @@ export type AdapterConfig = {
   scope: string;
   usesPkce: boolean;
   refreshSafetyWindowSec: number;
+  // Extra static query params appended to the authorization URL. freee uses
+  // `prompt=select_company` to force the 事業所 picker on every connect.
+  extraAuthParams?: Record<string, string>;
 };
 
 export type TokenSet = {

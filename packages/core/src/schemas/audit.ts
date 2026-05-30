@@ -29,8 +29,14 @@ export const auditActionEnum = z.enum([
   'integration.oauth_started',
   'integration.connected',
   'integration.disconnected',
+  'integration.refreshed',
   'integration.binding_created',
   'integration.binding_removed',
+  'integration.freee_data_accessed',
+  'member.tier_changed',
+  'member.supervisor_changed',
+  'member.capabilities_changed',
+  'client.assignee_changed',
 ]);
 export type AuditAction = z.infer<typeof auditActionEnum>;
 

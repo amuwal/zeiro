@@ -1,7 +1,7 @@
 'use client';
 
+import { disconnectFreee, refreshFreeeCompanies } from '@/app/(app)/settings/freee-actions';
 import { Icon } from '@/components/ui/icon';
-import { disconnectFreee } from '@/app/(app)/settings/freee-actions';
 
 type CompanyMini = { id: string; name: string; role: string };
 
@@ -129,6 +129,11 @@ function ConnectedView({
             <Icon name="alert" size={13} /> 再連携が必要
           </button>
         ))}
+        <form action={async () => refreshFreeeCompanies()}>
+          <button type="submit" className="freee-reauth-btn">
+            <Icon name="spark" size={13} /> 事業所リストを更新
+          </button>
+        </form>
         <form action={async () => disconnectFreee()}>
           <button type="submit" className="freee-disconnect-btn">
             連携を解除

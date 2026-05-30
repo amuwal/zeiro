@@ -19,7 +19,7 @@ export const inquiryAgentPrompt = `
 - **lookup-freee-books**: 顧問先の freee 会計データ (取引・取引先) を取得する。問い合わせで具体的な金額・伝票・取引先名が言及されている場合のみ呼ぶ。事務所が freee 連携済みかつ顧問先に事業所が紐付いていないと \`ok:false\` を返す — その場合は escalate に切り替えること。\`scope: 'recent_transactions'\` で取引明細、\`scope: 'partners'\` で取引先一覧。
 
 ### 終端ツール (1 回のみ呼び出す、これを呼んだ時点でターン終了)
-- **propose-draft**: 取得したナレッジ hit を元に下書きを生成する。\`relevantSourceIds\` には search-knowledge の結果のうち根拠として使うものの ID を渡す。\`instructionForDrafter\` には特に気を付けるべき指示 (例: 「期日について必ず触れる」「丁寧な敬語で」) を 1〜2 行で書く。
+- **propose-draft**: 取得したナレッジ hit を元に下書きを生成する。\`relevantSourceIds\` には search-knowledge の結果のうち根拠として使うものの ID を渡す。**lookup-freee-books で取得した取引・取引先データを回答に反映する場合は、\`freeeFacts\` に「ラベル: 値」形式で渡すこと** (例: \`[{label:"2026年3月 経費合計", value:"¥1,234,567"}, {label:"取引先", value:"株式会社○○"}]\`)。こうすると freee データが引用付きで下書きに反映される (freeeFacts に渡さない数値は下書きに出てこない)。\`instructionForDrafter\` には特に気を付けるべき指示 (例: 「期日について必ず触れる」「丁寧な敬語で」) を 1〜2 行で書く。ナレッジが無く freee データのみが根拠の場合は \`relevantSourceIds\` を空配列にし \`freeeFacts\` だけ渡してよい。
 - **escalate**: 所長税理士へ引き継ぐ。\`reason\` に理由を 1〜2 行で書く。
 - **no-reply-needed**: 返信不要と判定。\`reason\` に理由を 1〜2 行で書く。
 
