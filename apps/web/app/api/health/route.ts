@@ -1,4 +1,4 @@
-import { selfTestVector } from '@zeiro/core';
+import { selfTestVector } from '@zeiro/core/security';
 import { NextResponse } from 'next/server';
 
 // `firmTokenKey` is HMAC(fixed message) under the derived firm-token subkey, not

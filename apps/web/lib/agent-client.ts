@@ -1,4 +1,5 @@
-import { type DraftResult, draftResultSchema, FIRM_TOKEN_HEADER, signFirmToken } from '@zeiro/core';
+import { type DraftResult, draftResultSchema } from '@zeiro/core';
+import { FIRM_TOKEN_HEADER, signFirmToken } from '@zeiro/core/security';
 import { z } from 'zod';
 import { env } from './env';
 

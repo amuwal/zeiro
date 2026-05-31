@@ -3,13 +3,8 @@ import './lib/sentry';
 import './lib/integrations-bootstrap';
 import { serve } from '@hono/node-server';
 import { RequestContext } from '@mastra/core/di';
-import {
-  chatPostSchema,
-  FIRM_TOKEN_HEADER,
-  selfTestVector,
-  TenantIsolationError,
-  verifyFirmTokenFor,
-} from '@zeiro/core';
+import { chatPostSchema, TenantIsolationError } from '@zeiro/core';
+import { FIRM_TOKEN_HEADER, selfTestVector, verifyFirmTokenFor } from '@zeiro/core/security';
 import { getInquiry } from '@zeiro/db';
 import { Hono } from 'hono';
 import { loadChatHistory } from './lib/chat-history';

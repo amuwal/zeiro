@@ -1,4 +1,4 @@
-import { FIRM_TOKEN_HEADER, signFirmToken } from '@zeiro/core';
+import { FIRM_TOKEN_HEADER, signFirmToken } from '@zeiro/core/security';
 import { ctxCan } from '@/lib/authz';
 import { env } from '@/lib/env';
 import { requireFirmContext } from '@/lib/firm-context';

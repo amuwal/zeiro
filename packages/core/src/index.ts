@@ -20,6 +20,8 @@ export * from './schemas/client';
 export * from './schemas/import';
 export * from './schemas/inquiry';
 export * from './schemas/tenant';
-export * from './security/firm-token';
-export * from './security/hmac-key';
+// ./security/* (firm-token, hmac-key) is intentionally NOT re-exported here — it
+// imports node:crypto, which is unsupported in the Edge runtime (Next middleware
+// / edge instrumentation) and bloats client bundles. Import it from the
+// Node-only subpath '@zeiro/core/security'.
 export * from './tax/deadlines';

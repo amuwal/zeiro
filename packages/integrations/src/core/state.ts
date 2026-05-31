@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { signHmac } from '@zeiro/core';
+import { signHmac } from '@zeiro/core/security';
 
 export type OAuthState = {
   provider: string;
