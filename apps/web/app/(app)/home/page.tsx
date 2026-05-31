@@ -13,23 +13,16 @@ import { resolveWindow } from '@/lib/analytics-window';
 import { ctxCan, viewerScope } from '@/lib/authz';
 import { buildKpiCards } from '@/lib/dashboard-kpis';
 import { requireFirmContext } from '@/lib/firm-context';
-import { CATEGORY_TO_ID, shortTime } from '@/lib/inquiry-mappers';
+import { CATEGORY_TO_ID, readTriage, shortTime } from '@/lib/inquiry-mappers';
 
 const ACTIONABLE = new Set(['pending', 'drafted', 'escalated', 'unmatched']);
 const PRIORITY: Record<string, number> = { escalated: 0, unmatched: 0, drafted: 1, pending: 2 };
 
-function analysisOf(a: unknown): Record<string, unknown> {
-  return (a ?? {}) as Record<string, unknown>;
-}
-function triageOf(a: unknown): Record<string, unknown> {
-  return (analysisOf(a).triage ?? {}) as Record<string, unknown>;
-}
 function isUrgent(a: unknown): boolean {
-  return triageOf(a).urgency === 'high' || analysisOf(a).urgency === 'high';
+  return readTriage(a).urgency === 'high';
 }
 function catId(a: unknown): string {
-  const jp = triageOf(a).category;
-  return (typeof jp === 'string' ? CATEGORY_TO_ID[jp] : undefined) ?? 'other';
+  return CATEGORY_TO_ID[readTriage(a).category] ?? 'other';
 }
 
 export default async function HomePage() {

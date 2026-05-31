@@ -15,19 +15,20 @@ const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 export async function processDraft(firmId: string, inquiryId: string): Promise<void> {
   const inquiry = await getInquiry(firmId, inquiryId);
   if (!inquiry) throw new Error(`inquiry ${inquiryId} not found in firm ${firmId}`);
-  if (!inquiry.client) {
-    throw new Error(
-      `inquiry ${inquiryId} has no client — must be promoted from unmatched before drafting`,
-    );
-  }
 
   const threadHistory = await assembleThreadHistory(firmId, inquiryId);
 
+  // Clientless inquiries (the onboarding test inquiry, or an as-yet-unmatched
+  // sender) are still draftable: the agent accepts a null clientId, grounds on
+  // knowledge alone, and escalates when it can't. Only pull client notes when
+  // there's a matched client.
   const result = await runInquiryPipeline({
     firmId,
     inquiryId,
     clientId: inquiry.clientId,
-    clientNotes: await readClientNotes(firmId, inquiry.client.primaryEmail),
+    clientNotes: inquiry.client
+      ? await readClientNotes(firmId, inquiry.client.primaryEmail)
+      : null,
     subject: inquiry.subject,
     body: inquiry.body,
     ...(threadHistory.length > 0 ? { threadHistory } : {}),

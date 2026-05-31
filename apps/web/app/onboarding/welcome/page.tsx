@@ -3,6 +3,8 @@ import { findFirmByClerkOrgId } from '@zeiro/db';
 import { redirect } from 'next/navigation';
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard';
 import { PollForFirm } from '@/components/onboarding/poll-for-firm';
+import { ctxCan } from '@/lib/authz';
+import { getFirmContext } from '@/lib/firm-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,12 @@ export default async function WelcomePage() {
       </main>
     );
   }
+
+  // Only owners can complete onboarding (saveFirmProfileAction requires
+  // member.manage). A non-owner who lands here (e.g. invited before the owner
+  // finished) would dead-end on an owner-only form, so send them into the app.
+  const ctxResult = await getFirmContext();
+  if (ctxResult.ok && !ctxCan(ctxResult.ctx, 'member.manage')) redirect('/home');
 
   // First-run only — once finished, /onboarding/welcome just bounces to the app.
   const settings = (firm.settings ?? {}) as Record<string, unknown>;

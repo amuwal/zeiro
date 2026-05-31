@@ -4,7 +4,7 @@ import type { InboxItemView } from '@/components/inquiry/inbox-list';
 import { InboxShell } from '@/components/inquiry/shell';
 import { viewerScope } from '@/lib/authz';
 import { requireFirmContext } from '@/lib/firm-context';
-import { CATEGORY_TO_ID, normalizeChannel, shortTime } from '@/lib/inquiry-mappers';
+import { CATEGORY_TO_ID, normalizeChannel, readTriage, shortTime } from '@/lib/inquiry-mappers';
 
 export default async function InboxLayout({ children }: { children: ReactNode }) {
   const ctx = await requireFirmContext();
@@ -17,11 +17,9 @@ export default async function InboxLayout({ children }: { children: ReactNode })
   ]);
 
   const items: InboxItemView[] = threads.map((i) => {
-    const analysis = (i.analysis ?? {}) as Record<string, unknown>;
-    const triage = (analysis.triage ?? {}) as Record<string, unknown>;
-    const categoryJp = typeof triage.category === 'string' ? triage.category : 'その他';
-    const catId = CATEGORY_TO_ID[categoryJp] ?? 'other';
-    const confidence = typeof triage.confidence === 'number' ? triage.confidence : 0.5;
+    const triage = readTriage(i.analysis);
+    const catId = CATEGORY_TO_ID[triage.category] ?? 'other';
+    const confidence = triage.confidence;
     return {
       id: i.id,
       channel: normalizeChannel(i.channel),

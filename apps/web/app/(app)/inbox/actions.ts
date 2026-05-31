@@ -19,7 +19,6 @@ import { ctxCan, requireCan, viewerScope } from '@/lib/authz';
 import type { FirmContext } from '@/lib/firm-context';
 import { requireFirmContext } from '@/lib/firm-context';
 import { inngest } from '@/lib/inngest/client';
-import { processDraft } from '@/lib/process-draft';
 import { sendDraft } from '@/lib/send-draft';
 
 // Object-level scope check: an assigned-scope user must not act on an inquiry
@@ -41,11 +40,20 @@ export async function markInquiryReadAction(inquiryId: string): Promise<void> {
   revalidatePath('/home');
 }
 
-/** 再生成 — re-run pipeline. */
+/** 再生成 — re-run the pipeline off the request thread via Inngest (same path
+ * as inbound + promote). Running it inline blocked on the up-to-90s agent loop
+ * and surfaced any failure as an opaque Server Action error; enqueuing lets the
+ * composer poll while status is `pending` and routes failures through
+ * draftInquiryFn.onFailure. */
 export async function regenerateDraftAction(inquiryId: string): Promise<void> {
   const ctx = await requireCan('inquiry.draft');
   await requireVisibleInquiry(ctx, inquiryId);
-  await processDraft(ctx.firmId, inquiryId);
+  await setInquiryStatus(ctx.firmId, inquiryId, 'pending');
+  await inngest.send({
+    name: 'inquiry.queued',
+    data: { firmId: ctx.firmId, inquiryId },
+    id: `inquiry-regen-${inquiryId}-${Date.now()}`,
+  });
   revalidatePath(`/inbox/${inquiryId}`);
 }
 

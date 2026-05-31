@@ -43,12 +43,16 @@ export function OnboardingWizard({
   // calling the action directly and advancing here always works.
   const handleSave = (formData: FormData) => {
     startSave(async () => {
-      const res = await saveFirmProfileAction(formData);
-      if (res.ok) {
-        setError(null);
-        setStep([1, 1]);
-      } else {
-        setError(res.error);
+      try {
+        const res = await saveFirmProfileAction(formData);
+        if (res.ok) {
+          setError(null);
+          setStep([1, 1]);
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError('保存に失敗しました。時間をおいて再度お試しください。');
       }
     });
   };

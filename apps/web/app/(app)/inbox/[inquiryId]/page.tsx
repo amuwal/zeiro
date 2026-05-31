@@ -16,6 +16,7 @@ import {
   formatElapsed,
   formatTime,
   mapCitationsToSources,
+  readTriage,
   shortTime,
   toClientTab,
   toInitials,
@@ -38,7 +39,7 @@ export default async function InquiryDetailPage({
   const clientDetail = inquiry.clientId ? await getClientDetail(firmId, inquiry.clientId) : null;
 
   const inqAnalysis = (inquiry.analysis ?? {}) as Record<string, unknown>;
-  const inqTriage = (inqAnalysis.triage ?? {}) as Record<string, unknown>;
+  const inqTriage = readTriage(inquiry.analysis);
   const inqAiReview = (inqAnalysis.aiReview ?? {}) as Record<string, unknown>;
   const senderName = inquiry.client?.name ?? inquiry.unmatchedSender ?? 'Unknown';
 

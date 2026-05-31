@@ -11,6 +11,30 @@ export const CATEGORY_TO_ID: Record<string, InboxItemView['category']> = {
   その他: 'other',
 };
 
+export type TriageView = {
+  category: string;
+  confidence: number;
+  urgency: string;
+  requiresTaxJudgment: boolean;
+};
+
+// The inquiry `analysis` JSONB is written FLAT by the pipeline (process-draft.ts
+// analysisFromResult + lib/inngest onFailure both emit { category, confidence,
+// urgency, ... } at the top level). Read it flat here; the nested `triage.*`
+// form is only a fallback for any legacy rows. The defaults apply solely to
+// pre-draft (empty) analysis — once drafted, the real model values show.
+export function readTriage(analysis: unknown): TriageView {
+  const a = (analysis ?? {}) as Record<string, unknown>;
+  const t =
+    a.triage && typeof a.triage === 'object' ? (a.triage as Record<string, unknown>) : a;
+  return {
+    category: typeof t.category === 'string' ? t.category : 'その他',
+    confidence: typeof t.confidence === 'number' ? t.confidence : 0.5,
+    urgency: typeof t.urgency === 'string' ? t.urgency : 'medium',
+    requiresTaxJudgment: t.requiresTaxJudgment === true,
+  };
+}
+
 export function normalizeChannel(raw: string | null | undefined): InboxItemView['channel'] {
   switch (raw) {
     case 'email':
