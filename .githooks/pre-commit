@@ -1,0 +1,17 @@
+#!/bin/sh
+# Blocks committing secrets — the team's recurring failure mode is committing a
+# real .env. Scans ONLY staged changes (fast). Installed via the root package.json
+# `prepare` script (git config core.hooksPath .githooks). Requires gitleaks:
+#   brew install gitleaks   (https://github.com/gitleaks/gitleaks)
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks git --staged --redact --no-banner; then
+    echo ""
+    echo "✗ gitleaks found a potential secret in staged changes — commit blocked."
+    echo "  Remove the secret (use env vars / a secret store). If it's a genuine"
+    echo "  false positive, annotate the line with: # gitleaks:allow"
+    exit 1
+  fi
+else
+  echo "⚠ gitleaks not installed — skipping the staged-secret scan."
+  echo "  Install it so this guard works: brew install gitleaks"
+fi
