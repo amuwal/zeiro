@@ -165,7 +165,9 @@ describe('get exports refuse cross-firm ids', () => {
 
   it('getClient: A cannot read B client by id', async () => {
     expect(await getClient(A.firmId, A.clientId)).not.toBeNull();
-    expect(await getClient(A.firmId, B.clientId)).toBeNull();
+    // getClient uses findFirstOrThrow, so a cross-firm read REJECTS (not null)
+    // — that rejection is itself the isolation guarantee.
+    await expect(getClient(A.firmId, B.clientId)).rejects.toThrow();
   });
 
   it('getClientDetail: A cannot read B client by id', async () => {

@@ -289,6 +289,14 @@ export async function teardownFirms(firmIds: string[]): Promise<void> {
   // inquiry_reads + audit_events have no Prisma cascade on the firm relation in
   // every case, so clear them explicitly first.
   await prisma.inquiryRead.deleteMany({ where: { firmId: { in: firmIds } } });
-  await prisma.auditEvent.deleteMany({ where: { firmId: { in: firmIds } } });
+  // audit_events is append-only in prod (a trigger blocks DELETE). This is a
+  // disposable test DB, so drop the seeded rows by disabling the guard for the
+  // teardown only, then restoring it.
+  await prisma.$executeRawUnsafe('ALTER TABLE audit_events DISABLE TRIGGER USER');
+  try {
+    await prisma.auditEvent.deleteMany({ where: { firmId: { in: firmIds } } });
+  } finally {
+    await prisma.$executeRawUnsafe('ALTER TABLE audit_events ENABLE TRIGGER USER');
+  }
   await prisma.firm.deleteMany({ where: { id: { in: firmIds } } });
 }
