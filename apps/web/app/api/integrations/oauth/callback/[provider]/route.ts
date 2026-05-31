@@ -2,6 +2,7 @@ import { recordAudit } from '@zeiro/db';
 import { completeOAuthFlow, registerIntegrations } from '@zeiro/integrations';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
+import { requireFirmContext } from '@/lib/firm-context';
 
 registerIntegrations(env);
 
@@ -32,7 +33,12 @@ export async function GET(
   }
 
   try {
-    const integration = await completeOAuthFlow({ code, state });
+    // The callback runs inside the firm's authenticated session. Bind the grant
+    // to THIS firm: completeOAuthFlow rejects unless the HMAC-verified state
+    // firmId equals the session firmId, so a tampered/replayed state can't write
+    // one firm's OAuth tokens onto another firm's integration row.
+    const { firmId } = await requireFirmContext();
+    const integration = await completeOAuthFlow({ code, state, expectedFirmId: firmId });
     await recordAudit({
       firmId: integration.firmId,
       actorId: '00000000-0000-0000-0000-000000000000',

@@ -20,4 +20,6 @@ export * from './schemas/client';
 export * from './schemas/import';
 export * from './schemas/inquiry';
 export * from './schemas/tenant';
+export * from './security/firm-token';
+export * from './security/hmac-key';
 export * from './tax/deadlines';

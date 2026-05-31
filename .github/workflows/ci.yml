@@ -1,0 +1,67 @@
+# Tenant-isolation is the ship-blocking 守秘義務 (税理士法 §38) guarantee. Both
+# halves run here and BOTH must be green to merge:
+#   - check:isolation — the static AST gate (necessary, not sufficient)
+#   - @zeiro/db test  — the runtime contract suite against a real pgvector
+#     Postgres (CLAUDE.md: no DB mocks), which seeds two firms and asserts no
+#     cross-firm row is ever observed or mutated. This is the layer that catches
+#     leaks the static gate can't (e.g. an unguarded by-id mutation).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @zeiro/db db:generate
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+  tenant-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: zeiro
+          POSTGRES_PASSWORD: zeiro
+          POSTGRES_DB: zeiro_dev
+        ports:
+          - 6432:5432
+        options: >-
+          --health-cmd "pg_isready -U zeiro -d zeiro_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://zeiro:zeiro@localhost:6432/zeiro_dev
+      # CI-only test key (64 hex). Not a production secret; the contract tests
+      # need it because the firm-token HMAC derives from ENCRYPTION_KEY.
+      ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @zeiro/db db:generate
+      # Static gate: necessary, not sufficient.
+      - run: pnpm check:isolation
+      # Runtime contract suite: the real enforcement. Requires a live Postgres.
+      - run: pnpm --filter @zeiro/db db:deploy
+      - run: pnpm --filter @zeiro/db test

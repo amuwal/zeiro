@@ -90,6 +90,11 @@ export async function runInquiry(input: PipelineInput): Promise<DraftResult> {
     result = await withTimeout(
       inquiryAgent.generate(userMessage, {
         requestContext,
+        // Mastra-schema isolation: `resource` is the firmId, and the agent's
+        // thread (which stores raw email bodies in the `mastra` schema) is
+        // recalled only by {thread, resource}. input.firmId here is the
+        // token-VERIFIED firmId (server.ts overwrites the body value with the
+        // signed claim), so no request can plant or read another firm's thread.
         memory: {
           thread: input.inquiryId ?? `transient:${Date.now()}`,
           resource: input.firmId,

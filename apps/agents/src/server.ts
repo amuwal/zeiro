@@ -3,7 +3,13 @@ import './lib/sentry';
 import './lib/integrations-bootstrap';
 import { serve } from '@hono/node-server';
 import { RequestContext } from '@mastra/core/di';
-import { chatPostSchema } from '@zeiro/core';
+import {
+  chatPostSchema,
+  FIRM_TOKEN_HEADER,
+  selfTestVector,
+  TenantIsolationError,
+  verifyFirmTokenFor,
+} from '@zeiro/core';
 import { getInquiry } from '@zeiro/db';
 import { Hono } from 'hono';
 import { loadChatHistory } from './lib/chat-history';
@@ -33,7 +39,17 @@ const PORT = Number(process.env.PORT ?? 6002);
 
 const app = new Hono();
 
-app.get('/api/health', (c) => c.json({ ok: true }));
+// `firmTokenKey` MUST equal the web service's /api/health value — a mismatch
+// means a divergent ENCRYPTION_KEY, which silently 401s every draft + chat.
+app.get('/api/health', (c) => {
+  let firmTokenKey: string | null;
+  try {
+    firmTokenKey = selfTestVector('firm-token');
+  } catch {
+    firmTokenKey = null;
+  }
+  return c.json({ ok: true, firmTokenKey });
+});
 
 app.post('/api/inquiries/run', async (c) => {
   const body = await c.req.json().catch(() => null);
@@ -44,8 +60,21 @@ app.post('/api/inquiries/run', async (c) => {
   if (!parsed.success) {
     return c.json({ error: 'invalid input', issues: parsed.error.issues }, 400);
   }
+  // The body-supplied firmId is untrusted. Verify the signed token and derive
+  // firmId FROM it; reject if the body tried to act on a different firm.
+  let firmId: string;
   try {
-    const result = await runInquiry(parsed.data);
+    const claims = verifyFirmTokenFor(c.req.header(FIRM_TOKEN_HEADER), {
+      firmId: parsed.data.firmId,
+      ...(parsed.data.inquiryId ? { inquiryId: parsed.data.inquiryId } : {}),
+    });
+    firmId = claims.firmId;
+  } catch (error) {
+    if (error instanceof TenantIsolationError) return c.json({ error: error.message }, 401);
+    throw error;
+  }
+  try {
+    const result = await runInquiry({ ...parsed.data, firmId });
     return c.json({ result });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -57,8 +86,19 @@ app.post('/api/inquiries/run', async (c) => {
 // thread keyed by inquiry id, so we just normalise to our wire format.
 app.get('/api/inquiries/:id/chat', async (c) => {
   const inquiryId = c.req.param('id');
-  const firmId = c.req.query('firmId');
-  if (!firmId) return c.json({ error: 'firmId required' }, 400);
+  // firmId is derived from the signed token, NOT the query param. The query
+  // param is treated as an untrusted hint and must match the token's claim.
+  let firmId: string;
+  try {
+    const claims = verifyFirmTokenFor(c.req.header(FIRM_TOKEN_HEADER), {
+      firmId: c.req.query('firmId'),
+      inquiryId,
+    });
+    firmId = claims.firmId;
+  } catch (error) {
+    if (error instanceof TenantIsolationError) return c.json({ error: error.message }, 401);
+    throw error;
+  }
   try {
     const messages = await loadChatHistory({ inquiryId, firmId });
     return c.json({ messages });
@@ -72,8 +112,21 @@ app.get('/api/inquiries/:id/chat', async (c) => {
 // the inquiry pipeline used, so the model has the original draft context.
 app.post('/api/inquiries/:id/chat', async (c) => {
   const inquiryId = c.req.param('id');
-  const firmId = c.req.query('firmId');
-  if (!firmId) return c.json({ error: 'firmId required' }, 400);
+  // firmId is derived from the signed token, NOT the query param. This same
+  // verified firmId becomes the Mastra memory `resource` below, so the agent's
+  // thread (raw email bodies in the `mastra` schema) is keyed by a firmId that
+  // can't be forged from the request.
+  let firmId: string;
+  try {
+    const claims = verifyFirmTokenFor(c.req.header(FIRM_TOKEN_HEADER), {
+      firmId: c.req.query('firmId'),
+      inquiryId,
+    });
+    firmId = claims.firmId;
+  } catch (error) {
+    if (error instanceof TenantIsolationError) return c.json({ error: error.message }, 401);
+    throw error;
+  }
   const body = await c.req.json().catch(() => null);
   const parsed = chatPostSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'invalid body', issues: parsed.error.issues }, 400);

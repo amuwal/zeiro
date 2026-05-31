@@ -1,4 +1,4 @@
-import { type DraftResult, draftResultSchema } from '@zeiro/core';
+import { type DraftResult, draftResultSchema, FIRM_TOKEN_HEADER, signFirmToken } from '@zeiro/core';
 import { z } from 'zod';
 import { env } from './env';
 
@@ -28,9 +28,16 @@ const responseSchema = z.object({
 // workflow so the persistence layer doesn't change.
 export async function runInquiryPipeline(input: InquiryRunRequest): Promise<DraftResult> {
   const url = `${env.AGENTS_BASE_URL}/api/inquiries/run`;
+  // The agents service has no Clerk session; it must NOT trust the firmId in the
+  // body. Mint a short-lived HMAC token so it can derive (and re-verify) firmId
+  // from a signed claim instead. ENCRYPTION_KEY backs the HMAC on both sides.
+  const token = signFirmToken({
+    firmId: input.firmId,
+    ...(input.inquiryId ? { inquiryId: input.inquiryId } : {}),
+  });
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', [FIRM_TOKEN_HEADER]: token },
     body: JSON.stringify({ input }),
   });
   if (!response.ok) {
