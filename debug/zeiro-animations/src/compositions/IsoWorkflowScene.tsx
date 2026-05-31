@@ -1,9 +1,9 @@
-import { RoundedBox } from "@react-three/drei";
-import { Easing, interpolate } from "remotion";
-import { ease } from "../theme";
-import { c3 } from "../three/palette3d";
-import { Lights, ShadowGround } from "../three/rig";
-import { IsoWorkflowSheet } from "./IsoWorkflowSheet";
+import { RoundedBox } from '@react-three/drei';
+import { Easing, interpolate } from 'remotion';
+import { ease } from '../theme';
+import { c3 } from '../three/palette3d';
+import { Lights, ShadowGround } from '../three/rig';
+import { IsoWorkflowSheet } from './IsoWorkflowSheet';
 
 const SHEET_COUNT = 6;
 const FIRST_LAUNCH = 36;
@@ -13,7 +13,14 @@ const TRAVEL = 78;
 // In-tray sheets that remain (the messy pile), minus the ones that have launched.
 const TrayPile: React.FC<{ frame: number; launched: number }> = ({ frame, launched }) => (
   <group position={[-6, 0, 0]}>
-    <RoundedBox args={[2.6, 0.22, 3.2]} radius={0.06} smoothness={3} position={[0, 0.11, 0]} receiveShadow castShadow>
+    <RoundedBox
+      args={[2.6, 0.22, 3.2]}
+      radius={0.06}
+      smoothness={3}
+      position={[0, 0.11, 0]}
+      receiveShadow
+      castShadow
+    >
       <meshStandardMaterial color={c3.surface} roughness={0.78} metalness={0} />
     </RoundedBox>
     {[
@@ -36,8 +43,8 @@ const TrayPile: React.FC<{ frame: number; launched: number }> = ({ frame, launch
     {Array.from({ length: 7 }).map((_, i) => {
       const consumed = i < launched;
       const rise = interpolate(frame, [i * 5, i * 5 + 26], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
         easing: Easing.bezier(...ease.brand),
       });
       const tiltX = Math.sin(i * 1.9) * 0.07;
@@ -70,10 +77,24 @@ const Engine: React.FC<{ frame: number; appear: number }> = ({ frame, appear }) 
   const pulse = 0.42 + Math.sin(frame * 0.12) * 0.12;
   return (
     <group position={[0, 0, 0]} scale={appear}>
-      <RoundedBox args={[2.2, 0.6, 2.2]} radius={0.08} smoothness={3} position={[0, 0.3, 0]} castShadow receiveShadow>
+      <RoundedBox
+        args={[2.2, 0.6, 2.2]}
+        radius={0.08}
+        smoothness={3}
+        position={[0, 0.3, 0]}
+        castShadow
+        receiveShadow
+      >
         <meshStandardMaterial color={c3.ink2} roughness={0.7} metalness={0.1} />
       </RoundedBox>
-      <RoundedBox args={[1.0, 1.0, 1.0]} radius={0.06} smoothness={3} position={[0, 1.65, 0]} rotation={[wobble, spin, spin * 0.5]} castShadow>
+      <RoundedBox
+        args={[1.0, 1.0, 1.0]}
+        radius={0.06}
+        smoothness={3}
+        position={[0, 1.65, 0]}
+        rotation={[wobble, spin, spin * 0.5]}
+        castShadow
+      >
         <meshStandardMaterial
           color={c3.accent}
           emissive={c3.accentBright}
@@ -98,10 +119,13 @@ const Engine: React.FC<{ frame: number; appear: number }> = ({ frame, appear }) 
   );
 };
 
-const OutputStack: React.FC<{ frame: number; heroProgress: number }> = ({ frame, heroProgress }) => {
+const OutputStack: React.FC<{ frame: number; heroProgress: number }> = ({
+  frame,
+  heroProgress,
+}) => {
   const baseIn = interpolate(frame, [30, 60], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
   const stand = interpolate(heroProgress, [0, 1], [0, 1], { easing: Easing.bezier(...ease.brand) });
@@ -110,18 +134,49 @@ const OutputStack: React.FC<{ frame: number; heroProgress: number }> = ({ frame,
   const glow = 0.2 + heroProgress * (0.4 + Math.sin(frame * 0.16) * 0.18);
   return (
     <group position={[6, 0, 0]} scale={baseIn}>
-      <RoundedBox args={[2.2, 0.12, 2.7]} radius={0.05} smoothness={3} position={[0, 0.06, 0]} receiveShadow castShadow>
+      <RoundedBox
+        args={[2.2, 0.12, 2.7]}
+        radius={0.05}
+        smoothness={3}
+        position={[0, 0.06, 0]}
+        receiveShadow
+        castShadow
+      >
         <meshStandardMaterial color={c3.surface} roughness={0.78} metalness={0} />
       </RoundedBox>
       <group position={[-0.6, lift, 1.0]} rotation={[rotZ, 0.25, 0]}>
-        <RoundedBox args={[1.7, 0.06, 2.3]} radius={0.03} smoothness={3} castShadow receiveShadow scale={stand}>
+        <RoundedBox
+          args={[1.7, 0.06, 2.3]}
+          radius={0.03}
+          smoothness={3}
+          castShadow
+          receiveShadow
+          scale={stand}
+        >
           <meshStandardMaterial color={c3.paper} roughness={0.55} metalness={0} />
         </RoundedBox>
-        <RoundedBox args={[0.12, 0.08, 2.3]} radius={0.02} smoothness={2} position={[-0.79, 0.04, 0]} scale={stand} castShadow>
-          <meshStandardMaterial color={c3.accent} emissive={c3.accentBright} emissiveIntensity={glow} roughness={0.4} />
+        <RoundedBox
+          args={[0.12, 0.08, 2.3]}
+          radius={0.02}
+          smoothness={2}
+          position={[-0.79, 0.04, 0]}
+          scale={stand}
+          castShadow
+        >
+          <meshStandardMaterial
+            color={c3.accent}
+            emissive={c3.accentBright}
+            emissiveIntensity={glow}
+            roughness={0.4}
+          />
         </RoundedBox>
       </group>
-      <pointLight position={[0, 2.0, 1.4]} intensity={heroProgress * 1.3} distance={7} color={c3.accentGlow} />
+      <pointLight
+        position={[0, 2.0, 1.4]}
+        intensity={heroProgress * 1.3}
+        distance={7}
+        color={c3.accentGlow}
+      />
     </group>
   );
 };
@@ -131,13 +186,13 @@ export const IsoWorkflowScene: React.FC<{ frame: number }> = ({ frame }) => {
     easing: Easing.bezier(...ease.editorial),
   });
   const engineIn = interpolate(frame, [10, 44], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.pop),
   });
   const heroProgress = interpolate(frame, [206, 250], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
@@ -157,8 +212,8 @@ export const IsoWorkflowScene: React.FC<{ frame: number }> = ({ frame }) => {
         {Array.from({ length: SHEET_COUNT }).map((_, i) => {
           const launch = FIRST_LAUNCH + i * LAUNCH_GAP;
           const progress = interpolate(frame, [launch, launch + TRAVEL], [0, 1], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
             easing: Easing.bezier(...ease.inOut),
           });
           if (progress <= 0) return null;

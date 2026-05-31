@@ -9,7 +9,7 @@
  *   /api/1/partners                — 顧客 / 取引先 lookup
  *   /api/1/invoices                — issued invoices (if 請求書 plan enabled)
  */
-import { companyId, env, freee, FreeeApiError, logKV, logSection } from './lib';
+import { companyId, env, FreeeApiError, freee, logKV, logSection } from './lib';
 
 type Company = { id: number; name: string; name_kana: string | null; role: string };
 type Deal = {
@@ -63,7 +63,10 @@ async function main() {
   });
   logKV('count', deals.deals.length);
   for (const d of deals.deals.slice(0, 5)) {
-    logKV(`  ${d.issue_date}`, `${d.type === 'income' ? '+' : '-'}¥${d.amount.toLocaleString()}  ${d.ref_number ?? ''}`);
+    logKV(
+      `  ${d.issue_date}`,
+      `${d.type === 'income' ? '+' : '-'}¥${d.amount.toLocaleString()}  ${d.ref_number ?? ''}`,
+    );
   }
 
   logSection('3. /api/1/partners — 取引先 list');
@@ -84,7 +87,10 @@ async function main() {
     });
     logKV('count', invoices.invoices.length);
     for (const inv of invoices.invoices.slice(0, 3)) {
-      logKV(`  ${inv.invoice_number}`, `¥${inv.total_amount.toLocaleString()}  ${inv.partner_name}  (${inv.invoice_status})`);
+      logKV(
+        `  ${inv.invoice_number}`,
+        `¥${inv.total_amount.toLocaleString()}  ${inv.partner_name}  (${inv.invoice_status})`,
+      );
     }
   } catch (e) {
     if (e instanceof FreeeApiError && (e.status === 403 || e.status === 404)) {

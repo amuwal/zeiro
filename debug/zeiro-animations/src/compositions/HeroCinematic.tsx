@@ -1,11 +1,11 @@
-import { AbsoluteFill, Sequence } from "remotion";
-import { Background } from "../common/Background";
-import { Act1Chaos } from "./hero/act1Chaos";
-import { Act2Cut } from "./hero/act2Cut";
-import { Act3Work } from "./hero/act3Work";
-import { Act4Draft } from "./hero/act4Draft";
-import { Act5Numbers } from "./hero/act5Numbers";
-import { Act6Mark } from "./hero/act6Mark";
+import { AbsoluteFill, Sequence } from 'remotion';
+import { Background } from '../common/Background';
+import { Act1Chaos } from './hero/act1Chaos';
+import { Act2Cut } from './hero/act2Cut';
+import { Act3Work } from './hero/act3Work';
+import { Act4Draft } from './hero/act4Draft';
+import { Act5Numbers } from './hero/act5Numbers';
+import { Act6Mark } from './hero/act6Mark';
 
 // 6-act hero piece, ~28 seconds at 30fps.
 // Each act overlaps the next slightly via premount, so the cuts feel cinematic.

@@ -23,7 +23,9 @@ export function StatusTab({ data }: { data: StatusTabData }) {
   return (
     <div className="sc-pane">
       <section className="sc-block">
-        <div className="sc-block-head"><span>会話の状態</span></div>
+        <div className="sc-block-head">
+          <span>会話の状態</span>
+        </div>
         <div className="health-grid">
           <div className="health-cell">
             <div className="hc-lbl">往復</div>
@@ -65,12 +67,16 @@ export function StatusTab({ data }: { data: StatusTabData }) {
       )}
 
       <section className="sc-block">
-        <div className="sc-block-head"><span>判定理由</span></div>
+        <div className="sc-block-head">
+          <span>判定理由</span>
+        </div>
         <p className="reason">{renderReasonWithEmphasis(data.reasoning)}</p>
       </section>
 
       <section className="sc-block">
-        <div className="sc-block-head"><span>このスレッドの履歴</span></div>
+        <div className="sc-block-head">
+          <span>このスレッドの履歴</span>
+        </div>
         <div className="timeline">
           {data.timeline.map((row, i) => (
             <div
@@ -89,7 +95,9 @@ export function StatusTab({ data }: { data: StatusTabData }) {
       </section>
 
       <section className="sc-block">
-        <div className="sc-block-head"><span>監査ログ</span></div>
+        <div className="sc-block-head">
+          <span>監査ログ</span>
+        </div>
         <div className="kv-card">
           <div className="kv-line">
             <span className="k">チャンネル</span>
@@ -115,11 +123,5 @@ export function StatusTab({ data }: { data: StatusTabData }) {
 
 function renderReasonWithEmphasis(text: string): React.ReactNode {
   const parts = text.split(/「([^」]+)」/);
-  return parts.map((s, i) =>
-    i % 2 === 1 ? (
-      <em key={i}>「{s}」</em>
-    ) : (
-      <span key={i}>{s}</span>
-    ),
-  );
+  return parts.map((s, i) => (i % 2 === 1 ? <em key={i}>「{s}」</em> : <span key={i}>{s}</span>));
 }

@@ -3,13 +3,7 @@
 import type { ReactNode } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 
-export function ThreadSidecarSplit({
-  thread,
-  sidecar,
-}: {
-  thread: ReactNode;
-  sidecar: ReactNode;
-}) {
+export function ThreadSidecarSplit({ thread, sidecar }: { thread: ReactNode; sidecar: ReactNode }) {
   return (
     <Group orientation="horizontal" id="thread-sidecar" className="thread-sidecar-split">
       <Panel defaultSize="68%" minSize="25%">

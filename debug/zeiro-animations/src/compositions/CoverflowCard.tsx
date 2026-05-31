@@ -1,6 +1,6 @@
-import type { EmailCardData, EmailKind } from "../common/EmailCard";
-import { fonts } from "../fonts";
-import { palette, radius, shadow } from "../theme";
+import type { EmailCardData, EmailKind } from '../common/EmailCard';
+import { fonts } from '../fonts';
+import { palette, radius, shadow } from '../theme';
 
 const KIND_DOT: Record<EmailKind, string> = {
   tax: palette.catTax,
@@ -23,22 +23,24 @@ export const CoverflowCard: React.FC<{ data: EmailCardData; dim: number }> = ({ 
       borderRadius: radius.lg,
       boxShadow: shadow.md,
       padding: 28,
-      display: "flex",
-      flexDirection: "column",
+      display: 'flex',
+      flexDirection: 'column',
       filter: `brightness(${1 - dim * 0.18}) saturate(${1 - dim * 0.4})`,
     }}
   >
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 8, backgroundColor: KIND_DOT[data.kind] }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span
+        style={{ width: 8, height: 8, borderRadius: 8, backgroundColor: KIND_DOT[data.kind] }}
+      />
       <span
         style={{
           fontFamily: fonts.sans,
           fontSize: 13,
           color: palette.muted,
           fontWeight: 500,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
         {data.from}
@@ -50,7 +52,7 @@ export const CoverflowCard: React.FC<{ data: EmailCardData; dim: number }> = ({ 
         fontSize: 19,
         fontWeight: 700,
         color: palette.ink,
-        letterSpacing: "-0.01em",
+        letterSpacing: '-0.01em',
         marginTop: 20,
         lineHeight: 1.45,
       }}
@@ -70,12 +72,12 @@ export const CoverflowCard: React.FC<{ data: EmailCardData; dim: number }> = ({ 
     </div>
     <div
       style={{
-        marginTop: "auto",
+        marginTop: 'auto',
         fontFamily: fonts.mono,
         fontSize: 11,
         color: palette.muted2,
-        letterSpacing: "0.28em",
-        textTransform: "uppercase",
+        letterSpacing: '0.28em',
+        textTransform: 'uppercase',
       }}
     >
       inbox
@@ -83,4 +85,4 @@ export const CoverflowCard: React.FC<{ data: EmailCardData; dim: number }> = ({ 
   </div>
 );
 
-export { SIDE_W, SIDE_H };
+export { SIDE_H, SIDE_W };

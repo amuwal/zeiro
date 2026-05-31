@@ -7,9 +7,7 @@ import { Icon } from '@/components/ui/icon';
 export function ChatMessageView({ message }: { message: ChatMessage }) {
   return (
     <div className={`sc-chat-msg ${message.role}`}>
-      <div className="sc-chat-msg-role">
-        {message.role === 'user' ? 'あなた' : 'エージェント'}
-      </div>
+      <div className="sc-chat-msg-role">{message.role === 'user' ? 'あなた' : 'エージェント'}</div>
       <div className="sc-chat-msg-parts">
         {message.parts.map((p, i) => (
           <PartView key={i} part={p} />
@@ -46,11 +44,7 @@ function ReasoningPart({ text }: { text: string }) {
   );
 }
 
-function ToolCallPart({
-  part,
-}: {
-  part: Extract<ChatPart, { type: 'tool-call' }>;
-}) {
+function ToolCallPart({ part }: { part: Extract<ChatPart, { type: 'tool-call' }> }) {
   const [open, setOpen] = useState(false);
   const status: 'running' | 'done' | 'error' = part.error
     ? 'error'

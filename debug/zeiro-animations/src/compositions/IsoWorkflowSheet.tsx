@@ -1,5 +1,5 @@
-import { RoundedBox } from "@react-three/drei";
-import { c3, categoryColors } from "../three/palette3d";
+import { RoundedBox } from '@react-three/drei';
+import { c3, categoryColors } from '../three/palette3d';
 
 // A document sheet that travels the conveyor: in-tray -> engine arc -> output stack.
 // `progress` is 0..1 along the journey; the path is keyframed so the sheet lifts in a

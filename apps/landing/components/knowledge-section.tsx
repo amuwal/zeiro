@@ -30,8 +30,10 @@ export function KnowledgeSection() {
             そのまま下書きの根拠に。
           </h2>
           <p className="section-lede">
-            汎用 LLM は、貴所の<b>運用ルールも、顧問先の特記事項も知りません</b>。Zeiro は事務所マニュアル、FAQ、
-            過去回答、顧問先マスタ、国税庁通達まで取り込み、答えるたびに必ず<b>どこから来た答えか</b>を示します。
+            汎用 LLM は、貴所の<b>運用ルールも、顧問先の特記事項も知りません</b>。Zeiro
+            は事務所マニュアル、FAQ、
+            過去回答、顧問先マスタ、国税庁通達まで取り込み、答えるたびに必ず
+            <b>どこから来た答えか</b>を示します。
           </p>
         </div>
 
@@ -43,8 +45,9 @@ export function KnowledgeSection() {
               <span className="unit">件</span>
             </div>
             <p className="blurb">
-              既存の事務所マニュアル PDF、Notion、Google Drive、Slack 既往スレッドから自動でインデックス。
-              新しいルールを書き加えれば <b>15分以内</b> に下書きに反映されます。
+              既存の事務所マニュアル PDF、Notion、Google Drive、Slack
+              既往スレッドから自動でインデックス。 新しいルールを書き加えれば <b>15分以内</b>{' '}
+              に下書きに反映されます。
             </p>
 
             <div className="kn-sources">

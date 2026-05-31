@@ -52,10 +52,12 @@ export function HeroDemo() {
             <div className="demo-draft-text">
               <span className="l l1">山田 正彦様、いつもお世話になっております。</span>
               <span className="l l2">
-                3月決算ですので、<b>提出期限は 2026年5月31日</b>。<span className="cite c1">kb-001</span>
+                3月決算ですので、<b>提出期限は 2026年5月31日</b>。
+                <span className="cite c1">kb-001</span>
               </span>
               <span className="l l3">
-                e-Tax電子提出をご希望とのこと、承知いたしました。<span className="cite c2">kb-005</span>
+                e-Tax電子提出をご希望とのこと、承知いたしました。
+                <span className="cite c2">kb-005</span>
               </span>
               <span className="l l4">
                 事前確認ドラフトは5月20日にお送りします。<span className="cite c3">kb-003</span>

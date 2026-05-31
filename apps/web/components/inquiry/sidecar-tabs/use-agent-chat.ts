@@ -127,9 +127,10 @@ async function readSSE(body: ReadableStream<Uint8Array>, onEvent: (ev: ChatStrea
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    let nl: number;
     // SSE frames are split by blank lines (`\n\n`)
-    while ((nl = buffer.indexOf('\n\n')) !== -1) {
+    while (true) {
+      const nl = buffer.indexOf('\n\n');
+      if (nl === -1) break;
       const frame = buffer.slice(0, nl);
       buffer = buffer.slice(nl + 2);
       const dataLine = frame.split('\n').find((l) => l.startsWith('data:'));

@@ -18,7 +18,9 @@ export type IntegrationRow = {
   updatedAt: Date;
 };
 
-function rowFromPrisma(row: Awaited<ReturnType<ReturnType<typeof getPrisma>['integration']['findFirst']>>): IntegrationRow | null {
+function rowFromPrisma(
+  row: Awaited<ReturnType<ReturnType<typeof getPrisma>['integration']['findFirst']>>,
+): IntegrationRow | null {
   if (!row) return null;
   return {
     id: row.id,

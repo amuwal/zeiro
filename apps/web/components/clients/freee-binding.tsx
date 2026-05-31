@@ -23,7 +23,8 @@ export function FreeeBindingCard({ clientId, isFirmConnected, companies, binding
           <span className="cl-freee-badge cl-freee-badge-off">事務所未連携</span>
         </header>
         <p className="cl-freee-help">
-          事務所が freee と連携していないため、顧問先に事業所を紐付けることはできません。設定ページから連携してください。
+          事務所が freee
+          と連携していないため、顧問先に事業所を紐付けることはできません。設定ページから連携してください。
         </p>
       </section>
     );

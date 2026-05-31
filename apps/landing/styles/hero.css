@@ -18,7 +18,9 @@
 }
 
 .hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   padding: 6px 12px 6px 6px;
   border: 1px solid var(--line);
   background: var(--bg-1);
@@ -33,14 +35,18 @@
   animation: fade-up 700ms var(--ease) 80ms both;
 }
 .hero-eyebrow .badge {
-  background: var(--ink-0); color: var(--bg-0);
-  padding: 2px 8px; border-radius: 999px;
-  font-size: 9.5px; letter-spacing: 0.10em;
+  background: var(--ink-0);
+  color: var(--bg-0);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
   font-weight: 600;
 }
 .hero-eyebrow .pulse {
   display: inline-block;
-  width: 6px; height: 6px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--ink-0);
   position: relative;
@@ -48,14 +54,21 @@
 }
 .hero-eyebrow .pulse::after {
   content: "";
-  position: absolute; inset: -2px;
+  position: absolute;
+  inset: -2px;
   border-radius: 50%;
   border: 1px solid var(--ink-0);
   animation: pulse-ring 1.8s var(--ease-out) infinite;
 }
 @keyframes pulse-ring {
-  0% { transform: scale(0.5); opacity: 0.8; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
 }
 
 .hero h1 {
@@ -78,11 +91,19 @@
   transform: translateY(110%);
   animation: rise 900ms var(--ease) forwards;
 }
-.hero h1 .line:nth-child(1) > span { animation-delay: 120ms; }
-.hero h1 .line:nth-child(2) > span { animation-delay: 220ms; }
-.hero h1 .line:nth-child(3) > span { animation-delay: 320ms; }
+.hero h1 .line:nth-child(1) > span {
+  animation-delay: 120ms;
+}
+.hero h1 .line:nth-child(2) > span {
+  animation-delay: 220ms;
+}
+.hero h1 .line:nth-child(3) > span {
+  animation-delay: 320ms;
+}
 @keyframes rise {
-  to { transform: translateY(0); }
+  to {
+    transform: translateY(0);
+  }
 }
 .hero h1 em {
   font-family: var(--font-serif);
@@ -91,7 +112,9 @@
   color: var(--ink-2);
   letter-spacing: -0.02em;
 }
-.hero h1 .ink-light { color: var(--ink-3); }
+.hero h1 .ink-light {
+  color: var(--ink-3);
+}
 .hero h1 .strike {
   position: relative;
   display: inline-block;
@@ -99,14 +122,20 @@
 .hero h1 .strike::after {
   content: "";
   position: absolute;
-  left: -2%; right: -2%;
-  top: 52%; height: 4px;
+  left: -2%;
+  right: -2%;
+  top: 52%;
+  height: 4px;
   background: var(--ink-0);
   transform: scaleX(0);
   transform-origin: left;
   animation: strike 700ms var(--ease) 1100ms forwards;
 }
-@keyframes strike { to { transform: scaleX(1); } }
+@keyframes strike {
+  to {
+    transform: scaleX(1);
+  }
+}
 
 .hero-sub {
   margin: 28px 0 0;
@@ -117,16 +146,28 @@
   letter-spacing: 0.005em;
   animation: fade-up 700ms var(--ease) 600ms both;
 }
-.hero-sub b { color: var(--ink-0); font-weight: 600; }
+.hero-sub b {
+  color: var(--ink-0);
+  font-weight: 600;
+}
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-cta-row {
   margin-top: 32px;
-  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
   animation: fade-up 700ms var(--ease) 760ms both;
 }
 .hero-cta-row .kbd {
@@ -170,5 +211,5 @@
   font-size: 10px;
   color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
 }

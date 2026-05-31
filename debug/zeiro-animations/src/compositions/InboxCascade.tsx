@@ -1,9 +1,9 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { EmailCard } from "../common/EmailCard";
-import { SAMPLE_EMAILS } from "../common/sampleEmails";
-import { fonts } from "../fonts";
-import { ease, palette } from "../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { EmailCard } from '../common/EmailCard';
+import { SAMPLE_EMAILS } from '../common/sampleEmails';
+import { fonts } from '../fonts';
+import { ease, palette } from '../theme';
 
 // Phase 1 (0-30f): cards drift in scattered from off-screen at random angles, chaotic.
 // Phase 2 (30-70f): they magnetise into a clean vertical stack on the right.
@@ -16,26 +16,26 @@ export const InboxCascade: React.FC = () => {
   const sortEnd = 78;
 
   const headerIn = interpolate(frame, [70, 105], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   return (
     <AbsoluteFill>
       <Background />
-      <AbsoluteFill style={{ flexDirection: "row" }}>
+      <AbsoluteFill style={{ flexDirection: 'row' }}>
         <LeftHeader progress={headerIn} count={cards.length} />
-        <div style={{ flex: 1, position: "relative" }}>
+        <div style={{ flex: 1, position: 'relative' }}>
           {cards.map((email, i) => {
             const enter = interpolate(frame, [i * 3, i * 3 + 18], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
               easing: Easing.bezier(...ease.crisp),
             });
             const sort = interpolate(frame, [sortStart + i * 2, sortEnd + i * 2], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
               easing: Easing.bezier(...ease.brand),
             });
 
@@ -54,12 +54,12 @@ export const InboxCascade: React.FC = () => {
               <div
                 key={i}
                 style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "50%",
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
                   transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${rot}deg) scale(${scale})`,
                   opacity: enter,
-                  transition: "none",
+                  transition: 'none',
                 }}
               >
                 <EmailCard data={email} width={420} emphasized={sort > 0.85} />
@@ -88,10 +88,10 @@ const LeftHeader: React.FC<{ progress: number; count: number }> = ({ progress, c
   <div
     style={{
       width: 540,
-      padding: "120px 64px",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
+      padding: '120px 64px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
       gap: 16,
     }}
   >
@@ -102,8 +102,8 @@ const LeftHeader: React.FC<{ progress: number; count: number }> = ({ progress, c
         fontFamily: fonts.mono,
         color: palette.muted,
         fontSize: 13,
-        letterSpacing: "0.32em",
-        textTransform: "uppercase",
+        letterSpacing: '0.32em',
+        textTransform: 'uppercase',
       }}
     >
       Inbox · 09:14
@@ -117,10 +117,11 @@ const LeftHeader: React.FC<{ progress: number; count: number }> = ({ progress, c
         fontSize: 64,
         lineHeight: 1.05,
         fontWeight: 700,
-        letterSpacing: "-0.02em",
+        letterSpacing: '-0.02em',
       }}
     >
-      {count} 通の問い合わせ、<br />
+      {count} 通の問い合わせ、
+      <br />
       <span style={{ color: palette.accent }}>整理完了</span>。
     </div>
     <div
@@ -144,23 +145,23 @@ const SortPulse: React.FC<{ frame: number; sortStart: number; sortEnd: number }>
   sortEnd,
 }) => {
   const t = interpolate(frame, [sortStart, sortEnd], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
   });
   const radius = 24 + t * 600;
   const opacity = (1 - t) * 0.5;
   return (
     <div
       style={{
-        position: "absolute",
-        left: "50%",
-        top: "50%",
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
         width: radius,
         height: radius,
         marginLeft: -radius / 2,
         marginTop: -radius / 2,
         border: `2px solid ${palette.accent}`,
-        borderRadius: "50%",
+        borderRadius: '50%',
         opacity,
       }}
     />

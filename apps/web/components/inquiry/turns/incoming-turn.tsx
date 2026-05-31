@@ -16,7 +16,9 @@ export function IncomingTurn({ turn }: { turn: Extract<Turn, { kind: 'incoming' 
           <div className="attach-row">
             {turn.attachments.map((a, i) => (
               <span key={i} className="attach-chip">
-                <span className="ico"><Icon name="paperclip" size={12} /></span>
+                <span className="ico">
+                  <Icon name="paperclip" size={12} />
+                </span>
                 {a.name}
                 <span className="size">{a.size}</span>
               </span>

@@ -1,4 +1,4 @@
-import { CatmullRomCurve3, QuadraticBezierCurve3, Vector3 } from "three";
+import { CatmullRomCurve3, QuadraticBezierCurve3, Vector3 } from 'three';
 
 export const GLOBE_R = 2.2;
 export const CORE_POS = new Vector3(0, 1.55, 1.35);

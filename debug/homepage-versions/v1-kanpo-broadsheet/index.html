@@ -775,7 +775,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
 <script>
-(function(){
+(()=> {
   "use strict";
   const RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (RM) document.documentElement.classList.add("no-anim");
@@ -783,7 +783,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
 
   /* ── live dateline ── */
-  (function(){
+  (()=> {
     const el = document.getElementById("dateline");
     const d = new Date(); // LIVE dateline — renders the real current date
     const days = ["日","月","火","水","木","金","土"];
@@ -794,7 +794,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   /* ── Lenis smooth scroll, driven by GSAP's ticker (avoids ticker stall) ── */
   let lenis=null;
   if (window.Lenis && !RM){
-    lenis = new Lenis({ duration:1.1, easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)), smoothWheel:true });
+    lenis = new Lenis({ duration:1.1, easing:t=>Math.min(1,1.001-2 ** (-10*t)), smoothWheel:true });
     if (hasGSAP){
       lenis.on("scroll", ScrollTrigger.update);
       gsap.ticker.add((time)=> lenis.raf(time*1000));
@@ -826,7 +826,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   });
 
   /* ── crosshair cursor + folio readout ── */
-  (function(){
+  (()=> {
     if (RM || matchMedia("(pointer:coarse)").matches) return;
     const cross=document.getElementById("cross");
     if(!cross) return;
@@ -856,7 +856,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ── masthead top rule draw on load (CSS transition; rAF-independent) ── */
-  (function(){
+  (()=> {
     const top=document.getElementById("topRule");
     if(RM){ top.classList.add("is-drawn"); return; }
     setTimeout(()=>top.classList.add("is-drawn"),120);
@@ -865,7 +865,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   /* ── headline clip wipe upward — pure CSS transition, GSAP-independent ──
      Deferred until fonts are ready so the wipe plays against final display
      metrics, not a fallback face that would reflow mid-animation. */
-  (function(){
+  (()=> {
     if(RM) return;
     const hl=document.querySelector(".headline");
     if(!hl) return;
@@ -883,7 +883,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 
   /* ── reveals + hairline rule-draws via IntersectionObserver (no rAF needed) ──
      Content is default-visible if JS/observer never runs; this only enhances. */
-  (function(){
+  (()=> {
     if(RM){
       document.querySelectorAll("[data-rule]").forEach(r=>r.classList.add("is-drawn"));
       document.querySelectorAll(".reveal").forEach(el=>el.classList.add("in"));
@@ -912,7 +912,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ───────────────────────── THE PLATE — typeset reply ───────────────────────── */
-  (function(){
+  (()=> {
     const target=document.getElementById("draftText");
     const chips=Array.from(document.querySelectorAll("#chips .chip"));
     // segments: text with optional phrase id (for citation highlight binding)
@@ -1056,7 +1056,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ───────────────────────── THE PROCESS — scrubbed travelling pulse ───────────────────────── */
-  (function(){
+  (()=> {
     const wrap=document.getElementById("processWrap");
     const steps=Array.from(document.querySelectorAll(".step"));
     if(!wrap||!steps.length) return;
@@ -1114,14 +1114,14 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ───────────────────────── THE NUMBERS — count-ups + charts ───────────────────────── */
-  (function(){
+  (()=> {
     const grid=document.getElementById("numGrid");
     /* timer-based tween — advances even when rAF is throttled; always lands on `to` */
     function tween(dur,onStep){
       const t0=performance.now();
       const id=setInterval(()=>{
         const p=Math.min(1,(performance.now()-t0)/dur);
-        onStep(1-Math.pow(1-p,3),p);
+        onStep(1-(1-p) ** 3,p);
         if(p>=1) clearInterval(id);
       },16);
       onStep(0,0);
@@ -1204,7 +1204,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ───────────────────────── KNOWLEDGE CONSTELLATION (canvas) ───────────────────────── */
-  (function(){
+  (()=> {
     const canvas=document.getElementById("constCanvas");
     const poster=document.getElementById("constPoster");
     const fig=canvas.closest(".constellation");
@@ -1227,7 +1227,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
       ctx.setTransform(DPR,0,0,DPR,0,0);
     }
     resize();
-    let ro=new ResizeObserver(resize); ro.observe(fig);
+    const ro=new ResizeObserver(resize); ro.observe(fig);
     // mouse parallax (≤6°)
     let mx=0,my=0,tmx=0,tmy=0;
     fig.addEventListener("mousemove",e=>{
@@ -1318,7 +1318,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ───────────────────────── MAGNETIC CTA ───────────────────────── */
-  (function(){
+  (()=> {
     const btn=document.getElementById("magBtn");
     if(RM||matchMedia("(pointer:coarse)").matches) return;
     const radius=12; // tight 12px catch field beyond the button edge — restrained, not springy
@@ -1342,7 +1342,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
   })();
 
   /* ── constellation poster fallback if canvas unsupported ── */
-  (function(){
+  (()=> {
     const canvas=document.getElementById("constCanvas");
     try{ if(!canvas.getContext("2d")) throw 0; }
     catch(e){ document.getElementById("constPoster").style.opacity="1"; canvas.style.display="none"; }

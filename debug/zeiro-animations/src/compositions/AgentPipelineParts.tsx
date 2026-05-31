@@ -1,7 +1,7 @@
-import { AbsoluteFill } from "remotion";
-import { fonts } from "../fonts";
-import { palette } from "../theme";
-import type { PipelineNode } from "./AgentPipelineNode";
+import { AbsoluteFill } from 'remotion';
+import { fonts } from '../fonts';
+import { palette } from '../theme';
+import type { PipelineNode } from './AgentPipelineNode';
 
 type Placed = PipelineNode & { x: number; y: number; z: number };
 
@@ -21,12 +21,12 @@ export const Edge: React.FC<{
     <>
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           left: a.x,
           top: a.y,
           width: len,
           height: 3,
-          transformOrigin: "0 50%",
+          transformOrigin: '0 50%',
           transform: `translateZ(${midZ}px) rotate(${ang}deg)`,
           background: `linear-gradient(90deg, ${palette.lineStrong}, ${palette.line})`,
           opacity: 0.5,
@@ -35,12 +35,12 @@ export const Edge: React.FC<{
       />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           left: a.x,
           top: a.y,
           width: len * Math.min(travel, 1),
           height: 3,
-          transformOrigin: "0 50%",
+          transformOrigin: '0 50%',
           transform: `translateZ(${midZ}px) rotate(${ang}deg)`,
           background: palette.accent,
           opacity: 0.35 + 0.4 * fill,
@@ -50,7 +50,7 @@ export const Edge: React.FC<{
       {travel > 0 && travel < 1 && (
         <div
           style={{
-            position: "absolute",
+            position: 'absolute',
             left: a.x,
             top: a.y,
             transform: `translateZ(${midZ}px) rotate(${ang}deg) translateX(${
@@ -58,7 +58,7 @@ export const Edge: React.FC<{
             }px) translate(-50%, -50%)`,
             width: 16,
             height: 16,
-            borderRadius: "50%",
+            borderRadius: '50%',
             background: palette.accent,
             boxShadow: `0 0 18px 6px ${palette.accentSoft}`,
           }}
@@ -69,10 +69,10 @@ export const Edge: React.FC<{
 };
 
 export const Overlays: React.FC<{ opacity: number }> = ({ opacity }) => (
-  <AbsoluteFill style={{ pointerEvents: "none" }}>
+  <AbsoluteFill style={{ pointerEvents: 'none' }}>
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         top: 96,
         left: 120,
         opacity,
@@ -84,8 +84,8 @@ export const Overlays: React.FC<{ opacity: number }> = ({ opacity }) => (
           fontFamily: fonts.mono,
           fontSize: 13,
           color: palette.muted2,
-          letterSpacing: "0.4em",
-          textTransform: "uppercase",
+          letterSpacing: '0.4em',
+          textTransform: 'uppercase',
           fontWeight: 500,
         }}
       >
@@ -98,7 +98,7 @@ export const Overlays: React.FC<{ opacity: number }> = ({ opacity }) => (
           fontSize: 50,
           fontWeight: 700,
           color: palette.ink,
-          letterSpacing: "-0.02em",
+          letterSpacing: '-0.02em',
           lineHeight: 1.15,
         }}
       >
@@ -108,15 +108,15 @@ export const Overlays: React.FC<{ opacity: number }> = ({ opacity }) => (
 
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         bottom: 80,
         left: 120,
-        display: "flex",
+        display: 'flex',
         gap: 12,
         opacity,
       }}
     >
-      {["Mastra", "Claude", "Gemini Flash", "pgvector"].map((chip) => (
+      {['Mastra', 'Claude', 'Gemini Flash', 'pgvector'].map((chip) => (
         <div
           key={chip}
           style={{
@@ -124,8 +124,8 @@ export const Overlays: React.FC<{ opacity: number }> = ({ opacity }) => (
             fontSize: 13,
             fontWeight: 500,
             color: palette.ink2,
-            letterSpacing: "0.16em",
-            padding: "9px 16px",
+            letterSpacing: '0.16em',
+            padding: '9px 16px',
             borderRadius: 999,
             border: `1px solid ${palette.line}`,
             backgroundColor: palette.surface,

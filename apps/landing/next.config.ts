@@ -13,9 +13,7 @@ const SECURITY_HEADERS = [
 
 const config: NextConfig = {
   async headers() {
-    return [
-      { source: '/:path*', headers: SECURITY_HEADERS },
-    ];
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },
 };
 

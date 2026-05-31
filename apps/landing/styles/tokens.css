@@ -1,28 +1,28 @@
 :root {
-  --bg-0: #FAFAFA;
-  --bg-1: #FFFFFF;
-  --bg-2: #F4F4F4;
-  --bg-3: #ECECEC;
-  --bg-sunk: #EFEFEF;
+  --bg-0: #fafafa;
+  --bg-1: #ffffff;
+  --bg-2: #f4f4f4;
+  --bg-3: #ececec;
+  --bg-sunk: #efefef;
 
-  --ink-0: #0A0A0A;
-  --ink-1: #1F1F1F;
+  --ink-0: #0a0a0a;
+  --ink-1: #1f1f1f;
   --ink-2: #525252;
-  --ink-3: #8A8A8A;
-  --ink-4: #B8B8B8;
-  --ink-5: #D8D8D8;
+  --ink-3: #8a8a8a;
+  --ink-4: #b8b8b8;
+  --ink-5: #d8d8d8;
 
-  --line: #E8E8E8;
-  --line-2: #DBDBDB;
-  --line-strong: #C8C8C8;
+  --line: #e8e8e8;
+  --line-2: #dbdbdb;
+  --line-strong: #c8c8c8;
 
-  --hatch: rgba(10,10,10,0.06);
-  --hover: rgba(10,10,10,0.04);
-  --press: rgba(10,10,10,0.08);
-  --shadow-sm: 0 1px 0 rgba(10,10,10,0.04);
-  --shadow:    0 1px 2px rgba(10,10,10,0.04), 0 12px 28px -20px rgba(10,10,10,0.18);
-  --shadow-lg: 0 4px 8px rgba(10,10,10,0.04), 0 32px 64px -32px rgba(10,10,10,0.22);
-  --ring: 0 0 0 3px rgba(10,10,10,0.08);
+  --hatch: rgba(10, 10, 10, 0.06);
+  --hover: rgba(10, 10, 10, 0.04);
+  --press: rgba(10, 10, 10, 0.08);
+  --shadow-sm: 0 1px 0 rgba(10, 10, 10, 0.04);
+  --shadow: 0 1px 2px rgba(10, 10, 10, 0.04), 0 12px 28px -20px rgba(10, 10, 10, 0.18);
+  --shadow-lg: 0 4px 8px rgba(10, 10, 10, 0.04), 0 32px 64px -32px rgba(10, 10, 10, 0.22);
+  --ring: 0 0 0 3px rgba(10, 10, 10, 0.08);
 
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -30,14 +30,18 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
 
-  --font-sans: var(--font-inter-tight), var(--font-noto-jp), "Inter Tight", "Noto Sans JP", system-ui, -apple-system, sans-serif;
-  --font-jp:   var(--font-noto-jp), var(--font-inter-tight), "Noto Sans JP", "Inter Tight", system-ui, sans-serif;
+  --font-sans:
+    var(--font-inter-tight), var(--font-noto-jp), "Inter Tight", "Noto Sans JP", system-ui,
+    -apple-system, sans-serif;
+  --font-jp:
+    var(--font-noto-jp), var(--font-inter-tight), "Noto Sans JP", "Inter Tight", system-ui,
+    sans-serif;
   --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
-  --font-serif:var(--font-newsreader), "Newsreader", ui-serif, Georgia, serif;
+  --font-serif: var(--font-newsreader), "Newsreader", ui-serif, Georgia, serif;
 
-  --ease:      cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-out:  cubic-bezier(0.22, 1, 0.36, 1);
-  --spring:    cubic-bezier(0.34, 1.42, 0.64, 1);
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.34, 1.42, 0.64, 1);
   --spring-soft: cubic-bezier(0.5, 1.2, 0.5, 1);
 
   --t-fast: 140ms;
@@ -48,8 +52,14 @@
   --gutter: clamp(20px, 4vw, 56px);
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
 html {
   scroll-behavior: smooth;
 }
@@ -65,11 +75,28 @@ body {
   letter-spacing: 0.005em;
   overflow-x: hidden;
 }
-button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
-a { color: inherit; text-decoration: none; }
-img, svg { display: block; max-width: 100%; }
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
 
-::selection { background: var(--ink-0); color: var(--bg-0); }
+::selection {
+  background: var(--ink-0);
+  color: var(--bg-0);
+}
 
 .page {
   position: relative;
@@ -87,14 +114,21 @@ img, svg { display: block; max-width: 100%; }
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background-image:
-    linear-gradient(to right, rgba(10,10,10,0.025) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(10, 10, 10, 0.025) 1px, transparent 1px);
   background-size: calc(100% / 12) 100%;
-  mask-image: linear-gradient(to bottom, transparent 0, black 200px, black calc(100% - 200px), transparent 100%);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 200px,
+    black calc(100% - 200px),
+    transparent 100%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

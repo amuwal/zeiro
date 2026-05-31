@@ -4,7 +4,9 @@
   z-index: 1;
 }
 .section-eyebrow {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.14em;
@@ -46,7 +48,19 @@
   line-height: 1.65;
   max-width: 38em;
 }
-.section-lede b { color: var(--ink-0); font-weight: 600; }
+.section-lede b {
+  color: var(--ink-0);
+  font-weight: 600;
+}
 
-.reveal { opacity: 0; transform: translateY(20px); transition: opacity 800ms var(--ease), transform 800ms var(--ease); }
-.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 800ms var(--ease),
+    transform 800ms var(--ease);
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}

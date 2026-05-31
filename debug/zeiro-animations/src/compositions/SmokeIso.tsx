@@ -1,10 +1,10 @@
-import { RoundedBox } from "@react-three/drei";
-import { ThreeCanvas } from "@remotion/three";
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { Background } from "../common/Background";
-import { ease } from "../theme";
-import { c3 } from "../three/palette3d";
-import { Lights, ShadowGround } from "../three/rig";
+import { RoundedBox } from '@react-three/drei';
+import { ThreeCanvas } from '@remotion/three';
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Background } from '../common/Background';
+import { ease } from '../theme';
+import { c3 } from '../three/palette3d';
+import { Lights, ShadowGround } from '../three/rig';
 
 // Toolchain smoke test: transparent ThreeCanvas over the brand paper Background,
 // soft studio rig, drei RoundedBox, contact shadows, frame-driven motion.
@@ -17,8 +17,8 @@ export const SmokeIso: React.FC = () => {
   });
   const rise = (i: number) =>
     interpolate(frame, [i * 7, i * 7 + 32], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
       easing: Easing.bezier(...ease.brand),
     });
 
@@ -31,7 +31,7 @@ export const SmokeIso: React.FC = () => {
         shadows
         camera={{ position: [9, 8, 11], fov: 30 }}
         gl={{ alpha: true, antialias: true }}
-        style={{ position: "absolute", inset: 0 }}
+        style={{ position: 'absolute', inset: 0 }}
       >
         <Lights />
         <ShadowGround />

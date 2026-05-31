@@ -8,7 +8,9 @@
   background: var(--bg-0);
 }
 .marquee-label {
-  position: absolute; left: var(--gutter); top: 50%;
+  position: absolute;
+  left: var(--gutter);
+  top: 50%;
   transform: translateY(-50%);
   background: var(--bg-0);
   padding-right: 16px;
@@ -27,7 +29,9 @@
   padding-left: 220px;
 }
 .marquee-item {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-sans);
   font-size: 18px;
   font-weight: 500;
@@ -35,8 +39,13 @@
   color: var(--ink-2);
 }
 .marquee-item .dot {
-  width: 5px; height: 5px; border-radius: 50%; background: var(--ink-4);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-4);
 }
 @keyframes marquee-slide {
-  to { transform: translateX(-50%); }
+  to {
+    transform: translateX(-50%);
+  }
 }

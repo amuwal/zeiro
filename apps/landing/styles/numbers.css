@@ -11,16 +11,28 @@
   border-left: 1px solid var(--line);
   border-top: 1px solid var(--line);
 }
-@media (min-width: 640px)  { .numbers-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1024px) { .numbers-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 640px) {
+  .numbers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .numbers-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
 .num-cell {
   padding: clamp(28px, 4vw, 44px) clamp(24px, 3vw, 32px);
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  display: flex; flex-direction: column; gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   transition: background var(--t-base) var(--ease);
 }
-.num-cell:hover { background: var(--bg-0); }
+.num-cell:hover {
+  background: var(--bg-0);
+}
 .num-cell .lbl {
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -36,7 +48,9 @@
   line-height: 0.95;
   color: var(--ink-0);
   font-variant-numeric: tabular-nums;
-  display: flex; align-items: baseline; gap: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   margin: 14px 0 6px;
 }
 .num-cell .v .unit {
@@ -51,4 +65,7 @@
   line-height: 1.55;
   max-width: 24em;
 }
-.num-cell .note b { color: var(--ink-0); font-weight: 600; }
+.num-cell .note b {
+  color: var(--ink-0);
+  font-weight: 600;
+}

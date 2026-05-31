@@ -1,8 +1,8 @@
-import { Icosahedron, Sphere } from "@react-three/drei";
-import { Easing, interpolate } from "remotion";
-import type { ColorRepresentation } from "three";
-import { ease } from "../theme";
-import { c3 } from "../three/palette3d";
+import { Icosahedron, Sphere } from '@react-three/drei';
+import { Easing, interpolate } from 'remotion';
+import type { ColorRepresentation } from 'three';
+import { ease } from '../theme';
+import { c3 } from '../three/palette3d';
 import {
   ARC_NODES,
   arcCurve,
@@ -11,7 +11,7 @@ import {
   NODES,
   partialCurve,
   sphericalToCartesian,
-} from "./JapanGlobeHelpers";
+} from './JapanGlobeHelpers';
 
 export const Globe: React.FC<{ appear: number }> = ({ appear }) => (
   <group scale={appear}>
@@ -45,8 +45,8 @@ export const Nodes: React.FC<{ frame: number }> = ({ frame }) => (
       const p = sphericalToCartesian(GLOBE_R * 1.015, n.lat, n.long);
       const start = 40 + i * 9;
       const s = interpolate(frame, [start, start + 26], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
         easing: Easing.bezier(...ease.pop),
       });
       const pulse = 1 + 0.12 * Math.sin((frame + i * 17) * 0.08);
@@ -82,13 +82,13 @@ const Arc: React.FC<{ index: number; frame: number }> = ({ index, frame }) => {
   const full = arcCurve(from);
   const start = 120 + index * 16;
   const f = interpolate(frame, [start, start + 60], [0.001, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.editorial),
   });
   const fade = interpolate(frame, [start, start + 20], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
   });
   const drawn = partialCurve(full, f);
   const headPos = full.getPoint(f);

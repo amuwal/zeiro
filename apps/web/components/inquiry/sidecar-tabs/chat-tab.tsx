@@ -7,7 +7,10 @@ import { useAgentChat } from './use-agent-chat';
 
 const QUICK_PROMPTS = [
   { label: 'なぜこの回答?', text: 'この下書きの根拠と引用元を詳しく教えてください。' },
-  { label: 'freee で確認', text: 'freee の最新の取引データを取得して、回答内容を検証してください。' },
+  {
+    label: 'freee で確認',
+    text: 'freee の最新の取引データを取得して、回答内容を検証してください。',
+  },
   { label: '代替案を提示', text: '別の言い回しで2案、簡潔と丁寧の対比でください。' },
   { label: 'もっと簡潔に', text: '下書きを2/3程度の長さに簡潔化してください。' },
 ];
@@ -77,7 +80,9 @@ export function ChatTab({
         )}
         {isEmpty && !isAwaitingPipeline && (
           <div className="sc-chat-empty">
-            <div className="sc-chat-empty-glyph"><Icon name="spark" size={18} /></div>
+            <div className="sc-chat-empty-glyph">
+              <Icon name="spark" size={18} />
+            </div>
             <div className="sc-chat-empty-title">エージェントと対話</div>
             <p className="sc-chat-empty-sub">
               下書きの根拠、citations、freee の最新データなどを聞けます。

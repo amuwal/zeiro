@@ -25,15 +25,32 @@ function check(label: string, cond: boolean) {
 
 async function main() {
   // 1. Permission matrix
-  check('owner can manage integrations', can({ role: 'owner', canSend: true }, 'integration.manage'));
-  check('reviewer CANNOT manage integrations', !can({ role: 'reviewer', canSend: true }, 'integration.manage'));
+  check(
+    'owner can manage integrations',
+    can({ role: 'owner', canSend: true }, 'integration.manage'),
+  );
+  check(
+    'reviewer CANNOT manage integrations',
+    !can({ role: 'reviewer', canSend: true }, 'integration.manage'),
+  );
   check('reviewer can send', can({ role: 'reviewer', canSend: false }, 'inquiry.send'));
-  check('staff WITHOUT canSend cannot send', !can({ role: 'staff', canSend: false }, 'inquiry.send'));
+  check(
+    'staff WITHOUT canSend cannot send',
+    !can({ role: 'staff', canSend: false }, 'inquiry.send'),
+  );
   check('staff WITH canSend can send', can({ role: 'staff', canSend: true }, 'inquiry.send'));
   check('staff can draft', can({ role: 'staff', canSend: false }, 'inquiry.draft'));
   check('viewer CANNOT draft', !can({ role: 'viewer', canSend: false }, 'inquiry.draft'));
-  check('only owner manages members', can({ role: 'owner', canSend: true }, 'member.manage') && !can({ role: 'reviewer', canSend: true }, 'member.manage'));
-  check('only owner tombstones', can({ role: 'owner', canSend: true }, 'client.tombstone') && !can({ role: 'reviewer', canSend: true }, 'client.tombstone'));
+  check(
+    'only owner manages members',
+    can({ role: 'owner', canSend: true }, 'member.manage') &&
+      !can({ role: 'reviewer', canSend: true }, 'member.manage'),
+  );
+  check(
+    'only owner tombstones',
+    can({ role: 'owner', canSend: true }, 'client.tombstone') &&
+      !can({ role: 'reviewer', canSend: true }, 'client.tombstone'),
+  );
 
   // 2. Scoping — pick a client that has inquiries
   const prisma = getPrisma();
@@ -74,7 +91,10 @@ async function main() {
     );
 
     const all = await listInquiryThreads(FIRM, undefined, { userId: user.id, seeAll: true });
-    check('seeAll returns >= assigned-scope', all.length >= after.length && all.length > after.length);
+    check(
+      'seeAll returns >= assigned-scope',
+      all.length >= after.length && all.length > after.length,
+    );
 
     const otherInq = await prisma.inquiry.findFirst({
       where: { firmId: FIRM, clientId: { not: null }, AND: [{ clientId: { not: clientId } }] },
@@ -92,7 +112,9 @@ async function main() {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
   }
 
-  process.stdout.write(failures === 0 ? '\nALL RBAC CHECKS PASSED\n' : `\n${failures} CHECK(S) FAILED\n`);
+  process.stdout.write(
+    failures === 0 ? '\nALL RBAC CHECKS PASSED\n' : `\n${failures} CHECK(S) FAILED\n`,
+  );
   process.exit(failures > 0 ? 1 : 0);
 }
 

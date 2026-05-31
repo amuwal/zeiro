@@ -25,8 +25,7 @@ export type TriageView = {
 // pre-draft (empty) analysis — once drafted, the real model values show.
 export function readTriage(analysis: unknown): TriageView {
   const a = (analysis ?? {}) as Record<string, unknown>;
-  const t =
-    a.triage && typeof a.triage === 'object' ? (a.triage as Record<string, unknown>) : a;
+  const t = a.triage && typeof a.triage === 'object' ? (a.triage as Record<string, unknown>) : a;
   return {
     category: typeof t.category === 'string' ? t.category : 'その他',
     confidence: typeof t.confidence === 'number' ? t.confidence : 0.5,

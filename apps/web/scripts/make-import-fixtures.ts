@@ -111,10 +111,7 @@ function makeLegacyXls() {
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '顧問先');
-  writeFileSync(
-    join(DIR, 'legacy.xls'),
-    XLSX.write(wb, { type: 'buffer', bookType: 'biff8' }),
-  );
+  writeFileSync(join(DIR, 'legacy.xls'), XLSX.write(wb, { type: 'buffer', bookType: 'biff8' }));
 }
 
 async function main() {

@@ -69,7 +69,11 @@ function normalizeParts(parts: MastraPart[], fallbackText: string | undefined): 
   for (const p of parts) {
     if (p.type === 'text' && typeof p.text === 'string' && p.text.length > 0) {
       out.push({ type: 'text', text: p.text });
-    } else if (p.type === 'reasoning' && typeof p.reasoning === 'string' && p.reasoning.length > 0) {
+    } else if (
+      p.type === 'reasoning' &&
+      typeof p.reasoning === 'string' &&
+      p.reasoning.length > 0
+    ) {
       out.push({ type: 'reasoning', text: p.reasoning });
     } else if (p.type === 'tool-invocation' && p.toolInvocation) {
       const ti = p.toolInvocation;

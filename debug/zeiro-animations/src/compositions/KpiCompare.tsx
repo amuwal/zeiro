@@ -1,7 +1,7 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { fonts } from "../fonts";
-import { ease, palette, radius, shadow } from "../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { fonts } from '../fonts';
+import { ease, palette, radius, shadow } from '../theme';
 
 // Before / After split. Left side: jagged slow response curve. Right side: smooth fast.
 // A vertical seam wipes from left to right revealing the "after".
@@ -9,21 +9,21 @@ export const KpiCompare: React.FC = () => {
   const frame = useCurrentFrame();
 
   const headerIn = interpolate(frame, [0, 24], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   // Curtain pulls from the right edge inward to the centre, revealing "after" on the right half.
   const reveal = interpolate(frame, [30, 130], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.editorial),
   });
 
   const numIn = interpolate(frame, [130, 170], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
@@ -41,7 +41,7 @@ export const KpiCompare: React.FC = () => {
       {/* "After" revealed via clip-path on the right side */}
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
           clipPath: `polygon(${seamX}px 0, ${cw}px 0, ${cw}px ${ch}px, ${seamX}px ${ch}px)`,
         }}
@@ -54,7 +54,7 @@ export const KpiCompare: React.FC = () => {
       {/* Seam line */}
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           top: 0,
           bottom: 0,
           left: seamX - 1,
@@ -96,21 +96,19 @@ const Chart: React.FC<{
   color: string;
   label: string;
   badgeColor: string;
-  side: "left" | "right";
+  side: 'left' | 'right';
 }> = ({ points, color, label, badgeColor, side }) => {
-  const left = side === "left" ? 200 : 1000;
+  const left = side === 'left' ? 200 : 1000;
   const top = 460;
   const w = 720;
   const h = 360;
   const stepX = w / (points.length - 1);
-  const d = points
-    .map((y, i) => `${i === 0 ? "M" : "L"} ${i * stepX} ${h - y * h}`)
-    .join(" ");
+  const d = points.map((y, i) => `${i === 0 ? 'M' : 'L'} ${i * stepX} ${h - y * h}`).join(' ');
 
   return (
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         left,
         top,
         width: w,
@@ -119,15 +117,15 @@ const Chart: React.FC<{
     >
       <div
         style={{
-          display: "inline-flex",
-          alignItems: "center",
+          display: 'inline-flex',
+          alignItems: 'center',
           gap: 8,
           fontFamily: fonts.mono,
           fontSize: 12,
           color: badgeColor,
-          letterSpacing: "0.32em",
-          textTransform: "uppercase",
-          padding: "6px 12px",
+          letterSpacing: '0.32em',
+          textTransform: 'uppercase',
+          padding: '6px 12px',
           border: `1px solid ${badgeColor}`,
           borderRadius: 999,
           marginBottom: 20,
@@ -139,9 +137,24 @@ const Chart: React.FC<{
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
         {/* grid */}
         {[0.25, 0.5, 0.75].map((g) => (
-          <line key={g} x1={0} x2={w} y1={h - g * h} y2={h - g * h} stroke={palette.line} strokeWidth={1} />
+          <line
+            key={g}
+            x1={0}
+            x2={w}
+            y1={h - g * h}
+            y2={h - g * h}
+            stroke={palette.line}
+            strokeWidth={1}
+          />
         ))}
-        <path d={d} stroke={color} strokeWidth={4} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+        <path
+          d={d}
+          stroke={color}
+          strokeWidth={4}
+          fill="none"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
         {points.map((y, i) => (
           <circle key={i} cx={i * stepX} cy={h - y * h} r={5} fill={color} />
         ))}
@@ -153,7 +166,7 @@ const Chart: React.FC<{
 const BeforeOverlay: React.FC<{ opacity: number }> = ({ opacity }) => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       top: 96,
       left: 120,
       opacity,
@@ -165,8 +178,8 @@ const BeforeOverlay: React.FC<{ opacity: number }> = ({ opacity }) => (
         fontFamily: fonts.mono,
         fontSize: 13,
         color: palette.muted,
-        letterSpacing: "0.4em",
-        textTransform: "uppercase",
+        letterSpacing: '0.4em',
+        textTransform: 'uppercase',
         marginBottom: 10,
       }}
     >
@@ -178,7 +191,7 @@ const BeforeOverlay: React.FC<{ opacity: number }> = ({ opacity }) => (
         fontSize: 56,
         color: palette.ink,
         fontWeight: 700,
-        letterSpacing: "-0.02em",
+        letterSpacing: '-0.02em',
         lineHeight: 1.05,
       }}
     >
@@ -190,12 +203,12 @@ const BeforeOverlay: React.FC<{ opacity: number }> = ({ opacity }) => (
 const AfterOverlay: React.FC<{ opacity: number; numIn: number }> = ({ opacity, numIn }) => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       top: 96,
       right: 120,
       opacity,
       maxWidth: 760,
-      textAlign: "right",
+      textAlign: 'right',
     }}
   >
     <div
@@ -203,8 +216,8 @@ const AfterOverlay: React.FC<{ opacity: number; numIn: number }> = ({ opacity, n
         fontFamily: fonts.mono,
         fontSize: 13,
         color: palette.accent,
-        letterSpacing: "0.4em",
-        textTransform: "uppercase",
+        letterSpacing: '0.4em',
+        textTransform: 'uppercase',
         marginBottom: 10,
       }}
     >
@@ -216,26 +229,27 @@ const AfterOverlay: React.FC<{ opacity: number; numIn: number }> = ({ opacity, n
         fontSize: 46,
         color: palette.ink,
         fontWeight: 700,
-        letterSpacing: "-0.02em",
+        letterSpacing: '-0.02em',
         lineHeight: 1.1,
       }}
     >
-      33<span style={{ color: palette.accent }}>×</span> 速く、<br />
+      33<span style={{ color: palette.accent }}>×</span> 速く、
+      <br />
       その日のうちに返す。
     </div>
     <div
       style={{
         opacity: numIn,
         marginTop: 24,
-        display: "inline-block",
-        padding: "10px 22px",
+        display: 'inline-block',
+        padding: '10px 22px',
         borderRadius: radius.sm,
         backgroundColor: palette.accentSoft,
         color: palette.accentInk,
         fontFamily: fonts.mono,
         fontSize: 14,
-        letterSpacing: "0.2em",
-        textTransform: "uppercase",
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
         boxShadow: shadow.sm,
       }}
     >

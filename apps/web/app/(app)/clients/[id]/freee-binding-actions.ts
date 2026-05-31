@@ -130,6 +130,7 @@ function freeeErrorMessage(e: unknown): string {
   if (e instanceof IntegrationNotConnectedError) return '事務所が freee と連携していません';
   if (e instanceof IntegrationRevokedError) return 'freee 連携が解除されています — 再連携が必要';
   if (e instanceof TokenRefreshError) return 'freee トークン更新に失敗しました — 再連携が必要';
-  if (e instanceof RateLimitError) return `freee のレート制限中です (${e.retryAfterSec}秒後に再試行)`;
+  if (e instanceof RateLimitError)
+    return `freee のレート制限中です (${e.retryAfterSec}秒後に再試行)`;
   return e instanceof Error ? e.message : '接続テストに失敗しました';
 }

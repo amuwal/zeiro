@@ -1,35 +1,35 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { fonts } from "../fonts";
-import { ease, palette, radius } from "../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { fonts } from '../fonts';
+import { ease, palette, radius } from '../theme';
 
 const CHECKS = [
-  "守秘義務 (税理士法 §38)",
-  "個人情報保護法 適合",
-  "監査ログ (誰が・いつ・何を)",
-  "PII マスキング 自動",
-  "no-train LLM 契約",
-  "データ保管 jp-tokyo",
+  '守秘義務 (税理士法 §38)',
+  '個人情報保護法 適合',
+  '監査ログ (誰が・いつ・何を)',
+  'PII マスキング 自動',
+  'no-train LLM 契約',
+  'データ保管 jp-tokyo',
 ];
 
 export const TrustShield: React.FC = () => {
   const frame = useCurrentFrame();
 
   const headerIn = interpolate(frame, [0, 24], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   const shieldDraw = interpolate(frame, [20, 80], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   const checkAppear = interpolate(frame, [80, 110], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.pop),
   });
 
@@ -39,13 +39,13 @@ export const TrustShield: React.FC = () => {
 
       <Header opacity={headerIn} />
 
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
-        <div style={{ position: "relative", width: 720, height: 560 }}>
+      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: 720, height: 560 }}>
           {/* Concentric pulses */}
           {[0, 1, 2].map((i) => {
             const t = interpolate(frame, [60 + i * 20, 180 + i * 20], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
               easing: Easing.bezier(...ease.editorial),
             });
             const size = 360 + t * 380;
@@ -54,14 +54,14 @@ export const TrustShield: React.FC = () => {
               <div
                 key={i}
                 style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "50%",
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
                   width: size,
                   height: size,
                   marginLeft: -size / 2,
                   marginTop: -size / 2,
-                  borderRadius: "50%",
+                  borderRadius: '50%',
                   border: `1px solid ${palette.accent}`,
                   opacity,
                 }}
@@ -75,9 +75,9 @@ export const TrustShield: React.FC = () => {
           {/* Check icon inside shield */}
           <div
             style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
               transform: `translate(-50%, -50%) scale(${0.6 + 0.4 * checkAppear})`,
               opacity: checkAppear,
               fontFamily: fonts.sans,
@@ -95,20 +95,20 @@ export const TrustShield: React.FC = () => {
       {/* Checklist on the right */}
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           right: 120,
-          top: "50%",
-          transform: "translateY(-50%)",
-          display: "flex",
-          flexDirection: "column",
+          top: '50%',
+          transform: 'translateY(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 16,
         }}
       >
         {CHECKS.map((line, i) => {
           const showAt = 100 + i * 12;
           const t = interpolate(frame, [showAt, showAt + 20], [0, 1], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
             easing: Easing.bezier(...ease.brand),
           });
           return (
@@ -117,12 +117,12 @@ export const TrustShield: React.FC = () => {
               style={{
                 opacity: t,
                 transform: `translateX(${(1 - t) * 20}px)`,
-                display: "flex",
-                alignItems: "center",
+                display: 'flex',
+                alignItems: 'center',
                 gap: 12,
                 backgroundColor: palette.surface,
                 border: `1px solid ${palette.line}`,
-                padding: "10px 16px",
+                padding: '10px 16px',
                 borderRadius: radius.sm,
                 fontFamily: fonts.jp,
                 fontSize: 16,
@@ -131,14 +131,14 @@ export const TrustShield: React.FC = () => {
             >
               <span
                 style={{
-                  display: "inline-flex",
+                  display: 'inline-flex',
                   width: 18,
                   height: 18,
                   borderRadius: 18,
                   backgroundColor: palette.accent,
                   color: palette.surface,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   fontSize: 12,
                   fontWeight: 700,
                 }}
@@ -157,10 +157,10 @@ export const TrustShield: React.FC = () => {
 const ShieldSvg: React.FC<{ progress: number }> = ({ progress }) => (
   <svg
     style={{
-      position: "absolute",
-      left: "50%",
-      top: "50%",
-      transform: "translate(-50%, -50%)",
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
     }}
     width={320}
     height={380}
@@ -182,7 +182,7 @@ const ShieldSvg: React.FC<{ progress: number }> = ({ progress }) => (
 const Header: React.FC<{ opacity: number }> = ({ opacity }) => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       top: 96,
       left: 120,
       opacity,
@@ -194,8 +194,8 @@ const Header: React.FC<{ opacity: number }> = ({ opacity }) => (
         fontFamily: fonts.mono,
         fontSize: 13,
         color: palette.muted,
-        letterSpacing: "0.4em",
-        textTransform: "uppercase",
+        letterSpacing: '0.4em',
+        textTransform: 'uppercase',
         marginBottom: 10,
       }}
     >
@@ -207,11 +207,12 @@ const Header: React.FC<{ opacity: number }> = ({ opacity }) => (
         fontSize: 46,
         color: palette.ink,
         fontWeight: 700,
-        letterSpacing: "-0.02em",
+        letterSpacing: '-0.02em',
         lineHeight: 1.1,
       }}
     >
-      ぜんぶ、<br />
+      ぜんぶ、
+      <br />
       <span style={{ color: palette.accent }}>守る</span>前提で設計した。
     </div>
   </div>

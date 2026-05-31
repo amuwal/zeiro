@@ -1,20 +1,20 @@
-import { ThreeCanvas } from "@remotion/three";
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { Background } from "../common/Background";
-import { fonts } from "../fonts";
-import { ease, palette } from "../theme";
-import { IsoWorkflowScene } from "./IsoWorkflowScene";
+import { ThreeCanvas } from '@remotion/three';
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Background } from '../common/Background';
+import { fonts } from '../fonts';
+import { ease, palette } from '../theme';
+import { IsoWorkflowScene } from './IsoWorkflowScene';
 
 const STAGES: { jp: string; en: string; left: string }[] = [
-  { jp: "受信トレイ", en: "INBOX", left: "15%" },
-  { jp: "ZEIRO エンジン", en: "CLASSIFY · RETRIEVE", left: "50%" },
-  { jp: "下書き完成", en: "DRAFT", left: "84%" },
+  { jp: '受信トレイ', en: 'INBOX', left: '15%' },
+  { jp: 'ZEIRO エンジン', en: 'CLASSIFY · RETRIEVE', left: '50%' },
+  { jp: '下書き完成', en: 'DRAFT', left: '84%' },
 ];
 
 const fadeIn = (frame: number, a: number, b: number, e = ease.brand) =>
   interpolate(frame, [a, b], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...e),
   });
 
@@ -35,20 +35,20 @@ export const IsoWorkflow: React.FC = () => {
         shadows
         camera={{ position: [10, 9, 12], fov: 28 }}
         gl={{ alpha: true, antialias: true }}
-        style={{ position: "absolute", inset: 0 }}
+        style={{ position: 'absolute', inset: 0 }}
       >
         <IsoWorkflowScene frame={frame} />
       </ThreeCanvas>
 
-      <AbsoluteFill style={{ pointerEvents: "none" }}>
-        <div style={{ position: "absolute", top: 96, left: 120, right: 120 }}>
+      <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 96, left: 120, right: 120 }}>
           <div
             style={{
               fontFamily: fonts.mono,
               fontSize: 14,
               color: palette.muted2,
-              letterSpacing: "0.4em",
-              textTransform: "uppercase",
+              letterSpacing: '0.4em',
+              textTransform: 'uppercase',
               opacity: headIn,
               transform: `translateY(${(1 - headIn) * -8}px)`,
             }}
@@ -61,11 +61,11 @@ export const IsoWorkflow: React.FC = () => {
               fontSize: 52,
               fontWeight: 700,
               color: palette.ink,
-              letterSpacing: "-0.02em",
+              letterSpacing: '-0.02em',
               marginTop: 14,
               opacity: headIn,
               transform: `translateY(${(1 - headIn) * 12}px)`,
-              whiteSpace: "nowrap",
+              whiteSpace: 'nowrap',
             }}
           >
             散らかった受信を、整った下書きへ。
@@ -78,11 +78,11 @@ export const IsoWorkflow: React.FC = () => {
             <div
               key={s.en}
               style={{
-                position: "absolute",
+                position: 'absolute',
                 bottom: 168,
                 left: s.left,
                 transform: `translateX(-50%) translateY(${(1 - t) * 10}px)`,
-                textAlign: "center",
+                textAlign: 'center',
                 opacity: captionIn * t,
               }}
             >
@@ -92,8 +92,8 @@ export const IsoWorkflow: React.FC = () => {
                   fontSize: 18,
                   fontWeight: 700,
                   color: palette.ink2,
-                  letterSpacing: "0.04em",
-                  whiteSpace: "nowrap",
+                  letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {s.jp}
@@ -103,10 +103,10 @@ export const IsoWorkflow: React.FC = () => {
                   fontFamily: fonts.mono,
                   fontSize: 11,
                   color: palette.muted,
-                  letterSpacing: "0.34em",
-                  textTransform: "uppercase",
+                  letterSpacing: '0.34em',
+                  textTransform: 'uppercase',
                   marginTop: 6,
-                  whiteSpace: "nowrap",
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {s.en}
@@ -117,29 +117,29 @@ export const IsoWorkflow: React.FC = () => {
 
         <div
           style={{
-            position: "absolute",
+            position: 'absolute',
             bottom: 92,
             left: 0,
             right: 0,
-            display: "flex",
-            justifyContent: "center",
+            display: 'flex',
+            justifyContent: 'center',
             gap: 18,
             opacity: footIn,
             transform: `translateY(${(1 - footIn) * 8}px)`,
           }}
         >
-          {["分類", "検索(RAG)", "下書き", "監査ログ"].map((chip, i) => (
+          {['分類', '検索(RAG)', '下書き', '監査ログ'].map((chip, i) => (
             <div
               key={chip}
               style={{
-                display: "flex",
-                alignItems: "center",
+                display: 'flex',
+                alignItems: 'center',
                 gap: 18,
                 fontFamily: fonts.mono,
                 fontSize: 13,
                 color: palette.muted,
-                letterSpacing: "0.14em",
-                whiteSpace: "nowrap",
+                letterSpacing: '0.14em',
+                whiteSpace: 'nowrap',
               }}
             >
               <span style={{ fontFamily: fonts.jp }}>{chip}</span>

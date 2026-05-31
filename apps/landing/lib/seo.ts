@@ -17,9 +17,7 @@ export const BRAND = {
   addressLocality: '東京都千代田区',
   addressRegion: 'Tokyo',
   addressCountry: 'JP',
-  sameAs: [
-    'https://app.zeiro.io',
-  ],
+  sameAs: ['https://app.zeiro.io'],
 } as const;
 
 type FaqItem = { q: string; a: string };

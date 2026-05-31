@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/next';
-import { Inter_Tight, JetBrains_Mono, Newsreader, Noto_Sans_JP } from 'next/font/google';
 import type { Metadata, Viewport } from 'next';
+import { Inter_Tight, JetBrains_Mono, Newsreader, Noto_Sans_JP } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { JsonLd } from '@/components/json-ld';
 import { BRAND, SITE_URL, structuredData } from '@/lib/seo';
@@ -131,7 +131,12 @@ export const viewport: Viewport = {
   ],
 };
 
-const fontClass = [interTight.variable, notoSansJp.variable, jetbrainsMono.variable, newsreader.variable].join(' ');
+const fontClass = [
+  interTight.variable,
+  notoSansJp.variable,
+  jetbrainsMono.variable,
+  newsreader.variable,
+].join(' ');
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

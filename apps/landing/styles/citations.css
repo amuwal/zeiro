@@ -8,7 +8,11 @@
   grid-template-columns: 1fr;
 }
 @media (min-width: 960px) {
-  .cite-stage { grid-template-columns: 1fr 1fr; gap: 40px; align-items: stretch; }
+  .cite-stage {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+  }
 }
 .cite-paper {
   background: var(--bg-1);
@@ -21,7 +25,9 @@
   font-feature-settings: "ss01";
 }
 .cite-paper-head {
-  display: flex; align-items: center; gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 18px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
@@ -32,7 +38,8 @@
   text-transform: uppercase;
 }
 .cite-paper-head .ctag {
-  background: var(--ink-0); color: var(--bg-0);
+  background: var(--ink-0);
+  color: var(--bg-0);
   padding: 2px 7px;
   border-radius: 3px;
   font-weight: 600;
@@ -44,7 +51,9 @@
   color: var(--ink-1);
   letter-spacing: 0.003em;
 }
-.cite-paper p:last-child { margin-bottom: 0; }
+.cite-paper p:last-child {
+  margin-bottom: 0;
+}
 .cite-paper b {
   font-family: var(--font-jp);
   font-weight: 600;
@@ -66,7 +75,8 @@
   transition: all var(--t-fast) var(--ease);
   display: inline-block;
 }
-.cite-mark.active, .cite-mark:hover {
+.cite-mark.active,
+.cite-mark:hover {
   background: var(--ink-0);
   color: var(--bg-0);
   border-color: var(--ink-0);
@@ -74,7 +84,8 @@
 }
 
 .cite-cards {
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 .cite-card {
@@ -99,8 +110,10 @@
   align-items: center;
 }
 .cite-card .n {
-  width: 22px; height: 22px;
-  display: grid; place-items: center;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
   border-radius: 5px;
   background: var(--bg-2);
   font-family: var(--font-mono);
@@ -128,15 +141,22 @@
 }
 .cite-card .meta {
   margin: 8px 0 0 40px;
-  display: flex; gap: 8px; align-items: center;
+  display: flex;
+  gap: 8px;
+  align-items: center;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ink-3);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.cite-card .meta b { color: var(--ink-1); font-weight: 500; }
-.cite-card .meta .sep { color: var(--ink-4); }
+.cite-card .meta b {
+  color: var(--ink-1);
+  font-weight: 500;
+}
+.cite-card .meta .sep {
+  color: var(--ink-4);
+}
 .cite-card .snippet {
   margin: 12px 0 0 40px;
   font-size: 12.5px;
@@ -145,7 +165,9 @@
   letter-spacing: 0.005em;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 480ms var(--ease), margin-top 360ms var(--ease);
+  transition:
+    max-height 480ms var(--ease),
+    margin-top 360ms var(--ease);
   border-left: 1px solid var(--line);
   padding-left: 12px;
 }

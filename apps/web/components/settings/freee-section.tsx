@@ -27,7 +27,8 @@ export function FreeeSection({ view, canConfigureOAuth, flash }: Props) {
         <div>
           <h3 className="freee-title">freee 会計連携</h3>
           <p className="freee-sub">
-            事務所の freee アカウントを連携すると、AI が下書き作成時に顧問先の取引データを参照できます。
+            事務所の freee アカウントを連携すると、AI
+            が下書き作成時に顧問先の取引データを参照できます。
           </p>
         </div>
         <StatusBadge view={view} />
@@ -120,15 +121,20 @@ function ConnectedView({
       )}
 
       <div className="freee-actions">
-        {canConfigureOAuth && (view.status === 'connected' ? (
-          <button type="button" className="freee-reauth-btn" onClick={startOAuth}>
-            再連携
-          </button>
-        ) : (
-          <button type="button" className="freee-reauth-btn freee-reauth-warn" onClick={startOAuth}>
-            <Icon name="alert" size={13} /> 再連携が必要
-          </button>
-        ))}
+        {canConfigureOAuth &&
+          (view.status === 'connected' ? (
+            <button type="button" className="freee-reauth-btn" onClick={startOAuth}>
+              再連携
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="freee-reauth-btn freee-reauth-warn"
+              onClick={startOAuth}
+            >
+              <Icon name="alert" size={13} /> 再連携が必要
+            </button>
+          ))}
         <form action={async () => refreshFreeeCompanies()}>
           <button type="submit" className="freee-reauth-btn">
             <Icon name="spark" size={13} /> 事業所リストを更新

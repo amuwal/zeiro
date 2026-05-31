@@ -20,16 +20,22 @@ export function DraftTurn({ turn, highlightedCite, onCiteHover, onCiteLeave }: P
 
         {turn.aiNote && (
           <div className="ai-note">
-            <span className="ai-note-glyph"><Icon name="spark" size={11} /></span>
+            <span className="ai-note-glyph">
+              <Icon name="spark" size={11} />
+            </span>
             <span>{turn.aiNote}</span>
           </div>
         )}
 
         <div className="draft-card">
           <div className="draft-strip">
-            <span className="mini-stat"><b>{turn.citationCount}</b> KB参照</span>
+            <span className="mini-stat">
+              <b>{turn.citationCount}</b> KB参照
+            </span>
             <span className="strip-divider" />
-            <span className="mini-stat">信頼度 <b>{Math.round(turn.confidence * 100)}%</b></span>
+            <span className="mini-stat">
+              信頼度 <b>{Math.round(turn.confidence * 100)}%</b>
+            </span>
             <span className="strip-divider" />
             <span className="mini-stat">{(turn.model ?? 'CLAUDE-4.5').toUpperCase()}</span>
             <span className="gen-time">

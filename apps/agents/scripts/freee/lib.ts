@@ -28,7 +28,9 @@ if (!process.env.FREEE_ACCESS_TOKEN) {
 const envSchema = z.object({
   FREEE_CLIENT_ID: z.string().min(1).optional(),
   FREEE_CLIENT_SECRET: z.string().min(1).optional(),
-  FREEE_ACCESS_TOKEN: z.string().min(1, 'set FREEE_ACCESS_TOKEN or run `npx freee-mcp configure` first'),
+  FREEE_ACCESS_TOKEN: z
+    .string()
+    .min(1, 'set FREEE_ACCESS_TOKEN or run `npx freee-mcp configure` first'),
   FREEE_COMPANY_ID: z.string().regex(/^\d+$/, 'FREEE_COMPANY_ID must be numeric'),
 });
 

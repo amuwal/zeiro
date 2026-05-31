@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import {
-  promoteUnmatchedAction,
-  rejectUnmatchedAction,
-} from '@/app/(app)/inbox/actions';
+import { promoteUnmatchedAction, rejectUnmatchedAction } from '@/app/(app)/inbox/actions';
 import { Icon } from '@/components/ui/icon';
 
 type Props = {
@@ -24,9 +21,8 @@ const CONTRACT_OPTIONS = [
 
 export function UnmatchedBanner({ inquiryId, fromAddress, suggestedName }: Props) {
   const [name, setName] = useState(suggestedName);
-  const [contractType, setContractType] = useState<typeof CONTRACT_OPTIONS[number]['value']>(
-    'unverified',
-  );
+  const [contractType, setContractType] =
+    useState<(typeof CONTRACT_OPTIONS)[number]['value']>('unverified');
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +50,8 @@ export function UnmatchedBanner({ inquiryId, fromAddress, suggestedName }: Props
         <div>
           <div className="unmatched-banner-title">未登録の差出人からの問い合わせ</div>
           <div className="unmatched-banner-sub">
-            <code>{fromAddress}</code> は顧問先として未登録です。登録すると AI 下書きが生成されます。
+            <code>{fromAddress}</code> は顧問先として未登録です。登録すると AI
+            下書きが生成されます。
           </div>
         </div>
       </div>
@@ -74,7 +71,7 @@ export function UnmatchedBanner({ inquiryId, fromAddress, suggestedName }: Props
           <select
             value={contractType}
             onChange={(e) =>
-              setContractType(e.target.value as typeof CONTRACT_OPTIONS[number]['value'])
+              setContractType(e.target.value as (typeof CONTRACT_OPTIONS)[number]['value'])
             }
             disabled={busy}
           >
@@ -86,12 +83,7 @@ export function UnmatchedBanner({ inquiryId, fromAddress, suggestedName }: Props
           </select>
         </label>
         <div className="unmatched-banner-actions">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={reject}
-            disabled={busy}
-          >
+          <button type="button" className="btn btn-ghost" onClick={reject} disabled={busy}>
             <Icon name="x" size={12} /> 破棄
           </button>
           <button

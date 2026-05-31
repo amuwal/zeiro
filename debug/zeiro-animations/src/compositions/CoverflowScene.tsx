@@ -1,7 +1,7 @@
-import { AbsoluteFill } from "remotion";
-import { fonts } from "../fonts";
-import { palette } from "../theme";
-import { CARD_H } from "./CoverflowCenter";
+import { AbsoluteFill } from 'remotion';
+import { fonts } from '../fonts';
+import { palette } from '../theme';
+import { CARD_H } from './CoverflowCenter';
 
 export const CENTER_X = 960;
 export const ROW_Y = 415;
@@ -25,20 +25,17 @@ export const placement = (slot: number) => {
   return { x, rotY, z, scale };
 };
 
-export const Reflection: React.FC<{ children: React.ReactNode; h: number }> = ({
-  children,
-  h,
-}) => (
+export const Reflection: React.FC<{ children: React.ReactNode; h: number }> = ({ children, h }) => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       top: h + 6,
       left: 0,
-      transform: "scaleY(-1)",
+      transform: 'scaleY(-1)',
       opacity: 0.24,
-      WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 55%)",
-      maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 55%)",
-      pointerEvents: "none",
+      WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 55%)',
+      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 55%)',
+      pointerEvents: 'none',
     }}
   >
     {children}
@@ -48,7 +45,7 @@ export const Reflection: React.FC<{ children: React.ReactNode; h: number }> = ({
 export const GlossyFloor: React.FC = () => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       left: 0,
       right: 0,
       top: ROW_Y + CARD_H - 24,
@@ -60,14 +57,14 @@ export const GlossyFloor: React.FC = () => (
 );
 
 export const Overlay: React.FC<{ headIn: number; pill: number }> = ({ headIn, pill }) => (
-  <AbsoluteFill style={{ pointerEvents: "none" }}>
+  <AbsoluteFill style={{ pointerEvents: 'none' }}>
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         top: 96,
         left: 0,
         right: 0,
-        textAlign: "center",
+        textAlign: 'center',
         opacity: headIn,
         transform: `translateY(${(1 - headIn) * -12}px)`,
       }}
@@ -77,8 +74,8 @@ export const Overlay: React.FC<{ headIn: number; pill: number }> = ({ headIn, pi
           fontFamily: fonts.mono,
           fontSize: 13,
           color: palette.muted2,
-          letterSpacing: "0.4em",
-          textTransform: "uppercase",
+          letterSpacing: '0.4em',
+          textTransform: 'uppercase',
           marginBottom: 14,
         }}
       >
@@ -90,7 +87,7 @@ export const Overlay: React.FC<{ headIn: number; pill: number }> = ({ headIn, pi
           fontSize: 50,
           fontWeight: 700,
           color: palette.ink,
-          letterSpacing: "-0.02em",
+          letterSpacing: '-0.02em',
         }}
       >
         受信メールが、そのまま返信の下書きに。
@@ -99,12 +96,12 @@ export const Overlay: React.FC<{ headIn: number; pill: number }> = ({ headIn, pi
 
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         bottom: 96,
         left: 0,
         right: 0,
-        display: "flex",
-        justifyContent: "center",
+        display: 'flex',
+        justifyContent: 'center',
         opacity: pill,
         transform: `translateY(${(1 - pill) * 14}px) scale(${0.9 + 0.1 * pill})`,
       }}
@@ -116,11 +113,11 @@ export const Overlay: React.FC<{ headIn: number; pill: number }> = ({ headIn, pi
           fontWeight: 700,
           color: palette.bg,
           backgroundColor: palette.accent,
-          padding: "14px 30px",
+          padding: '14px 30px',
           borderRadius: 999,
-          letterSpacing: "0.04em",
-          boxShadow: "0 18px 40px -16px rgba(20,17,13,0.5)",
-          whiteSpace: "nowrap",
+          letterSpacing: '0.04em',
+          boxShadow: '0 18px 40px -16px rgba(20,17,13,0.5)',
+          whiteSpace: 'nowrap',
         }}
       >
         承認して送信
@@ -129,16 +126,16 @@ export const Overlay: React.FC<{ headIn: number; pill: number }> = ({ headIn, pi
 
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         bottom: 44,
         left: 0,
         right: 0,
-        textAlign: "center",
+        textAlign: 'center',
         fontFamily: fonts.mono,
         fontSize: 13,
         color: palette.muted,
-        letterSpacing: "0.3em",
-        textTransform: "uppercase",
+        letterSpacing: '0.3em',
+        textTransform: 'uppercase',
         opacity: headIn,
       }}
     >

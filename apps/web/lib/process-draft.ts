@@ -26,9 +26,7 @@ export async function processDraft(firmId: string, inquiryId: string): Promise<v
     firmId,
     inquiryId,
     clientId: inquiry.clientId,
-    clientNotes: inquiry.client
-      ? await readClientNotes(firmId, inquiry.client.primaryEmail)
-      : null,
+    clientNotes: inquiry.client ? await readClientNotes(firmId, inquiry.client.primaryEmail) : null,
     subject: inquiry.subject,
     body: inquiry.body,
     ...(threadHistory.length > 0 ? { threadHistory } : {}),

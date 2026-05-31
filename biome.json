@@ -11,7 +11,8 @@
       "!design_files",
       "!**/.clerk",
       "!**/next-env.d.ts",
-      "!apps/web/app/globals.css"
+      "!apps/web/app/globals.css",
+      "!debug"
     ]
   },
   "formatter": {
@@ -31,9 +32,21 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "a11y": {
+        "noStaticElementInteractions": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useButtonType": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useValidAnchor": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsole": "warn"
+        "noConsole": "warn",
+        "noArrayIndexKey": "warn",
+        "useIterableCallbackReturn": "warn"
       },
       "style": {
         "useImportType": "error",

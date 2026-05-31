@@ -9,7 +9,7 @@
  * partner POSTs will 403 and you should either re-OAuth with write or seed
  * manually via the freee UI.
  */
-import { companyId, freee, FreeeApiError, jpyDate, logKV, logSection } from './lib';
+import { companyId, FreeeApiError, freee, jpyDate, logKV, logSection } from './lib';
 
 const SEED_TAG = 'zeiro-seed';
 
@@ -21,9 +21,24 @@ type PartnerSeed = {
 };
 
 const PARTNERS: PartnerSeed[] = [
-  { key: 'mirai-tech', name: '合同会社みらいテック', email: 'mirai-tech@example.co.jp', payerPayee: 'customer' },
-  { key: 'sakura-clinic', name: '佐藤クリニック', email: 'sato@sato-clinic.jp', payerPayee: 'customer' },
-  { key: 'yamada-shoji', name: '株式会社山田商事', email: 'yamada@yamada-shoji.co.jp', payerPayee: 'customer' },
+  {
+    key: 'mirai-tech',
+    name: '合同会社みらいテック',
+    email: 'mirai-tech@example.co.jp',
+    payerPayee: 'customer',
+  },
+  {
+    key: 'sakura-clinic',
+    name: '佐藤クリニック',
+    email: 'sato@sato-clinic.jp',
+    payerPayee: 'customer',
+  },
+  {
+    key: 'yamada-shoji',
+    name: '株式会社山田商事',
+    email: 'yamada@yamada-shoji.co.jp',
+    payerPayee: 'customer',
+  },
   { key: 'office-rent', name: 'ヤマダ不動産 (賃貸)', payerPayee: 'supplier' },
   { key: 'cloud-saas', name: 'AWS Japan', payerPayee: 'supplier' },
 ];
@@ -41,19 +56,103 @@ type DealSeed = {
 // customers, occasional one-off purchases. Spread over the last 90 days.
 const DEALS: DealSeed[] = [
   // Recurring outgoings
-  { type: 'expense', daysAgo: 5, partnerKey: 'office-rent', amount: 180000, description: '事務所家賃 (今月)', account: '地代家賃' },
-  { type: 'expense', daysAgo: 8, partnerKey: 'cloud-saas', amount: 47800, description: 'AWS 利用料', account: '通信費' },
-  { type: 'expense', daysAgo: 35, partnerKey: 'office-rent', amount: 180000, description: '事務所家賃 (先月)', account: '地代家賃' },
-  { type: 'expense', daysAgo: 38, partnerKey: 'cloud-saas', amount: 52100, description: 'AWS 利用料 (先月)', account: '通信費' },
-  { type: 'expense', daysAgo: 65, partnerKey: 'office-rent', amount: 180000, description: '事務所家賃 (前々月)', account: '地代家賃' },
-  { type: 'expense', daysAgo: 68, partnerKey: 'cloud-saas', amount: 49500, description: 'AWS 利用料 (前々月)', account: '通信費' },
+  {
+    type: 'expense',
+    daysAgo: 5,
+    partnerKey: 'office-rent',
+    amount: 180000,
+    description: '事務所家賃 (今月)',
+    account: '地代家賃',
+  },
+  {
+    type: 'expense',
+    daysAgo: 8,
+    partnerKey: 'cloud-saas',
+    amount: 47800,
+    description: 'AWS 利用料',
+    account: '通信費',
+  },
+  {
+    type: 'expense',
+    daysAgo: 35,
+    partnerKey: 'office-rent',
+    amount: 180000,
+    description: '事務所家賃 (先月)',
+    account: '地代家賃',
+  },
+  {
+    type: 'expense',
+    daysAgo: 38,
+    partnerKey: 'cloud-saas',
+    amount: 52100,
+    description: 'AWS 利用料 (先月)',
+    account: '通信費',
+  },
+  {
+    type: 'expense',
+    daysAgo: 65,
+    partnerKey: 'office-rent',
+    amount: 180000,
+    description: '事務所家賃 (前々月)',
+    account: '地代家賃',
+  },
+  {
+    type: 'expense',
+    daysAgo: 68,
+    partnerKey: 'cloud-saas',
+    amount: 49500,
+    description: 'AWS 利用料 (前々月)',
+    account: '通信費',
+  },
   // Sales (income)
-  { type: 'income', daysAgo: 12, partnerKey: 'mirai-tech', amount: 660000, description: 'システム開発 11月分', account: '売上高' },
-  { type: 'income', daysAgo: 18, partnerKey: 'sakura-clinic', amount: 88000, description: 'IT サポート 月額', account: '売上高' },
-  { type: 'income', daysAgo: 22, partnerKey: 'yamada-shoji', amount: 330000, description: 'コンサルティング 11月', account: '売上高' },
-  { type: 'income', daysAgo: 48, partnerKey: 'mirai-tech', amount: 660000, description: 'システム開発 10月分', account: '売上高' },
-  { type: 'income', daysAgo: 50, partnerKey: 'sakura-clinic', amount: 88000, description: 'IT サポート 月額 (10月)', account: '売上高' },
-  { type: 'income', daysAgo: 55, partnerKey: 'yamada-shoji', amount: 275000, description: 'コンサルティング 10月', account: '売上高' },
+  {
+    type: 'income',
+    daysAgo: 12,
+    partnerKey: 'mirai-tech',
+    amount: 660000,
+    description: 'システム開発 11月分',
+    account: '売上高',
+  },
+  {
+    type: 'income',
+    daysAgo: 18,
+    partnerKey: 'sakura-clinic',
+    amount: 88000,
+    description: 'IT サポート 月額',
+    account: '売上高',
+  },
+  {
+    type: 'income',
+    daysAgo: 22,
+    partnerKey: 'yamada-shoji',
+    amount: 330000,
+    description: 'コンサルティング 11月',
+    account: '売上高',
+  },
+  {
+    type: 'income',
+    daysAgo: 48,
+    partnerKey: 'mirai-tech',
+    amount: 660000,
+    description: 'システム開発 10月分',
+    account: '売上高',
+  },
+  {
+    type: 'income',
+    daysAgo: 50,
+    partnerKey: 'sakura-clinic',
+    amount: 88000,
+    description: 'IT サポート 月額 (10月)',
+    account: '売上高',
+  },
+  {
+    type: 'income',
+    daysAgo: 55,
+    partnerKey: 'yamada-shoji',
+    amount: 275000,
+    description: 'コンサルティング 10月',
+    account: '売上高',
+  },
 ];
 
 type Partner = { id: number; name: string; shortcut1: string | null };
@@ -80,7 +179,9 @@ async function findOrCreatePartner(seed: PartnerSeed, existing: Partner[]): Prom
 async function findAccountItemByName(items: AccountItem[], name: string): Promise<number> {
   const match = items.find((i) => i.name === name);
   if (!match) {
-    throw new Error(`account_item not found: ${name}. freee 事業所 may not have the default chart of accounts.`);
+    throw new Error(
+      `account_item not found: ${name}. freee 事業所 may not have the default chart of accounts.`,
+    );
   }
   return match.id;
 }
@@ -100,7 +201,9 @@ async function createDealIfMissing(
   const refNumber = `zs-${seed.partnerKey.slice(0, 6)}-${seed.daysAgo}d`;
 
   // Dedup by ref_number — freee allows custom ref values per deal.
-  const dup = existingDeals.find((d) => (d as Deal & { ref_number?: string }).ref_number === refNumber);
+  const dup = existingDeals.find(
+    (d) => (d as Deal & { ref_number?: string }).ref_number === refNumber,
+  );
   if (dup) {
     logKV(`  deal=${seed.daysAgo}d`, `exists #${dup.id} ${seed.description}`);
     return;
@@ -121,15 +224,26 @@ async function createDealIfMissing(
       },
     ],
   });
-  logKV(`  deal=${seed.daysAgo}d`, `created #${created.deal.id} ${seed.type} ¥${seed.amount.toLocaleString()} ${seed.description}`);
+  logKV(
+    `  deal=${seed.daysAgo}d`,
+    `created #${created.deal.id} ${seed.type} ¥${seed.amount.toLocaleString()} ${seed.description}`,
+  );
 }
 
 async function main() {
   logSection('1. fetch existing state');
   const [partnersRes, accountsRes, dealsRes] = await Promise.all([
-    freee<{ partners: Partner[] }>('GET', '/api/1/partners', undefined, { company_id: companyId, limit: 100 }),
-    freee<{ account_items: AccountItem[] }>('GET', '/api/1/account_items', undefined, { company_id: companyId }),
-    freee<{ deals: Deal[] }>('GET', '/api/1/deals', undefined, { company_id: companyId, limit: 100 }),
+    freee<{ partners: Partner[] }>('GET', '/api/1/partners', undefined, {
+      company_id: companyId,
+      limit: 100,
+    }),
+    freee<{ account_items: AccountItem[] }>('GET', '/api/1/account_items', undefined, {
+      company_id: companyId,
+    }),
+    freee<{ deals: Deal[] }>('GET', '/api/1/deals', undefined, {
+      company_id: companyId,
+      limit: 100,
+    }),
   ]);
   logKV('partners', partnersRes.partners.length);
   logKV('account_items', accountsRes.account_items.length);

@@ -78,9 +78,14 @@ async function main() {
       // Spot-check first + last row for fidelity
       const first = preview.rows[0];
       const last = preview.rows[preview.rows.length - 1];
-      if (first) out(`  first      → [${first.sourceRow}] ${first.name}  <${first.primaryEmail ?? '—'}>  ${first.contractType ?? '—'}`);
+      if (first)
+        out(
+          `  first      → [${first.sourceRow}] ${first.name}  <${first.primaryEmail ?? '—'}>  ${first.contractType ?? '—'}`,
+        );
       if (last && preview.rows.length > 1) {
-        out(`  last       → [${last.sourceRow}] ${last.name}  <${last.primaryEmail ?? '—'}>  ${last.contractType ?? '—'}`);
+        out(
+          `  last       → [${last.sourceRow}] ${last.name}  <${last.primaryEmail ?? '—'}>  ${last.contractType ?? '—'}`,
+        );
       }
       // Issue summary
       const issues = new Map<string, number>();
@@ -88,7 +93,11 @@ async function main() {
         for (const issue of r.issues) issues.set(issue, (issues.get(issue) ?? 0) + 1);
       }
       if (issues.size > 0) {
-        out(`  issues     → ${Array.from(issues.entries()).map(([k, v]) => `${k}:${v}`).join('  ')}`);
+        out(
+          `  issues     → ${Array.from(issues.entries())
+            .map(([k, v]) => `${k}:${v}`)
+            .join('  ')}`,
+        );
       }
     } catch (e) {
       out(`  parsed     → ❌ ${(e as Error).message}`);

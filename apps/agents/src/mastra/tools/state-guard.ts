@@ -2,9 +2,12 @@
  * context (populated by the chat endpoint). The pipeline doesn't set this —
  * pipeline only runs on fresh inquiries so omission is treated as a permissive
  * default. */
-export type ContextLike = {
-  get(key: string): unknown;
-} | null | undefined;
+export type ContextLike =
+  | {
+      get(key: string): unknown;
+    }
+  | null
+  | undefined;
 
 export function readCurrentStatus(ctx: ContextLike): string | null {
   const v = ctx?.get('currentStatus');

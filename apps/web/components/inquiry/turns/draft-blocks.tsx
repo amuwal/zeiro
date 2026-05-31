@@ -8,7 +8,13 @@ type Props = CiteProps & {
   typing: boolean;
 };
 
-export function DraftBlocksView({ blocks, highlightedCite, onCiteHover, onCiteLeave, typing }: Props) {
+export function DraftBlocksView({
+  blocks,
+  highlightedCite,
+  onCiteHover,
+  onCiteLeave,
+  typing,
+}: Props) {
   const [shown, setShown] = useState(typing ? 0 : blocks.length);
   useEffect(() => {
     if (!typing) {

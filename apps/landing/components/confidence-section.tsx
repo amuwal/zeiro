@@ -27,10 +27,25 @@ const CASES: ConfidenceCase[] = [
   },
 ];
 
-const THRESHOLDS: Array<{ kind: 'auto' | 'review' | 'escalate'; grade: string; label: string; sub: string }> = [
+const THRESHOLDS: Array<{
+  kind: 'auto' | 'review' | 'escalate';
+  grade: string;
+  label: string;
+  sub: string;
+}> = [
   { kind: 'auto', grade: '≥ 0.85', label: '自動送信 — 担当のみ通知', sub: '高確度 · 定型応答' },
-  { kind: 'review', grade: '0.70 – 0.85', label: '下書きを生成 · 担当者の承認後に送信', sub: '標準フロー' },
-  { kind: 'escalate', grade: '< 0.70', label: '所長へ即時エスカレーション', sub: '個別判断・新規論点' },
+  {
+    kind: 'review',
+    grade: '0.70 – 0.85',
+    label: '下書きを生成 · 担当者の承認後に送信',
+    sub: '標準フロー',
+  },
+  {
+    kind: 'escalate',
+    grade: '< 0.70',
+    label: '所長へ即時エスカレーション',
+    sub: '個別判断・新規論点',
+  },
 ];
 
 export function ConfidenceSection() {
@@ -55,8 +70,9 @@ export function ConfidenceSection() {
             <em>人間に</em>渡す。
           </h2>
           <p className="section-lede">
-            類似ナレッジの一致度、過去類例の数、顧問契約の特記事項。これらを総合し <b>0–1 の信頼度</b> を算出。
-            事務所が設定した閾値を下回ったとき、Zeiro は<b>勝手に送信しない</b>。所長に確認を仰ぎます。
+            類似ナレッジの一致度、過去類例の数、顧問契約の特記事項。これらを総合し{' '}
+            <b>0–1 の信頼度</b> を算出。 事務所が設定した閾値を下回ったとき、Zeiro は
+            <b>勝手に送信しない</b>。所長に確認を仰ぎます。
           </p>
         </div>
 

@@ -39,7 +39,9 @@ async function main() {
   const { companies } = (await res.json()) as {
     companies: Array<{ id: number; name: string; role: string }>;
   };
-  console.log(`[seed] visible companies: ${companies.map((c) => `${c.id} (${c.role})`).join(', ')}`);
+  console.log(
+    `[seed] visible companies: ${companies.map((c) => `${c.id} (${c.role})`).join(', ')}`,
+  );
 
   const target = companies.find((c) => String(c.id) === companyId);
   if (!target) {

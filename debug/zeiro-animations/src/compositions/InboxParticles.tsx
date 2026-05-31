@@ -1,7 +1,7 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { fonts } from "../fonts";
-import { ease, palette } from "../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { fonts } from '../fonts';
+import { ease, palette } from '../theme';
 
 // A swarm of small dots (each = one email) flies in from a turbulent cloud,
 // then resolves into a perfect grid — pure "data → order" visual.
@@ -27,14 +27,14 @@ export const InboxParticles: React.FC = () => {
   const frame = useCurrentFrame();
 
   const gridIn = interpolate(frame, [40, 100], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   const labelIn = interpolate(frame, [110, 145], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.crisp),
   });
 
@@ -46,8 +46,8 @@ export const InboxParticles: React.FC = () => {
   return (
     <AbsoluteFill>
       <Background />
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
-        <div style={{ position: "relative", width: gridW, height: gridH }}>
+      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: gridW, height: gridH }}>
           {Array.from({ length: TOTAL }).map((_, i) => {
             const col = i % COLS;
             const row = Math.floor(i / COLS);
@@ -56,8 +56,8 @@ export const InboxParticles: React.FC = () => {
             const r3 = seedAt(i + 2002);
             const delay = Math.floor(r1 * 30);
             const t = interpolate(frame, [delay, delay + 50], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
               easing: Easing.bezier(...ease.brand),
             });
 
@@ -76,7 +76,7 @@ export const InboxParticles: React.FC = () => {
               <div
                 key={i}
                 style={{
-                  position: "absolute",
+                  position: 'absolute',
                   left: x,
                   top: y,
                   width: gridSize,
@@ -93,11 +93,11 @@ export const InboxParticles: React.FC = () => {
 
         <div
           style={{
-            position: "absolute",
+            position: 'absolute',
             bottom: 110,
             left: 0,
             right: 0,
-            textAlign: "center",
+            textAlign: 'center',
             opacity: labelIn,
             transform: `translateY(${(1 - labelIn) * 14}px)`,
           }}
@@ -107,8 +107,8 @@ export const InboxParticles: React.FC = () => {
               fontFamily: fonts.mono,
               fontSize: 13,
               color: palette.muted,
-              letterSpacing: "0.32em",
-              textTransform: "uppercase",
+              letterSpacing: '0.32em',
+              textTransform: 'uppercase',
               marginBottom: 10,
             }}
           >
@@ -120,7 +120,7 @@ export const InboxParticles: React.FC = () => {
               fontSize: 36,
               color: palette.ink,
               fontWeight: 600,
-              letterSpacing: "-0.01em",
+              letterSpacing: '-0.01em',
             }}
           >
             すべての問い合わせを、ひとつの秩序に。

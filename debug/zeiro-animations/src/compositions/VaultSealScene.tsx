@@ -1,10 +1,10 @@
-import { RoundedBox } from "@react-three/drei";
-import { Easing, interpolate } from "remotion";
-import { ease } from "../theme";
-import { c3 } from "../three/palette3d";
+import { RoundedBox } from '@react-three/drei';
+import { Easing, interpolate } from 'remotion';
+import { ease } from '../theme';
+import { c3 } from '../three/palette3d';
 
 const bez = (e: readonly [number, number, number, number]) => Easing.bezier(e[0], e[1], e[2], e[3]);
-const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
 // PII sheets fly from screen edges toward the vault face (z>0) and get absorbed:
 // translate to center, scale down, fade. Staggered start every 22 frames from f=34.
@@ -22,7 +22,10 @@ const Sheet: React.FC<{ frame: number; i: number }> = ({ frame, i }) => {
   const x = interpolate(t, [0, 1], [cfg.from[0], 0]);
   const y = interpolate(t, [0, 1], [cfg.from[1], 0]);
   const z = interpolate(t, [0, 1], [2.6, 0.55]);
-  const appear = interpolate(frame, [start, start + 8], [0, 1], { ...clamp, easing: bez(ease.brand) });
+  const appear = interpolate(frame, [start, start + 8], [0, 1], {
+    ...clamp,
+    easing: bez(ease.brand),
+  });
   const absorbed = interpolate(t, [0.7, 1], [1, 0], clamp);
   const opacity = Math.min(appear, absorbed);
   if (opacity <= 0.001) return null;
@@ -62,7 +65,18 @@ const Ring: React.FC<{
   metalness: number;
   roughness: number;
   scale: number;
-}> = ({ r, tube, z, rotation, color, emissive, emissiveIntensity, metalness, roughness, scale }) => (
+}> = ({
+  r,
+  tube,
+  z,
+  rotation,
+  color,
+  emissive,
+  emissiveIntensity,
+  metalness,
+  roughness,
+  scale,
+}) => (
   <mesh position={[0, 0, z]} rotation={[0, 0, rotation]} scale={scale} castShadow receiveShadow>
     <torusGeometry args={[r, tube, 24, 96]} />
     <meshStandardMaterial
@@ -90,7 +104,10 @@ export const VaultSealScene: React.FC<{ frame: number }> = ({ frame }) => {
   const pulseScale = interpolate(pulseT, [0, 1], [1.0, 1.55]);
   const pulseOpacity = interpolate(pulseT, [0, 0.25, 1], [0, 0.9, 0], clamp);
 
-  const shieldGlow = interpolate(frame, [150, 196], [0.5, 1.7], { ...clamp, easing: bez(ease.brand) });
+  const shieldGlow = interpolate(frame, [150, 196], [0.5, 1.7], {
+    ...clamp,
+    easing: bez(ease.brand),
+  });
   const shieldScale = interpolate(frame, [10, 40], [0, 1], { ...clamp, easing: bez(ease.pop) });
 
   return (
@@ -108,20 +125,75 @@ export const VaultSealScene: React.FC<{ frame: number }> = ({ frame }) => {
       </mesh>
 
       {/* Recessed door face disc so the center reads solid before the shield arrives */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.34]} scale={[doorScale, 1, doorScale]} receiveShadow>
+      <mesh
+        rotation={[Math.PI / 2, 0, 0]}
+        position={[0, 0, 0.34]}
+        scale={[doorScale, 1, doorScale]}
+        receiveShadow
+      >
         <cylinderGeometry args={[2.55, 2.55, 0.04, 96]} />
-        <meshStandardMaterial color={c3.ink} metalness={0.3} roughness={0.6} emissive={c3.accent} emissiveIntensity={0.12 * assemble} />
+        <meshStandardMaterial
+          color={c3.ink}
+          metalness={0.3}
+          roughness={0.6}
+          emissive={c3.accent}
+          emissiveIntensity={0.12 * assemble}
+        />
       </mesh>
 
       {/* Accent emissive trim ring flush on the door face */}
-      <Ring r={2.78} tube={0.05} z={0.36} rotation={0} color={c3.accent} emissive={c3.accentBright} emissiveIntensity={0.7 * assemble} metalness={0.4} roughness={0.4} scale={doorScale} />
+      <Ring
+        r={2.78}
+        tube={0.05}
+        z={0.36}
+        rotation={0}
+        color={c3.accent}
+        emissive={c3.accentBright}
+        emissiveIntensity={0.7 * assemble}
+        metalness={0.4}
+        roughness={0.4}
+        scale={doorScale}
+      />
 
       {/* Outer static ring */}
-      <Ring r={3.35} tube={0.16} z={0.05} rotation={0} color={c3.ink2} emissive={c3.accent} emissiveIntensity={0.18 * assemble} metalness={0.35} roughness={0.55} scale={assemble} />
+      <Ring
+        r={3.35}
+        tube={0.16}
+        z={0.05}
+        rotation={0}
+        color={c3.ink2}
+        emissive={c3.accent}
+        emissiveIntensity={0.18 * assemble}
+        metalness={0.35}
+        roughness={0.55}
+        scale={assemble}
+      />
 
       {/* Inner dial rings — rotate during ingest, lock on seal */}
-      <Ring r={2.4} tube={0.12} z={0.28} rotation={dialA} color={c3.inkSoft} emissive={c3.accentBright} emissiveIntensity={0.22 * assemble} metalness={0.4} roughness={0.45} scale={doorScale} />
-      <Ring r={1.78} tube={0.1} z={0.32} rotation={dialB} color={c3.muted} emissive={c3.accentBright} emissiveIntensity={0.2 * assemble} metalness={0.45} roughness={0.42} scale={doorScale} />
+      <Ring
+        r={2.4}
+        tube={0.12}
+        z={0.28}
+        rotation={dialA}
+        color={c3.inkSoft}
+        emissive={c3.accentBright}
+        emissiveIntensity={0.22 * assemble}
+        metalness={0.4}
+        roughness={0.45}
+        scale={doorScale}
+      />
+      <Ring
+        r={1.78}
+        tube={0.1}
+        z={0.32}
+        rotation={dialB}
+        color={c3.muted}
+        emissive={c3.accentBright}
+        emissiveIntensity={0.2 * assemble}
+        metalness={0.45}
+        roughness={0.42}
+        scale={doorScale}
+      />
 
       {/* Seal pulse torus */}
       <mesh position={[0, 0, 0.4]} scale={[pulseScale, pulseScale, 1]}>
@@ -147,7 +219,12 @@ export const VaultSealScene: React.FC<{ frame: number }> = ({ frame }) => {
           />
         </RoundedBox>
         {/* Keyhole bar */}
-        <RoundedBox args={[0.16, 0.6, 0.1]} radius={0.06} smoothness={4} position={[0, -0.12, 0.18]}>
+        <RoundedBox
+          args={[0.16, 0.6, 0.1]}
+          radius={0.06}
+          smoothness={4}
+          position={[0, -0.12, 0.18]}
+        >
           <meshStandardMaterial color={c3.accentInk} roughness={0.5} metalness={0.2} />
         </RoundedBox>
         <mesh position={[0, 0.18, 0.18]} rotation={[Math.PI / 2, 0, 0]}>

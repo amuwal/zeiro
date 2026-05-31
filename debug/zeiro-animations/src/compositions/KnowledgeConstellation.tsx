@@ -1,8 +1,8 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { CITED_SOURCES } from "../common/sampleEmails";
-import { fonts } from "../fonts";
-import { ease, palette, radius, shadow } from "../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { CITED_SOURCES } from '../common/sampleEmails';
+import { fonts } from '../fonts';
+import { ease, palette, radius, shadow } from '../theme';
 
 // A central "draft" node sits in the middle. Around it, knowledge cards orbit at
 // fixed positions and connect to the draft via thin lines that draw in over time.
@@ -18,26 +18,68 @@ type Node = {
 };
 
 const NODES: Node[] = [
-  { label: "顧問契約書", source: "internal · v3", angle: -170, radius: 520, color: "oklch(48% 0.06 195)", ref: "S-08 §4.2" },
-  { label: "国税庁 質疑応答", source: "external · gov.jp", angle: -120, radius: 440, color: "oklch(52% 0.1 25)", ref: "K-21 No.4117" },
-  { label: "過去メール", source: "internal · 2024-09", angle: -45, radius: 460, color: "oklch(45% 0.08 295)", ref: "C-12" },
-  { label: "電子帳簿保存法", source: "external · law", angle: 25, radius: 520, color: "oklch(58% 0.1 70)", ref: "L-04 §7" },
-  { label: "前回の決算書", source: "internal · 2025-03", angle: 115, radius: 380, color: "oklch(48% 0.06 195)", ref: "F-19" },
-  { label: "業界ガイドライン", source: "external · jaai", angle: 175, radius: 520, color: "oklch(45% 0.08 295)", ref: "G-02" },
+  {
+    label: '顧問契約書',
+    source: 'internal · v3',
+    angle: -170,
+    radius: 520,
+    color: 'oklch(48% 0.06 195)',
+    ref: 'S-08 §4.2',
+  },
+  {
+    label: '国税庁 質疑応答',
+    source: 'external · gov.jp',
+    angle: -120,
+    radius: 440,
+    color: 'oklch(52% 0.1 25)',
+    ref: 'K-21 No.4117',
+  },
+  {
+    label: '過去メール',
+    source: 'internal · 2024-09',
+    angle: -45,
+    radius: 460,
+    color: 'oklch(45% 0.08 295)',
+    ref: 'C-12',
+  },
+  {
+    label: '電子帳簿保存法',
+    source: 'external · law',
+    angle: 25,
+    radius: 520,
+    color: 'oklch(58% 0.1 70)',
+    ref: 'L-04 §7',
+  },
+  {
+    label: '前回の決算書',
+    source: 'internal · 2025-03',
+    angle: 115,
+    radius: 380,
+    color: 'oklch(48% 0.06 195)',
+    ref: 'F-19',
+  },
+  {
+    label: '業界ガイドライン',
+    source: 'external · jaai',
+    angle: 175,
+    radius: 520,
+    color: 'oklch(45% 0.08 295)',
+    ref: 'G-02',
+  },
 ];
 
 export const KnowledgeConstellation: React.FC = () => {
   const frame = useCurrentFrame();
 
   const headerIn = interpolate(frame, [0, 24], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   const draftIn = interpolate(frame, [20, 50], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.pop),
   });
 
@@ -55,12 +97,12 @@ export const KnowledgeConstellation: React.FC = () => {
         <div
           key={i}
           style={{
-            position: "absolute",
+            position: 'absolute',
             left: centerX - i * 180,
             top: centerY - i * 180,
             width: i * 360,
             height: i * 360,
-            borderRadius: "50%",
+            borderRadius: '50%',
             border: `1px solid ${palette.muted}`,
             opacity: 0.12,
           }}
@@ -70,7 +112,7 @@ export const KnowledgeConstellation: React.FC = () => {
       <svg
         width={1920}
         height={1080}
-        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       >
         {NODES.map((node, i) => {
           const angleR = (node.angle * Math.PI) / 180;
@@ -78,8 +120,8 @@ export const KnowledgeConstellation: React.FC = () => {
           const y = centerY + Math.sin(angleR) * node.radius;
           const start = 50 + i * 15;
           const t = interpolate(frame, [start, start + 30], [0, 1], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
             easing: Easing.bezier(...ease.brand),
           });
           return (
@@ -104,25 +146,17 @@ export const KnowledgeConstellation: React.FC = () => {
         const y = centerY + Math.sin(angleR) * node.radius;
         const start = 30 + i * 12;
         const t = interpolate(frame, [start, start + 22], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
           easing: Easing.bezier(...ease.brand),
         });
-        return (
-          <KnowledgeCard
-            key={i}
-            node={node}
-            x={x}
-            y={y}
-            t={t}
-          />
-        );
+        return <KnowledgeCard key={i} node={node} x={x} y={y} t={t} />;
       })}
 
       {/* Central draft node */}
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           left: centerX,
           top: centerY,
           transform: `translate(-50%, -50%) scale(${0.85 + 0.15 * draftIn})`,
@@ -134,15 +168,15 @@ export const KnowledgeConstellation: React.FC = () => {
             backgroundColor: palette.surface,
             border: `2px solid ${palette.accent}`,
             borderRadius: radius.lg,
-            padding: "26px 34px",
+            padding: '26px 34px',
             boxShadow: `0 24px 60px -16px rgba(0,0,0,0.35), 0 0 0 ${draftIn * 12}px rgba(11, 78, 50, 0.14)`,
             fontFamily: fonts.jp,
             fontSize: 28,
             fontWeight: 700,
             color: palette.ink,
-            letterSpacing: "-0.01em",
+            letterSpacing: '-0.01em',
             minWidth: 320,
-            textAlign: "center",
+            textAlign: 'center',
           }}
         >
           下書き
@@ -151,8 +185,8 @@ export const KnowledgeConstellation: React.FC = () => {
               fontFamily: fonts.mono,
               fontSize: 12,
               color: palette.accent,
-              letterSpacing: "0.32em",
-              textTransform: "uppercase",
+              letterSpacing: '0.32em',
+              textTransform: 'uppercase',
               marginTop: 8,
               fontWeight: 500,
             }}
@@ -165,21 +199,21 @@ export const KnowledgeConstellation: React.FC = () => {
       {/* Citation chips along the bottom */}
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           left: 0,
           right: 0,
           bottom: 80,
-          display: "flex",
-          justifyContent: "center",
+          display: 'flex',
+          justifyContent: 'center',
           gap: 12,
-          flexWrap: "wrap",
+          flexWrap: 'wrap',
         }}
       >
         {CITED_SOURCES.map((source, i) => {
           const showAt = 160 + i * 14;
           const t = interpolate(frame, [showAt, showAt + 18], [0, 1], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
             easing: Easing.bezier(...ease.pop),
           });
           return (
@@ -191,14 +225,14 @@ export const KnowledgeConstellation: React.FC = () => {
                 backgroundColor: palette.ink2,
                 border: `1px solid ${source.color}`,
                 borderLeft: `3px solid ${source.color}`,
-                padding: "10px 14px",
+                padding: '10px 14px',
                 borderRadius: radius.sm,
                 fontFamily: fonts.mono,
                 fontSize: 13,
                 color: palette.bg,
-                display: "flex",
+                display: 'flex',
                 gap: 10,
-                alignItems: "center",
+                alignItems: 'center',
               }}
             >
               <span style={{ color: source.color, fontWeight: 700 }}>{source.id}</span>
@@ -219,7 +253,7 @@ const KnowledgeCard: React.FC<{ node: Node; x: number; y: number; t: number }> =
 }) => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       left: x,
       top: y,
       transform: `translate(-50%, -50%) scale(${0.8 + 0.2 * t})`,
@@ -227,20 +261,20 @@ const KnowledgeCard: React.FC<{ node: Node; x: number; y: number; t: number }> =
       backgroundColor: palette.surface,
       border: `1px solid ${node.color}`,
       borderRadius: radius.md,
-      padding: "10px 14px",
+      padding: '10px 14px',
       boxShadow: shadow.md,
       fontFamily: fonts.jp,
       color: palette.ink,
       minWidth: 180,
     }}
   >
-    <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.005em" }}>{node.label}</div>
+    <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.005em' }}>{node.label}</div>
     <div
       style={{
         fontFamily: fonts.mono,
         fontSize: 11,
         color: palette.muted,
-        letterSpacing: "0.18em",
+        letterSpacing: '0.18em',
         marginTop: 4,
       }}
     >
@@ -253,7 +287,7 @@ const KnowledgeCard: React.FC<{ node: Node; x: number; y: number; t: number }> =
         fontSize: 11,
         color: node.color,
         fontWeight: 700,
-        letterSpacing: "0.08em",
+        letterSpacing: '0.08em',
       }}
     >
       {node.ref}
@@ -264,11 +298,11 @@ const KnowledgeCard: React.FC<{ node: Node; x: number; y: number; t: number }> =
 const Header: React.FC<{ opacity: number }> = ({ opacity }) => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       top: 80,
       left: 0,
       right: 0,
-      textAlign: "center",
+      textAlign: 'center',
       opacity,
     }}
   >
@@ -277,8 +311,8 @@ const Header: React.FC<{ opacity: number }> = ({ opacity }) => (
         fontFamily: fonts.mono,
         fontSize: 13,
         color: palette.muted2,
-        letterSpacing: "0.4em",
-        textTransform: "uppercase",
+        letterSpacing: '0.4em',
+        textTransform: 'uppercase',
         marginBottom: 10,
       }}
     >
@@ -290,7 +324,7 @@ const Header: React.FC<{ opacity: number }> = ({ opacity }) => (
         fontSize: 46,
         color: palette.bg,
         fontWeight: 700,
-        letterSpacing: "-0.02em",
+        letterSpacing: '-0.02em',
       }}
     >
       引いてから、書く。

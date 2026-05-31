@@ -1,33 +1,32 @@
-import "./index.css";
-import { Composition } from "remotion";
-
-import { LogoMinimal } from "./compositions/LogoMinimal";
-import { LogoBilingual } from "./compositions/LogoBilingual";
-import { LogoGeometric } from "./compositions/LogoGeometric";
-import { InboxCascade } from "./compositions/InboxCascade";
-import { InboxParticles } from "./compositions/InboxParticles";
-import { InboxPipeline } from "./compositions/InboxPipeline";
-import { DraftSplit } from "./compositions/DraftSplit";
-import { DraftStream } from "./compositions/DraftStream";
-import { DraftThinking } from "./compositions/DraftThinking";
-import { TrustRedact } from "./compositions/TrustRedact";
-import { TrustVault } from "./compositions/TrustVault";
-import { TrustShield } from "./compositions/TrustShield";
-import { KpiCounter } from "./compositions/KpiCounter";
-import { KpiClock } from "./compositions/KpiClock";
-import { KpiCompare } from "./compositions/KpiCompare";
-import { KnowledgeConstellation } from "./compositions/KnowledgeConstellation";
-import { JapanMap } from "./compositions/JapanMap";
-import { DeadlineCalendar } from "./compositions/DeadlineCalendar";
-import { HeroCinematic } from "./compositions/HeroCinematic";
-import { IsoWorkflow } from "./compositions/IsoWorkflow";
-import { DocumentVortex } from "./compositions/DocumentVortex";
-import { JapanGlobe } from "./compositions/JapanGlobe";
-import { KpiMonolith } from "./compositions/KpiMonolith";
-import { VaultSeal } from "./compositions/VaultSeal";
-import { AgentPipeline3D } from "./compositions/AgentPipeline3D";
-import { TimeReclaimed } from "./compositions/TimeReclaimed";
-import { DocumentCoverflow } from "./compositions/DocumentCoverflow";
+import './index.css';
+import { Composition } from 'remotion';
+import { AgentPipeline3D } from './compositions/AgentPipeline3D';
+import { DeadlineCalendar } from './compositions/DeadlineCalendar';
+import { DocumentCoverflow } from './compositions/DocumentCoverflow';
+import { DocumentVortex } from './compositions/DocumentVortex';
+import { DraftSplit } from './compositions/DraftSplit';
+import { DraftStream } from './compositions/DraftStream';
+import { DraftThinking } from './compositions/DraftThinking';
+import { HeroCinematic } from './compositions/HeroCinematic';
+import { InboxCascade } from './compositions/InboxCascade';
+import { InboxParticles } from './compositions/InboxParticles';
+import { InboxPipeline } from './compositions/InboxPipeline';
+import { IsoWorkflow } from './compositions/IsoWorkflow';
+import { JapanGlobe } from './compositions/JapanGlobe';
+import { JapanMap } from './compositions/JapanMap';
+import { KnowledgeConstellation } from './compositions/KnowledgeConstellation';
+import { KpiClock } from './compositions/KpiClock';
+import { KpiCompare } from './compositions/KpiCompare';
+import { KpiCounter } from './compositions/KpiCounter';
+import { KpiMonolith } from './compositions/KpiMonolith';
+import { LogoBilingual } from './compositions/LogoBilingual';
+import { LogoGeometric } from './compositions/LogoGeometric';
+import { LogoMinimal } from './compositions/LogoMinimal';
+import { TimeReclaimed } from './compositions/TimeReclaimed';
+import { TrustRedact } from './compositions/TrustRedact';
+import { TrustShield } from './compositions/TrustShield';
+import { TrustVault } from './compositions/TrustVault';
+import { VaultSeal } from './compositions/VaultSeal';
 
 const FPS = 30;
 const W = 1920;
@@ -43,13 +42,28 @@ export const RemotionRoot: React.FC = () => {
 
       {/* FLAGSHIP — 3D / infographic set */}
       <Composition id="IsoWorkflow" component={IsoWorkflow} durationInFrames={270} {...wide} />
-      <Composition id="DocumentVortex" component={DocumentVortex} durationInFrames={240} {...wide} />
+      <Composition
+        id="DocumentVortex"
+        component={DocumentVortex}
+        durationInFrames={240}
+        {...wide}
+      />
       <Composition id="JapanGlobe" component={JapanGlobe} durationInFrames={300} {...wide} />
       <Composition id="KpiMonolith" component={KpiMonolith} durationInFrames={240} {...wide} />
       <Composition id="VaultSeal" component={VaultSeal} durationInFrames={240} {...wide} />
-      <Composition id="AgentPipeline3D" component={AgentPipeline3D} durationInFrames={270} {...wide} />
+      <Composition
+        id="AgentPipeline3D"
+        component={AgentPipeline3D}
+        durationInFrames={270}
+        {...wide}
+      />
       <Composition id="TimeReclaimed" component={TimeReclaimed} durationInFrames={240} {...wide} />
-      <Composition id="DocumentCoverflow" component={DocumentCoverflow} durationInFrames={240} {...wide} />
+      <Composition
+        id="DocumentCoverflow"
+        component={DocumentCoverflow}
+        durationInFrames={240}
+        {...wide}
+      />
 
       {/* 1. Wordmark reveal */}
       <Composition id="LogoMinimal" component={LogoMinimal} durationInFrames={150} {...wide} />
@@ -58,7 +72,12 @@ export const RemotionRoot: React.FC = () => {
 
       {/* 2. Inbox → Order */}
       <Composition id="InboxCascade" component={InboxCascade} durationInFrames={150} {...wide} />
-      <Composition id="InboxParticles" component={InboxParticles} durationInFrames={180} {...wide} />
+      <Composition
+        id="InboxParticles"
+        component={InboxParticles}
+        durationInFrames={180}
+        {...wide}
+      />
       <Composition id="InboxPipeline" component={InboxPipeline} durationInFrames={240} {...wide} />
 
       {/* 3. AI Drafting */}
@@ -84,7 +103,12 @@ export const RemotionRoot: React.FC = () => {
         {...wide}
       />
       <Composition id="JapanMap" component={JapanMap} durationInFrames={240} {...wide} />
-      <Composition id="DeadlineCalendar" component={DeadlineCalendar} durationInFrames={210} {...wide} />
+      <Composition
+        id="DeadlineCalendar"
+        component={DeadlineCalendar}
+        durationInFrames={210}
+        {...wide}
+      />
     </>
   );
 };

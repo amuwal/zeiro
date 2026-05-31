@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { InboxList, type InboxItemView } from './inbox-list';
+import { type ReactNode, useState } from 'react';
+import { type InboxItemView, InboxList } from './inbox-list';
 import { Sidebar } from './sidebar';
 
 export type FilterState = {
@@ -18,16 +18,12 @@ const DEFAULT: FilterState = {
   category: 'all',
 };
 
-export function InboxShell({
-  items,
-  children,
-}: {
-  items: InboxItemView[];
-  children: ReactNode;
-}) {
+export function InboxShell({ items, children }: { items: InboxItemView[]; children: ReactNode }) {
   const [state, setState] = useState<FilterState>(DEFAULT);
-  const setKey = <K extends keyof FilterState>(k: K) => (v: string) =>
-    setState((s) => ({ ...s, [k]: v }));
+  const setKey =
+    <K extends keyof FilterState>(k: K) =>
+    (v: string) =>
+      setState((s) => ({ ...s, [k]: v }));
 
   return (
     <>

@@ -52,7 +52,9 @@ export default function OpenGraphImage() {
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 40, fontWeight: 700, color: '#0a0a0a', letterSpacing: '-0.02em' }}>
+          <div
+            style={{ fontSize: 40, fontWeight: 700, color: '#0a0a0a', letterSpacing: '-0.02em' }}
+          >
             {BRAND.name}
           </div>
           <div

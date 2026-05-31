@@ -1,8 +1,8 @@
-import { RoundedBox } from "@react-three/drei";
-import { Easing, interpolate, useCurrentFrame } from "remotion";
-import { ease } from "../theme";
-import { c3, categoryColors } from "../three/palette3d";
-import { Lights, ShadowGround } from "../three/rig";
+import { RoundedBox } from '@react-three/drei';
+import { Easing, interpolate, useCurrentFrame } from 'remotion';
+import { ease } from '../theme';
+import { c3, categoryColors } from '../three/palette3d';
+import { Lights, ShadowGround } from '../three/rig';
 
 const SHEET_COUNT = 100;
 const GOLDEN = 2.39996;
@@ -35,8 +35,8 @@ export const DocumentVortexScene: React.FC = () => {
 
   // Once-around accent torus pulse near the stack base, 210..240.
   const pulse = interpolate(frame, [210, 224, 240], [0, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.editorial),
   });
 
@@ -48,13 +48,13 @@ export const DocumentVortexScene: React.FC = () => {
       {Array.from({ length: SHEET_COUNT }, (_, i) => {
         const start = (i / SHEET_COUNT) * 120;
         const p = interpolate(frame, [start, start + 60], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
           easing: Easing.bezier(...ease.brand),
         });
         const opacity = interpolate(frame, [start, start + 15], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
         });
 
         const chaos = chaosPose(i);
@@ -83,7 +83,13 @@ export const DocumentVortexScene: React.FC = () => {
 
         return (
           <group key={i} position={pos} rotation={rot} scale={opacity * 0.85 + 0.15}>
-            <RoundedBox args={[3, 0.018, 2.1]} radius={0.015} smoothness={2} castShadow receiveShadow>
+            <RoundedBox
+              args={[3, 0.018, 2.1]}
+              radius={0.015}
+              smoothness={2}
+              castShadow
+              receiveShadow
+            >
               <meshStandardMaterial
                 color={c3.paper}
                 roughness={0.82}

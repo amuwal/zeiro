@@ -1,4 +1,4 @@
-import { c3 } from "./palette3d";
+import { c3 } from './palette3d';
 
 // Soft three-point studio rig tuned for matte "paper" materials on a cream stage.
 // Warm key light from upper-right, cool accent fill from the left, gentle ambient

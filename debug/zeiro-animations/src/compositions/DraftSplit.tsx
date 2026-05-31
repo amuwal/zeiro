@@ -1,49 +1,49 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { fonts } from "../fonts";
-import { ZEIRO_REPLY_LINES } from "../common/sampleEmails";
-import { ease, palette, radius, shadow } from "../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { ZEIRO_REPLY_LINES } from '../common/sampleEmails';
+import { fonts } from '../fonts';
+import { ease, palette, radius, shadow } from '../theme';
 
 const Q_LINES = [
-  "田中商事 田中様より",
-  "",
-  "源泉徴収票を再発行いただくこと、",
-  "可能でしょうか。",
-  "離職時の控えを紛失してしまい、",
-  "確定申告に必要となっております。",
+  '田中商事 田中様より',
+  '',
+  '源泉徴収票を再発行いただくこと、',
+  '可能でしょうか。',
+  '離職時の控えを紛失してしまい、',
+  '確定申告に必要となっております。',
 ];
 
-const TOTAL_Q = Q_LINES.join("\n").length;
-const TOTAL_A = ZEIRO_REPLY_LINES.join("\n").length;
+const TOTAL_Q = Q_LINES.join('\n').length;
+const TOTAL_A = ZEIRO_REPLY_LINES.join('\n').length;
 
 export const DraftSplit: React.FC = () => {
   const frame = useCurrentFrame();
 
   const qChars = Math.floor(
     interpolate(frame, [10, 90], [0, TOTAL_Q], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
       easing: Easing.bezier(...ease.editorial),
-    })
+    }),
   );
 
   const aChars = Math.floor(
     interpolate(frame, [110, 260], [0, TOTAL_A], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
       easing: Easing.bezier(...ease.editorial),
-    })
+    }),
   );
 
-  const qText = Q_LINES.join("\n").slice(0, qChars);
-  const aText = ZEIRO_REPLY_LINES.join("\n").slice(0, aChars);
+  const qText = Q_LINES.join('\n').slice(0, qChars);
+  const aText = ZEIRO_REPLY_LINES.join('\n').slice(0, aChars);
 
   const cursorOn = Math.floor(frame / 8) % 2 === 0;
 
   return (
     <AbsoluteFill>
       <Background />
-      <AbsoluteFill style={{ flexDirection: "row", padding: "100px 80px", gap: 48 }}>
+      <AbsoluteFill style={{ flexDirection: 'row', padding: '100px 80px', gap: 48 }}>
         <Panel
           title="お客様 — 受信"
           subtitle="2026-05-29 09:14"
@@ -68,10 +68,10 @@ const Panel: React.FC<{
   subtitle: string;
   body: string;
   cursor: boolean;
-  tone: "customer" | "draft";
+  tone: 'customer' | 'draft';
 }> = ({ title, subtitle, body, cursor, tone }) => {
-  const accent = tone === "draft" ? palette.accent : palette.muted;
-  const bg = tone === "draft" ? palette.surface : palette.surface2;
+  const accent = tone === 'draft' ? palette.accent : palette.muted;
+  const bg = tone === 'draft' ? palette.surface : palette.surface2;
   return (
     <div
       style={{
@@ -79,21 +79,21 @@ const Panel: React.FC<{
         backgroundColor: bg,
         border: `1px solid ${palette.line}`,
         borderRadius: radius.lg,
-        padding: "32px 36px",
+        padding: '32px 36px',
         boxShadow: shadow.md,
-        display: "flex",
-        flexDirection: "column",
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <span style={{ width: 8, height: 8, borderRadius: 8, backgroundColor: accent }} />
         <span
           style={{
             fontFamily: fonts.mono,
             color: palette.muted,
             fontSize: 12,
-            letterSpacing: "0.28em",
-            textTransform: "uppercase",
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
           }}
         >
           {title}
@@ -105,7 +105,7 @@ const Panel: React.FC<{
           color: palette.muted2,
           fontSize: 12,
           marginBottom: 24,
-          letterSpacing: "0.02em",
+          letterSpacing: '0.02em',
         }}
       >
         {subtitle}
@@ -116,7 +116,7 @@ const Panel: React.FC<{
           color: palette.ink,
           fontSize: 22,
           lineHeight: 1.75,
-          whiteSpace: "pre-wrap",
+          whiteSpace: 'pre-wrap',
           flex: 1,
         }}
       >
@@ -124,11 +124,11 @@ const Panel: React.FC<{
         {cursor && (
           <span
             style={{
-              display: "inline-block",
+              display: 'inline-block',
               width: 10,
               height: 22,
-              backgroundColor: tone === "draft" ? palette.accent : palette.ink,
-              transform: "translateY(4px)",
+              backgroundColor: tone === 'draft' ? palette.accent : palette.ink,
+              transform: 'translateY(4px)',
               marginLeft: 2,
             }}
           />

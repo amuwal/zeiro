@@ -1,8 +1,8 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { EmailCard } from "../../common/EmailCard";
-import { SAMPLE_EMAILS } from "../../common/sampleEmails";
-import { fonts } from "../../fonts";
-import { ease, palette } from "../../theme";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { EmailCard } from '../../common/EmailCard';
+import { SAMPLE_EMAILS } from '../../common/sampleEmails';
+import { fonts } from '../../fonts';
+import { ease, palette } from '../../theme';
 
 // 0-90 frames: emails fly in from outside the canvas, tilted, fast, overlapping —
 // the "before zeiro" feeling. Headline lingers at top-left.
@@ -25,28 +25,28 @@ export const Act1Chaos: React.FC = () => {
   const cards = SAMPLE_EMAILS.slice(0, SCATTER.length);
 
   const headerIn = interpolate(frame, [0, 22], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
 
   // Whole composition shakes out near the end as zeiro "cuts" the chaos.
   const exitT = interpolate(frame, [70, 95], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.editorial),
   });
 
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", top: 96, left: 120, opacity: headerIn }}>
+      <div style={{ position: 'absolute', top: 96, left: 120, opacity: headerIn }}>
         <div
           style={{
             fontFamily: fonts.mono,
             fontSize: 13,
             color: palette.muted,
-            letterSpacing: "0.4em",
-            textTransform: "uppercase",
+            letterSpacing: '0.4em',
+            textTransform: 'uppercase',
             marginBottom: 12,
           }}
         >
@@ -58,12 +58,13 @@ export const Act1Chaos: React.FC = () => {
             fontSize: 64,
             color: palette.ink,
             fontWeight: 700,
-            letterSpacing: "-0.02em",
+            letterSpacing: '-0.02em',
             lineHeight: 1.05,
             maxWidth: 1400,
           }}
         >
-          月曜日。<br />
+          月曜日。
+          <br />
           未読は、<span style={{ color: palette.urgent }}>142 件</span>。
         </div>
       </div>
@@ -71,8 +72,8 @@ export const Act1Chaos: React.FC = () => {
       {cards.map((email, i) => {
         const s = SCATTER[i];
         const t = interpolate(frame, [s.delay, s.delay + 18], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
           easing: Easing.bezier(...ease.crisp),
         });
         const enterX = s.x * 1.5 * (1 - t);
@@ -82,9 +83,9 @@ export const Act1Chaos: React.FC = () => {
           <div
             key={i}
             style={{
-              position: "absolute",
-              left: "50%",
-              top: "55%",
+              position: 'absolute',
+              left: '50%',
+              top: '55%',
               transform: `translate(calc(-50% + ${s.x + enterX}px), calc(-50% + ${enterY}px)) rotate(${s.rot}deg) scale(${s.scale})`,
               opacity: t * exitOpacity,
             }}

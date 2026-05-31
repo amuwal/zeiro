@@ -1,10 +1,10 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { Background } from "../common/Background";
-import { SAMPLE_EMAILS } from "../common/sampleEmails";
-import { ease } from "../theme";
-import { CARD_H, CoverflowCenter } from "./CoverflowCenter";
-import { CoverflowCard, SIDE_W } from "./CoverflowCard";
-import { GlossyFloor, Overlay, placement, Reflection, ROW_Y } from "./CoverflowScene";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
+import { Background } from '../common/Background';
+import { SAMPLE_EMAILS } from '../common/sampleEmails';
+import { ease } from '../theme';
+import { CoverflowCard, SIDE_W } from './CoverflowCard';
+import { CARD_H, CoverflowCenter } from './CoverflowCenter';
+import { GlossyFloor, Overlay, placement, Reflection, ROW_Y } from './CoverflowScene';
 
 const SIDE_EMAILS = [
   SAMPLE_EMAILS[7], // 国税庁 e-Tax
@@ -21,28 +21,28 @@ export const DocumentCoverflow: React.FC = () => {
   const frame = useCurrentFrame();
 
   const fanIn = interpolate(frame, [0, 40], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
   const advance = interpolate(frame, [50, 110], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.editorial),
   });
   const flip = interpolate(frame, [120, 180], [0, 180], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.editorial),
   });
   const headIn = interpolate(frame, [6, 34], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.brand),
   });
   const pill = interpolate(frame, [196, 224], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
     easing: Easing.bezier(...ease.pop),
   });
 
@@ -68,8 +68,8 @@ export const DocumentCoverflow: React.FC = () => {
       const p = placement(c.slot);
       const w = c.isCenter ? 460 : SIDE_W;
       const enterT = interpolate(fanIn, [Math.min(idx * 0.07, 0.5), 1], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
       });
       const flatRot = c.isCenter ? 0 : (1 - enterT) * -Math.sign(c.slot) * 10;
       return { ...c, p, w, enterT, flatRot, idx };
@@ -81,16 +81,16 @@ export const DocumentCoverflow: React.FC = () => {
       <Background variant="surface" />
       <GlossyFloor />
 
-      <AbsoluteFill style={{ perspective: 1800, perspectiveOrigin: "50% 38%" }}>
-        <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d" }}>
+      <AbsoluteFill style={{ perspective: 1800, perspectiveOrigin: '50% 38%' }}>
+        <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}>
           {placed.map((c) => (
             <div
               key={c.idx}
               style={{
-                position: "absolute",
+                position: 'absolute',
                 left: c.p.x - c.w / 2,
                 top: ROW_Y - (1 - c.enterT) * 40,
-                transformStyle: "preserve-3d",
+                transformStyle: 'preserve-3d',
                 transform: `translateZ(${c.p.z}px) rotateY(${c.p.rotY + c.flatRot}deg) scale(${c.p.scale})`,
                 opacity: c.enterT,
                 zIndex: c.isCenter ? 50 : 10 + Math.round(c.p.z),
