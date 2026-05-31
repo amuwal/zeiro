@@ -4,8 +4,18 @@ import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { env } from '@/lib/env';
 import { processInbound } from '@/lib/process-inbound';
+import { runWithRequestContext } from '@/lib/request-context';
 
-export async function POST(request: Request) {
+// Mint a correlation id at this inbound boundary (or adopt an upstream
+// x-request-id) so every log + Inngest event for this webhook shares one id.
+export function POST(request: Request): Promise<Response> {
+  return runWithRequestContext(
+    { requestId: request.headers.get('x-request-id') ?? undefined },
+    () => handle(request),
+  );
+}
+
+async function handle(request: Request): Promise<Response> {
   const rawBody = await request.text();
   const verified = await verifyResendWebhook(rawBody);
   if (!verified) {

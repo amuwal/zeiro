@@ -4,9 +4,19 @@ import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { env } from '@/lib/env';
 import { processInbound } from '@/lib/process-inbound';
+import { runWithRequestContext } from '@/lib/request-context';
 import { applyEvents } from '@/lib/resend-events';
 
-export async function POST(request: Request) {
+// Mint a correlation id at this inbound boundary (or adopt an upstream
+// x-request-id) so every log + Inngest event for this webhook shares one id.
+export function POST(request: Request): Promise<Response> {
+  return runWithRequestContext(
+    { requestId: request.headers.get('x-request-id') ?? undefined },
+    () => handle(request),
+  );
+}
+
+async function handle(request: Request): Promise<Response> {
   if (!env.RESEND_EVENT_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'resend not configured' }, { status: 503 });
   }

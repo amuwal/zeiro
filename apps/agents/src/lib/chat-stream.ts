@@ -1,5 +1,5 @@
 import type { ChunkType } from '@mastra/core/stream';
-import type { ChatStreamEvent } from '@zeiro/core';
+import { type ChatStreamEvent, redactPII } from '@zeiro/core';
 
 /** Map a single Mastra `fullStream` chunk to our wire-format event. Returns
  * null for chunks the UI doesn't need (text-start/end markers, response
@@ -52,9 +52,11 @@ export function chunkToEvent(chunk: ChunkType): ChatStreamEvent | null {
   }
 }
 
+// Upstream LLM/tool error strings can embed the client subject/body/name; this
+// event is streamed to the browser, so PII-scrub the free text at the boundary.
 function errorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
+  if (err instanceof Error) return redactPII(err.message);
+  if (typeof err === 'string') return redactPII(err);
   return 'unknown agent error';
 }
 

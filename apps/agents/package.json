@@ -25,7 +25,7 @@
     "@mastra/pg": "^1.11.0",
     "@opentelemetry/core": "^2.7.1",
     "@opentelemetry/sdk-trace-base": "^2.7.1",
-    "@sentry/node": "^9.0.0",
+    "@sentry/node": "^10.55.0",
     "@zeiro/core": "workspace:*",
     "@zeiro/db": "workspace:*",
     "@zeiro/email": "workspace:*",

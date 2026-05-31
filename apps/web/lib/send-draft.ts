@@ -14,6 +14,7 @@ import {
 } from '@zeiro/email';
 import { env } from './env';
 import { inngest } from './inngest/client';
+import { getRequestId } from './request-context';
 import { sendDraftChatwork } from './send-draft-chatwork';
 
 export type SendDraftArgs = {
@@ -115,9 +116,15 @@ export async function sendDraftEmail(args: SendDraftArgs): Promise<void> {
   // this, the agent re-discovers the same answers every time the same kind
   // of question comes in. Inngest event id is idempotent per-draft so a
   // double-fire (e.g. user clicks send twice) is a no-op downstream.
+  const requestId = getRequestId();
   await inngest.send({
     name: 'knowledge.auto_add',
-    data: { firmId: args.firmId, inquiryId: args.inquiryId, draftId: draft.id },
+    data: {
+      firmId: args.firmId,
+      inquiryId: args.inquiryId,
+      draftId: draft.id,
+      ...(requestId ? { requestId } : {}),
+    },
     id: `auto-add-${draft.id}`,
   });
 }

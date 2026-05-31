@@ -43,7 +43,7 @@ export const chatStreamEventSchema = z.discriminatedUnion('type', [
     error: z.string().optional(),
   }),
   z.object({ type: z.literal('done') }),
-  z.object({ type: z.literal('error'), message: z.string() }),
+  z.object({ type: z.literal('error'), message: z.string(), requestId: z.string().optional() }),
   z.object({
     type: z.literal('state-changed'),
     status: z.enum(['pending', 'drafted', 'sent', 'escalated', 'rejected']),

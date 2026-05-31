@@ -22,15 +22,26 @@ import { createMastraStorage } from './storage';
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL required for Mastra storage');
 
+// Langfuse traces capture the FULL prompt — which includes client email bodies
+// and names — so in production it is only allowed against a SELF-HOSTED instance
+// (an explicit LANGFUSE_HOST that is not Langfuse Cloud). Pointing it at
+// cloud.langfuse.com in prod would ship client content off jp-tokyo to a
+// third-party without a no-training/residency contract — a §38 守秘義務 leak.
+function langfuseConfig(): { publicKey: string; secretKey: string; baseUrl: string } | null {
+  const publicKey = process.env.LANGFUSE_PUBLIC_KEY;
+  const secretKey = process.env.LANGFUSE_SECRET_KEY;
+  if (!publicKey || !secretKey) return null;
+  const baseUrl = process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com';
+  if (process.env.NODE_ENV === 'production' && /(^|\.)cloud\.langfuse\.com/i.test(baseUrl)) {
+    return null;
+  }
+  return { publicKey, secretKey, baseUrl };
+}
+
 const exporters: Array<DefaultExporter | LangfuseExporter> = [new DefaultExporter()];
-if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {
-  exporters.push(
-    new LangfuseExporter({
-      publicKey: process.env.LANGFUSE_PUBLIC_KEY,
-      secretKey: process.env.LANGFUSE_SECRET_KEY,
-      baseUrl: process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com',
-    }),
-  );
+const lf = langfuseConfig();
+if (lf) {
+  exporters.push(new LangfuseExporter(lf));
 }
 
 // SensitiveDataFilter scrubs common credential field names (token, secret,

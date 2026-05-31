@@ -11,6 +11,7 @@ import {
 import type { ParsedMessage } from '@zeiro/email';
 import { parseInboundAttachments } from './inbound-attachments';
 import { inngest } from './inngest/client';
+import { getRequestId } from './request-context';
 
 const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
@@ -102,9 +103,10 @@ export async function processInbound(message: ParsedMessage): Promise<ProcessOut
 
   if (insert.kind === 'duplicate') return { kind: 'duplicate', inquiryId: insert.id };
 
+  const requestId = getRequestId();
   await inngest.send({
     name: 'inquiry.queued',
-    data: { firmId: firm.id, inquiryId: insert.id },
+    data: { firmId: firm.id, inquiryId: insert.id, ...(requestId ? { requestId } : {}) },
     id: `inquiry-${insert.id}`,
   });
 

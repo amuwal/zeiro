@@ -19,6 +19,7 @@ import { extract } from '../knowledge/extract';
 import { ParserError } from '../knowledge/types';
 import { ingestKnowledge } from '../knowledge-ingest';
 import { processDraft } from '../process-draft';
+import { runWithRequestContext } from '../request-context';
 import { inngest } from './client';
 
 const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
@@ -55,10 +56,17 @@ export const draftInquiryFn = inngest.createFunction(
     },
   },
   { event: 'inquiry.queued' },
-  async ({ event, step }) => {
-    await step.run('draft', () => processDraft(event.data.firmId, event.data.inquiryId));
-    return { ok: true };
-  },
+  async ({ event, step }) =>
+    // Re-enter the correlation scope minted at the inbound webhook so the
+    // agents fetch carries the same x-request-id end-to-end. If the event
+    // predates requestId threading, a fresh id is minted.
+    runWithRequestContext(
+      { requestId: event.data.requestId, firmId: event.data.firmId },
+      async () => {
+        await step.run('draft', () => processDraft(event.data.firmId, event.data.inquiryId));
+        return { ok: true };
+      },
+    ),
 );
 
 export const autoAddKnowledgeFn = inngest.createFunction(
@@ -68,42 +76,46 @@ export const autoAddKnowledgeFn = inngest.createFunction(
     retries: 3,
   },
   { event: 'knowledge.auto_add' },
-  async ({ event, step }) => {
-    await step.run('ingest', async () => {
-      const { firmId, inquiryId, draftId } = event.data;
-      const [inquiry, draft, sentBody] = await Promise.all([
-        getInquiry(firmId, inquiryId),
-        getDraftByInquiry(firmId, inquiryId),
-        findLatestSentBody(firmId, inquiryId),
-      ]);
-      if (!inquiry || !draft) return { skipped: 'missing' };
-      if (!inquiry.client) return { skipped: 'unmatched' };
+  async ({ event, step }) =>
+    runWithRequestContext(
+      { requestId: event.data.requestId, firmId: event.data.firmId },
+      async () => {
+        await step.run('ingest', async () => {
+          const { firmId, inquiryId, draftId } = event.data;
+          const [inquiry, draft, sentBody] = await Promise.all([
+            getInquiry(firmId, inquiryId),
+            getDraftByInquiry(firmId, inquiryId),
+            findLatestSentBody(firmId, inquiryId),
+          ]);
+          if (!inquiry || !draft) return { skipped: 'missing' };
+          if (!inquiry.client) return { skipped: 'unmatched' };
 
-      const body = sentBody ?? draft.body;
-      if (body.trim().length < MIN_INGEST_LENGTH) return { skipped: 'too_short' };
+          const body = sentBody ?? draft.body;
+          if (body.trim().length < MIN_INGEST_LENGTH) return { skipped: 'too_short' };
 
-      const result = await ingestKnowledge({
-        firmId,
-        source: `過去回答 / ${inquiry.client.name} / ${formatYMD(inquiry.receivedAt)}`,
-        documentId: inquiry.id,
-        body,
-      });
+          const result = await ingestKnowledge({
+            firmId,
+            source: `過去回答 / ${inquiry.client.name} / ${formatYMD(inquiry.receivedAt)}`,
+            documentId: inquiry.id,
+            body,
+          });
 
-      await recordAudit({
-        firmId,
-        actorId: SYSTEM_ACTOR,
-        inquiryId,
-        action: 'knowledge.updated',
-        metadata: {
-          source: 'auto_add_from_sent',
-          chunks: result.chunks,
-          draftId,
-        },
-      });
-      return { chunks: result.chunks };
-    });
-    return { ok: true };
-  },
+          await recordAudit({
+            firmId,
+            actorId: SYSTEM_ACTOR,
+            inquiryId,
+            action: 'knowledge.updated',
+            metadata: {
+              source: 'auto_add_from_sent',
+              chunks: result.chunks,
+              draftId,
+            },
+          });
+          return { chunks: result.chunks };
+        });
+        return { ok: true };
+      },
+    ),
 );
 
 function formatYMD(d: Date): string {

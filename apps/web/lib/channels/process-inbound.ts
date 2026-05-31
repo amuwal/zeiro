@@ -1,6 +1,7 @@
 import { maskMyNumber } from '@zeiro/core';
 import { createInquiry, recordAudit } from '@zeiro/db';
 import { inngest } from '@/lib/inngest/client';
+import { getRequestId } from '@/lib/request-context';
 import type { CanonicalMessage, ChannelAdapter } from './contract';
 
 const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
@@ -56,9 +57,10 @@ export async function processInbound(
     // Gate on 'created' so a re-delivered webhook (same messageId → 'duplicate')
     // never double-enqueues the pipeline.
     if (insert.kind === 'created') {
+      const requestId = getRequestId();
       await inngest.send({
         name: 'inquiry.queued',
-        data: { firmId, inquiryId: insert.id },
+        data: { firmId, inquiryId: insert.id, ...(requestId ? { requestId } : {}) },
         id: `inquiry-${insert.id}`,
       });
     }

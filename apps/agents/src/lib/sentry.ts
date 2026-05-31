@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
-import { redactPII } from '@zeiro/core';
+import { registerSentryLogBridge } from './sentry-log-bridge';
+import { scrubEvent, scrubLog } from './sentry-scrub';
 
 const dsn = process.env.SENTRY_DSN;
 
@@ -9,15 +10,10 @@ if (dsn) {
     ...(process.env.NODE_ENV ? { environment: process.env.NODE_ENV } : {}),
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
     sendDefaultPii: false,
-    beforeSend(event) {
-      if (event.message) event.message = redactPII(event.message);
-      event.exception?.values?.forEach((ex) => {
-        if (ex.value) ex.value = redactPII(ex.value);
-      });
-      event.breadcrumbs?.forEach((b) => {
-        if (b.message) b.message = redactPII(b.message);
-      });
-      return event;
-    },
+    enableLogs: true,
+    beforeSend: scrubEvent,
+    // Logs (enableLogs) bypass beforeSend — beforeSendLog is their scrub hook.
+    beforeSendLog: scrubLog,
   });
+  registerSentryLogBridge();
 }
