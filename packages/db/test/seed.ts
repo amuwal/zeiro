@@ -27,6 +27,8 @@ export type SeededFirm = {
   unmatchedInquiryId: string;
   unmatchedSenderEmail: string;
   lineUserId: string;
+  clientLineUserId: string;
+  clientChatworkRoomId: string;
   freeeExternalId: string;
   sentBody: string;
   documentFilename: string;
@@ -69,6 +71,11 @@ async function seedFirm(label: string): Promise<SeededFirm> {
     },
   });
 
+  // lineUserId / chatworkRoomId on the client row are stable re-identification
+  // handles; the RTBF cascade must null them. Seeded distinct per firm so a
+  // missing firm scope on the scrub would surface as a cross-firm leak.
+  const clientLineUserId = `Uclient${label}${tag}`;
+  const clientChatworkRoomId = `room-${label}-${tag}`;
   const client = await prisma.client.create({
     data: {
       firmId: firm.id,
@@ -77,6 +84,8 @@ async function seedFirm(label: string): Promise<SeededFirm> {
       contractType: 'advisory',
       assignedTaxAccountantId: user.id,
       notes: `${label} private notes`,
+      lineUserId: clientLineUserId,
+      chatworkRoomId: clientChatworkRoomId,
     },
   });
 
@@ -96,6 +105,9 @@ async function seedFirm(label: string): Promise<SeededFirm> {
       body: `${label} inquiry body`,
       status: 'drafted',
       channel: 'email',
+      // Cleartext client name/email in the raw headers — the RTBF cascade must
+      // scrub this to {}.
+      headers: { fromName: `Client ${label}`, From: `Client ${label} <${SHARED_CLIENT_EMAIL}>` },
     },
   });
 
@@ -110,6 +122,9 @@ async function seedFirm(label: string): Promise<SeededFirm> {
       body: `${label} follow-up`,
       status: 'pending',
       channel: 'email',
+      // Child inquiry also carries cleartext sender headers — the RTBF cascade
+      // must scrub EVERY inquiry of the client, not just the thread root.
+      headers: { fromName: `Client ${label}`, From: `Client ${label} <${SHARED_CLIENT_EMAIL}>` },
     },
   });
 
@@ -143,14 +158,17 @@ async function seedFirm(label: string): Promise<SeededFirm> {
 
   // KnowledgeChunk.embedding is a required vector column with no Prisma default,
   // so insert via raw SQL (mirrors insertKnowledgeChunk).
+  // metadata.documentId = inquiry.id marks this as an auto-added "past answer"
+  // chunk, the exact shape the RTBF cascade deletes.
   const chunkId = randomUUID();
   const vec = `[${embedding(label === 'A' ? 1 : 2).join(',')}]`;
+  const chunkMeta = JSON.stringify({ documentId: inquiry.id });
   await prisma.$executeRaw`
     INSERT INTO knowledge_chunks (id, firm_id, scope, source, content, embedding, metadata)
     VALUES (
       ${chunkId}::uuid, ${firm.id}::uuid, 'firm',
-      ${`${label}-source`}, ${`${label} knowledge content`},
-      ${vec}::vector, '{}'::jsonb
+      ${`過去回答 / Client ${label}`}, ${`${label} knowledge content`},
+      ${vec}::vector, ${chunkMeta}::jsonb
     )
   `;
 
@@ -271,6 +289,8 @@ async function seedFirm(label: string): Promise<SeededFirm> {
     unmatchedInquiryId: unmatchedInquiry.id,
     unmatchedSenderEmail,
     lineUserId,
+    clientLineUserId,
+    clientChatworkRoomId,
     freeeExternalId,
     sentBody,
     documentFilename,

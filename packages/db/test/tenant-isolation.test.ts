@@ -5,7 +5,9 @@ import {
   assigneesByClient,
   deleteBinding,
   deleteClient,
+  findClientByChatworkRoomId,
   findClientByEmail,
+  findClientByLineUserId,
   findInquiryByMessageId,
   findIntegration,
   findLatestSentBody,
@@ -366,6 +368,16 @@ describe('mutations refuse cross-firm ids', () => {
     const bRow = await getPrisma().client.findFirstOrThrow({ where: { id: B.clientId } });
     expect(bRow.firmId).toBe(B.firmId);
     expect(bRow.primaryEmail).not.toContain('@invalid');
+    // The two destructive cascade statements (chunk DELETE + binding deleteMany)
+    // run BEFORE the clientCount guard throws. Lock that the rejected cross-firm
+    // path leaves B's RAG chunk and freee binding intact — the rollback +
+    // non-matching predicates must be a contract, not an incidental property.
+    const bChunks = await getPrisma().$queryRaw<Array<{ n: bigint }>>`
+      SELECT COUNT(*) AS n FROM knowledge_chunks
+      WHERE firm_id = ${B.firmId}::uuid AND metadata->>'documentId' = ${B.inquiryId}
+    `;
+    expect(Number(bChunks[0]?.n ?? 0)).toBeGreaterThan(0);
+    expect(await getBindingByClient(B.firmId, B.clientId, 'freee')).not.toBeNull();
     // No audit row leaked into firm A for B's client.
     const leaked = await getPrisma().auditEvent.count({
       where: { firmId: A.firmId, action: 'client.tombstoned' },
@@ -445,5 +457,71 @@ describe('mutations refuse cross-firm ids', () => {
     // must not delete it. Assert the row survives.
     await deleteClient(A.firmId, B.clientId);
     expect(await clientName(B.firmId, B.clientId)).not.toBeNull();
+  });
+});
+
+// RTBF (削除要求) cascade — locks the new firm-scoping: a legitimate same-firm
+// tombstone purges its OWN client's RAG chunks / inquiry headers / freee bindings
+// while leaving the other firm's identical surfaces untouched. Uses a dedicated
+// firm pair so it never mutates the shared A/B the read/cross-firm tests rely on.
+describe('tombstoneClient cascade purges client PII without crossing firms', () => {
+  let X: SeededFirm;
+  let Y: SeededFirm;
+
+  async function chunkExistsForDocument(firmId: string, documentId: string): Promise<boolean> {
+    const rows = await getPrisma().$queryRaw<Array<{ n: bigint }>>`
+      SELECT COUNT(*) AS n FROM knowledge_chunks
+      WHERE firm_id = ${firmId}::uuid AND metadata->>'documentId' = ${documentId}
+    `;
+    return Number(rows[0]?.n ?? 0) > 0;
+  }
+
+  async function inquiryHeaders(firmId: string, inquiryId: string): Promise<unknown> {
+    const row = await getInquiry(firmId, inquiryId);
+    return row?.headers ?? null;
+  }
+
+  beforeAll(async () => {
+    const seeded = await seedTwoFirms();
+    X = seeded.a;
+    Y = seeded.b;
+    await tombstoneClient({
+      firmId: X.firmId,
+      clientId: X.clientId,
+      requestedBy: X.userId,
+      reason: 'RTBF cascade contract',
+    });
+  });
+
+  afterAll(async () => {
+    if (X && Y) await teardownFirms([X.firmId, Y.firmId]);
+  });
+
+  it("deletes X's auto-added RAG chunk keyed to its inquiry", async () => {
+    expect(await chunkExistsForDocument(X.firmId, X.inquiryId)).toBe(false);
+  });
+
+  it("clears headers on EVERY one of X's inquiries (root + child)", async () => {
+    expect(await inquiryHeaders(X.firmId, X.inquiryId)).toEqual({});
+    // The child inquiry was seeded with non-empty headers too — a too-narrow
+    // updateMany scope (e.g. parentInquiryId IS NULL) would leave this dirty.
+    expect(await inquiryHeaders(X.firmId, X.childInquiryId)).toEqual({});
+  });
+
+  it("nulls X's LINE / Chatwork re-identification handles", async () => {
+    expect(await findClientByLineUserId(X.firmId, X.clientLineUserId)).toBeNull();
+    expect(await findClientByChatworkRoomId(X.firmId, X.clientChatworkRoomId)).toBeNull();
+  });
+
+  it("deletes X's freee binding", async () => {
+    expect(await getBindingByClient(X.firmId, X.clientId, 'freee')).toBeNull();
+  });
+
+  it("leaves Y's chunk, headers, binding, and handles untouched (no cross-firm delete)", async () => {
+    expect(await chunkExistsForDocument(Y.firmId, Y.inquiryId)).toBe(true);
+    expect(await inquiryHeaders(Y.firmId, Y.inquiryId)).not.toEqual({});
+    expect(await getBindingByClient(Y.firmId, Y.clientId, 'freee')).not.toBeNull();
+    expect(await findClientByLineUserId(Y.firmId, Y.clientLineUserId)).not.toBeNull();
+    expect(await findClientByChatworkRoomId(Y.firmId, Y.clientChatworkRoomId)).not.toBeNull();
   });
 });
