@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import type { MiddlewareHandler } from 'hono';
 import { getAgentContext, runWithAgentContext } from './request-context';
 
@@ -11,7 +12,10 @@ export const requestIdMiddleware: MiddlewareHandler = (c, next) => {
   const incoming = c.req.header(REQUEST_ID_HEADER);
   return runWithAgentContext({ requestId: incoming ?? null }, async () => {
     const ctx = getAgentContext();
-    if (ctx) c.header(REQUEST_ID_HEADER, ctx.requestId);
+    if (ctx) {
+      c.header(REQUEST_ID_HEADER, ctx.requestId);
+      Sentry.getIsolationScope().setTag('requestId', ctx.requestId);
+    }
     await next();
   });
 };

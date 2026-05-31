@@ -3,6 +3,7 @@ import { type AppRole, asAppRole, asClientScope, type ClientScope } from '@zeiro
 import { findFirmByClerkOrgId, findUserByClerkUserId, getMembership } from '@zeiro/db';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
+import { setRequestScopeTags } from '@/lib/sentry-tags';
 
 export type FirmContext = {
   firmId: string;
@@ -40,6 +41,8 @@ export const getFirmContext = cache(async (): Promise<ContextResult> => {
 
   const membership = await getMembership(user.id, firm.id);
   if (!membership) return { ok: false, reason: NOT_PROVISIONED };
+
+  setRequestScopeTags({ firmId: firm.id, userId: user.id });
 
   return {
     ok: true,

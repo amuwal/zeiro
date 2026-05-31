@@ -3,6 +3,7 @@ import './lib/sentry';
 import './lib/integrations-bootstrap';
 import { serve } from '@hono/node-server';
 import { RequestContext } from '@mastra/core/di';
+import * as Sentry from '@sentry/node';
 import { chatPostSchema, TenantIsolationError } from '@zeiro/core';
 import { logger } from '@zeiro/core/logger';
 import { FIRM_TOKEN_HEADER, selfTestVector, verifyFirmTokenFor } from '@zeiro/core/security';
@@ -84,6 +85,7 @@ app.post('/api/inquiries/run', async (c) => {
     // so a failure is correlated to the (PII-scrubbed) agents log line instead.
     const requestId = agentLogger().bindings().requestId as string | undefined;
     agentLogger().error({ err: error, route: 'inquiries.run' }, 'inquiry run failed');
+    Sentry.captureException(error);
     return c.json({ error: 'inquiry_run_failed', requestId }, 500);
   }
 });
@@ -112,6 +114,7 @@ app.get('/api/inquiries/:id/chat', async (c) => {
   } catch (error) {
     const requestId = agentLogger().bindings().requestId as string | undefined;
     agentLogger().error({ err: error, route: 'inquiries.chat.history' }, 'chat history failed');
+    Sentry.captureException(error);
     return c.json({ error: 'chat_history_failed', requestId }, 500);
   }
 });
@@ -241,6 +244,15 @@ app.post('/api/inquiries/:id/chat', async (c) => {
         // + requestId; the scrubbed server log carries the detail.
         const requestId = log.bindings().requestId as string | undefined;
         log.error({ err, route: 'inquiries.chat.stream' }, 'chat stream failed');
+        // This callback runs after the handler returned, so the request's Sentry
+        // isolation scope is no longer active — capture in a fresh isolation scope
+        // with the tags set explicitly, so the Issue is attributed to THIS request
+        // and can never inherit a concurrent request's firmId.
+        Sentry.withIsolationScope((scope) => {
+          scope.setTag('firmId', firmId);
+          if (requestId) scope.setTag('requestId', requestId);
+          Sentry.captureException(err);
+        });
         controller.enqueue(
           enc.encode(encodeSSE({ type: 'error', message: 'chat_stream_failed', requestId })),
         );

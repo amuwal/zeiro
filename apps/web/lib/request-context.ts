@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { child, type Logger } from '@zeiro/core/logger';
+import { setRequestScopeTags } from './sentry-tags';
 
 export type WebRequestContext = {
   requestId: string;
@@ -40,6 +41,7 @@ export function runWithRequestContext<T>(
       ...(init.userId ? { userId: init.userId } : {}),
     }),
   };
+  setRequestScopeTags({ requestId, firmId: init.firmId, userId: init.userId });
   return storage.run(ctx, fn);
 }
 
@@ -69,6 +71,7 @@ export function bindRequestScope(bind: {
   if (!store) return;
   if (bind.firmId) store.firmId = bind.firmId;
   if (bind.userId) store.userId = bind.userId;
+  setRequestScopeTags({ firmId: bind.firmId, userId: bind.userId });
   store.logger = child({
     requestId: store.requestId,
     ...(store.firmId ? { firmId: store.firmId } : {}),

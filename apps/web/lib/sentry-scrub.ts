@@ -24,6 +24,11 @@ export function scrubEvent(event: ErrorEvent, _hint: EventHint): ErrorEvent | nu
     request.data = scrubPIIDeep(request.data) as typeof request.data;
   }
 
+  // Tag values are opaque ids by policy (requestId/firmId/userId/service), but
+  // scrub them too so a future tag added without that discipline can't egress
+  // PII as a searchable Issue tag (§38 defence-in-depth).
+  if (event.tags) event.tags = scrubPIIDeep(event.tags) as typeof event.tags;
+
   return event;
 }
 

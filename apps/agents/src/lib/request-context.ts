@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
+import * as Sentry from '@sentry/node';
 import { child, type Logger } from '@zeiro/core/logger';
 
 export type AgentRequestContext = {
@@ -35,6 +36,7 @@ export function bindAgentFirm(firmId: string): void {
   if (!store) return;
   store.firmId = firmId;
   store.logger = child({ requestId: store.requestId, firmId });
+  Sentry.getIsolationScope().setTag('firmId', firmId);
 }
 
 export function agentLogger(): Logger {
