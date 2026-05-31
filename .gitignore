@@ -26,3 +26,7 @@ next-env.d.ts
 # Claude Code skill installer artifacts (per-developer, not project code)
 .agents/
 skills-lock.json
+
+# prod secrets (never commit)
+.env.production
+apps/*/.env.production

@@ -1,0 +1,24 @@
+# Controls what `gcloud run deploy --source` uploads to Cloud Build.
+# Keep all source + workspace manifests; exclude installed deps, build output,
+# and anything containing secrets (env files are injected via --env-vars-file).
+.git
+node_modules
+**/node_modules
+.env
+.env.*
+**/.env
+**/.env.*
+.next
+**/.next
+dist
+**/dist
+out
+**/out
+debug
+coverage
+*.log
+.DS_Store
+.vercel
+**/.vercel
+.turbo
+**/.turbo

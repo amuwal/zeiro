@@ -15,6 +15,8 @@ export type FirmContext = {
   clientScope: ClientScope;
   // Clerk org role string ('org:admin' | 'org:member') — billing-admin mirror only.
   clerkRole: string;
+  // First-run onboarding wizard completed (firm.settings.onboardingCompleted).
+  onboardingCompleted: boolean;
 };
 
 export const NO_AUTH = 'NO_AUTH' as const;
@@ -48,6 +50,8 @@ export const getFirmContext = cache(async (): Promise<ContextResult> => {
       canSend: membership.canSend,
       clientScope: asClientScope(membership.clientScope),
       clerkRole: membership.role,
+      onboardingCompleted:
+        ((firm.settings ?? {}) as Record<string, unknown>).onboardingCompleted === true,
     },
   };
 });

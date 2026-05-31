@@ -12,8 +12,13 @@ import { reflectorAgent } from './agents/reflector';
 import { triageAgent } from './agents/triage';
 import { createMastraStorage } from './storage';
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error('DATABASE_URL required for Mastra storage');
+// Mastra's pg store opens long-lived `pg` connections. On Neon's serverless
+// (free) compute the DIRECT endpoint drops connections when the compute
+// suspends/resumes — that crashed the container mid-init ("Connection
+// terminated unexpectedly"). The POOLED endpoint (PgBouncer) tolerates it, so
+// prefer MASTRA_DATABASE_URL (the -pooler host) when set.
+const databaseUrl = process.env.MASTRA_DATABASE_URL ?? process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('MASTRA_DATABASE_URL or DATABASE_URL required for Mastra storage');
 
 const exporters: Array<DefaultExporter | LangfuseExporter> = [new DefaultExporter()];
 if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {

@@ -7,3 +7,5 @@
 # of the working tree so the repo stays small.
 *.traineddata
 
+.vercel
+.env*.local

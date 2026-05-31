@@ -20,6 +20,15 @@ import { inquiryAgent } from './mastra/agents/inquiry';
 import { pipelineInputSchema } from './mastra/schemas';
 import './mastra';
 
+// Resilience: a transient Neon connection drop (serverless resume) can surface
+// as an unhandled rejection deep inside Mastra's pg store init. Don't let one
+// async blip take down the whole container — log it and keep serving; the
+// affected request still fails via its own handler.
+process.on('unhandledRejection', (reason) => {
+  // biome-ignore lint/suspicious/noConsole: surfaced in Cloud Run logs + Sentry
+  console.error('[unhandledRejection]', reason);
+});
+
 const PORT = Number(process.env.PORT ?? 6002);
 
 const app = new Hono();
