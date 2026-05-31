@@ -33,3 +33,14 @@ export function getPrisma(): PrismaClient {
 function isNeon(url: string): boolean {
   return url.includes('.neon.tech');
 }
+
+// Wakes a scale-to-zero Neon compute before a fragile consumer connects. Neon
+// suspends after ~5min idle; Mastra's @mastra/pg TCP pool then throws
+// "Authentication timed out" on the stale socket when it hits a still-resuming
+// compute. This SELECT 1 goes through the resilient serverless adapter (which
+// waits out the resume), so by the time it returns the compute is awake and the
+// pg pool connects cleanly. Best-effort — callers swallow failures, since a real
+// outage will surface on the actual query.
+export async function pingDatabase(): Promise<void> {
+  await getPrisma().$queryRaw`SELECT 1`;
+}
