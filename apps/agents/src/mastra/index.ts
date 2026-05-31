@@ -12,13 +12,15 @@ import { reflectorAgent } from './agents/reflector';
 import { triageAgent } from './agents/triage';
 import { createMastraStorage } from './storage';
 
-// Mastra's pg store opens long-lived `pg` connections. On Neon's serverless
-// (free) compute the DIRECT endpoint drops connections when the compute
-// suspends/resumes — that crashed the container mid-init ("Connection
-// terminated unexpectedly"). The POOLED endpoint (PgBouncer) tolerates it, so
-// prefer MASTRA_DATABASE_URL (the -pooler host) when set.
-const databaseUrl = process.env.MASTRA_DATABASE_URL ?? process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error('MASTRA_DATABASE_URL or DATABASE_URL required for Mastra storage');
+// Mastra's @mastra/pg uses node-postgres (pg.Pool). Neon's POOLED (PgBouncer)
+// endpoint returns "Authentication timed out" with it (verified in prod), so we
+// MUST use the DIRECT endpoint (DATABASE_URL) — do NOT point this at the
+// `-pooler` host. Caveat: on Neon free the compute suspends after ~5min idle, so
+// the first draft after idle can fail once; inquiry.queued retries 3x and the
+// unhandledRejection guard in server.ts keeps the container alive. The permanent
+// fix is the planned non-suspending / jp-tokyo DB.
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL required for Mastra storage');
 
 const exporters: Array<DefaultExporter | LangfuseExporter> = [new DefaultExporter()];
 if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {
