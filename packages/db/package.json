@@ -13,7 +13,7 @@
     "check:isolation": "tsx scripts/check-tenant-isolation.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "prisma generate",
+    "db:generate": "DATABASE_URL=${DATABASE_URL:-postgres://zeiro:zeiro@localhost:6432/zeiro_dev} prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio --port 6080",
