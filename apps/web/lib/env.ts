@@ -1,3 +1,4 @@
+import 'server-only';
 import { z } from 'zod';
 
 const optionalString = z.preprocess(
@@ -18,6 +19,8 @@ const schema = z.object({
   CLERK_WEBHOOK_SECRET: z.string().min(1),
   OUTBOUND_FROM_DOMAIN: z.string().min(1).default('reply.zeiro.io'),
   ENCRYPTION_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, 'must be 64 hex chars (32 bytes)'),
+  ANTHROPIC_API_KEY: z.string().min(1),
+  OPENAI_API_KEY: z.string().min(1),
   FREEE_CLIENT_ID: optionalString,
   FREEE_CLIENT_SECRET: optionalString,
   FREEE_REDIRECT_URI: optionalString,

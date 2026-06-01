@@ -1,10 +1,8 @@
-import { maskMyNumber } from '@zeiro/core';
+import { maskMyNumber, SYSTEM_ACTOR_ID as SYSTEM_ACTOR } from '@zeiro/core';
 import { createInquiry, recordAudit } from '@zeiro/db';
 import { inngest } from '@/lib/inngest/client';
 import { getRequestId } from '@/lib/request-context';
 import type { CanonicalMessage, ChannelAdapter } from './contract';
-
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 export type InboundOutcome = { applied: number; unmatched: number; skipped: number };
 

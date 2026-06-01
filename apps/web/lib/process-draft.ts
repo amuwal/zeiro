@@ -1,4 +1,9 @@
-import { DRAFT_MODEL, type DraftResult, type TriageResult } from '@zeiro/core';
+import {
+  DRAFT_MODEL,
+  type DraftResult,
+  SYSTEM_ACTOR_ID as SYSTEM_ACTOR,
+  type TriageResult,
+} from '@zeiro/core';
 import {
   createDraft,
   findClientByEmail,
@@ -10,8 +15,6 @@ import {
 } from '@zeiro/db';
 import { runInquiryPipeline, type ThreadMessage } from './agent-client';
 import { reqLogger } from './request-context';
-
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 export async function processDraft(firmId: string, inquiryId: string): Promise<void> {
   const inquiry = await getInquiry(firmId, inquiryId);

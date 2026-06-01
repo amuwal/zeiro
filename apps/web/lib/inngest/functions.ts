@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID as SYSTEM_ACTOR } from '@zeiro/core';
 import {
   claimClientImport,
   claimIngestionJob,
@@ -22,7 +23,6 @@ import { processDraft } from '../process-draft';
 import { runWithRequestContext } from '../request-context';
 import { inngest } from './client';
 
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 const MIN_INGEST_LENGTH = 50;
 
 export const draftInquiryFn = inngest.createFunction(

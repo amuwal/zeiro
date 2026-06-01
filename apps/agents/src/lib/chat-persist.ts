@@ -1,9 +1,13 @@
-import { type CitationBlock, DRAFT_MODEL } from '@zeiro/core';
+import {
+  type ChatInquiryStatus,
+  type CitationBlock,
+  confidenceFromCitations,
+  DRAFT_MODEL,
+  SYSTEM_ACTOR_ID,
+} from '@zeiro/core';
 import { createDraft, recordAudit, setInquiryStatus } from '@zeiro/db';
 
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
-
-export type InquiryStatus = 'pending' | 'drafted' | 'sent' | 'escalated' | 'rejected';
+export type { ChatInquiryStatus } from '@zeiro/core';
 
 /** A terminal tool result accumulated from a chat stream. We only care about
  * the latest one — if the agent (mis)calls multiple, the last wins. */
@@ -59,9 +63,9 @@ export async function persistChatTerminal(args: {
   firmId: string;
   inquiryId: string;
   subject: string;
-  currentStatus: InquiryStatus;
+  currentStatus: ChatInquiryStatus;
   terminal: TerminalToolResult;
-}): Promise<{ status: InquiryStatus; draftId?: string } | null> {
+}): Promise<{ status: ChatInquiryStatus; draftId?: string } | null> {
   if (args.currentStatus === 'sent') return null;
 
   if (args.terminal.name === 'propose-draft') {
@@ -80,7 +84,7 @@ export async function persistChatTerminal(args: {
     await setInquiryStatus(args.firmId, args.inquiryId, 'drafted');
     await recordAudit({
       firmId: args.firmId,
-      actorId: SYSTEM_ACTOR,
+      actorId: SYSTEM_ACTOR_ID,
       inquiryId: args.inquiryId,
       action: 'draft.generated',
       metadata: {
@@ -99,16 +103,10 @@ export async function persistChatTerminal(args: {
   await setInquiryStatus(args.firmId, args.inquiryId, 'escalated');
   await recordAudit({
     firmId: args.firmId,
-    actorId: SYSTEM_ACTOR,
+    actorId: SYSTEM_ACTOR_ID,
     inquiryId: args.inquiryId,
     action: 'draft.escalated',
     metadata: { source: 'chat', tool: args.terminal.name, reason: args.terminal.reason },
   });
   return { status: 'escalated' };
-}
-
-function confidenceFromCitations(count: number): number {
-  if (count === 0) return 0.3;
-  if (count >= 3) return 0.85;
-  return 0.55 + (count - 1) * 0.15;
 }

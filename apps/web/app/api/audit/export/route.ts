@@ -1,4 +1,4 @@
-import { auditActionEnum } from '@zeiro/core';
+import { auditActionEnum, SYSTEM_ACTOR_ID } from '@zeiro/core';
 import { listAuditEvents, listFirmUsers } from '@zeiro/db';
 import { NextResponse } from 'next/server';
 import { resolveWindow } from '@/lib/analytics-window';
@@ -6,7 +6,6 @@ import { ctxCan } from '@/lib/authz';
 import { csvRow } from '@/lib/csv';
 import { requireFirmContext } from '@/lib/firm-context';
 
-const SYSTEM_ACTOR_ID = '00000000-0000-0000-0000-000000000000';
 const MAX_ROWS = 10_000;
 const BATCH_SIZE = 500;
 

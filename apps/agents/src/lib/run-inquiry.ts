@@ -2,6 +2,7 @@ import { RequestContext } from '@mastra/core/di';
 import {
   type AiReview,
   type CitationBlock,
+  confidenceFromCitations,
   DRAFT_GENERATION_TIMEOUT_MS,
   type DraftResult,
   type TriageResult,
@@ -220,12 +221,6 @@ function defaultAiReview(
   reasoning: string,
 ): AiReview {
   return { recommendation, confidence, reasoning, gaps: [], suggestions: [] };
-}
-
-function confidenceFromCitations(count: number): number {
-  if (count === 0) return 0.3;
-  if (count >= 3) return 0.85;
-  return 0.55 + (count - 1) * 0.15;
 }
 
 function buildAgentMessage(input: PipelineInput, triage: TriageResult): string {

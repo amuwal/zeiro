@@ -1,4 +1,5 @@
 import { createTool } from '@mastra/core/tools';
+import { SYSTEM_ACTOR_ID as SYSTEM_ACTOR } from '@zeiro/core';
 import { TenantIsolationError } from '@zeiro/core/errors';
 import { recordAudit } from '@zeiro/db';
 import { FreeeApiClient } from '@zeiro/integrations';
@@ -8,7 +9,6 @@ import { interpretError, redactDeal, redactInvoice, redactPartner } from './free
 // Agent-driven freee reads run as the system actor; we audit WHO (system, on
 // behalf of the firm) accessed WHICH client's books and HOW MUCH — never the
 // transaction contents (税理士法 §38).
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 async function auditAccess(firmId: string, clientId: string, scope: string, rows: number) {
   await recordAudit({

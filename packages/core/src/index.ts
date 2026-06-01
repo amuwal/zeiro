@@ -2,8 +2,10 @@ export * from './authz';
 export * from './chunking/generic';
 export * from './chunking/japanese';
 export * from './chunking/router';
+export * from './constants/actors';
 export * from './constants/categories';
 export * from './constants/category-theme';
+export * from './constants/confidence';
 export * from './constants/integrations';
 export * from './constants/thresholds';
 export {

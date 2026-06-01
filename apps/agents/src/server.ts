@@ -4,14 +4,13 @@ import './lib/integrations-bootstrap';
 import { serve } from '@hono/node-server';
 import { RequestContext } from '@mastra/core/di';
 import * as Sentry from '@sentry/node';
-import { chatPostSchema, TenantIsolationError } from '@zeiro/core';
+import { type ChatInquiryStatus, chatPostSchema, TenantIsolationError } from '@zeiro/core';
 import { logger } from '@zeiro/core/logger';
 import { FIRM_TOKEN_HEADER, selfTestVector, verifyFirmTokenFor } from '@zeiro/core/security';
 import { getInquiry } from '@zeiro/db';
 import { Hono } from 'hono';
 import { loadChatHistory } from './lib/chat-history';
 import {
-  type InquiryStatus,
   persistChatTerminal,
   readTerminalToolResult,
   TERMINAL_REGISTRY_KEYS,
@@ -148,13 +147,13 @@ app.post('/api/inquiries/:id/chat', async (c) => {
   // inquiry pipeline uses so chat tool calls work identically.
   const inquiry = await getInquiry(firmId, inquiryId);
   if (!inquiry) return c.json({ error: 'inquiry not found' }, 404);
-  const status = (inquiry.status ?? 'pending') as InquiryStatus;
+  const status = (inquiry.status ?? 'pending') as ChatInquiryStatus;
   const requestContext = new RequestContext<{
     firmId: string;
     clientId: string | null;
     subject: string;
     body: string;
-    currentStatus: InquiryStatus;
+    currentStatus: ChatInquiryStatus;
   }>([
     ['firmId', firmId],
     ['clientId', inquiry.clientId ?? null],
@@ -207,7 +206,7 @@ app.post('/api/inquiries/:id/chat', async (c) => {
         }
 
         // Persist after stream completes (so memory has written all chunks).
-        let newStatus: InquiryStatus | null = null;
+        let newStatus: ChatInquiryStatus | null = null;
         let newDraftId: string | undefined;
         if (terminalPayload) {
           const terminal = readTerminalToolResult(terminalPayload.key, terminalPayload.result);

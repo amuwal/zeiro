@@ -25,6 +25,9 @@
     "typescript": "^5.7.0"
   },
   "pnpm": {
+    "overrides": {
+      "protobufjs": ">=8.0.2"
+    },
     "onlyBuiltDependencies": [
       "@clerk/shared",
       "@prisma/client",

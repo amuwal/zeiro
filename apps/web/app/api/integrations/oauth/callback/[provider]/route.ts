@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@zeiro/core';
 import { recordAudit } from '@zeiro/db';
 import { completeOAuthFlow, registerIntegrations } from '@zeiro/integrations';
 import { NextResponse } from 'next/server';
@@ -41,7 +42,7 @@ export async function GET(
     const integration = await completeOAuthFlow({ code, state, expectedFirmId: firmId });
     await recordAudit({
       firmId: integration.firmId,
-      actorId: '00000000-0000-0000-0000-000000000000',
+      actorId: SYSTEM_ACTOR_ID,
       inquiryId: null,
       action: 'integration.connected',
       metadata: { provider, integrationId: integration.id },

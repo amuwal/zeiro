@@ -14,6 +14,7 @@ import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 
+import { SYSTEM_ACTOR_ID as ACTOR_ID } from '@zeiro/core';
 import {
   type ClientImport,
   completeClientImport,
@@ -31,7 +32,6 @@ import { inngest } from '../lib/inngest/client';
 config({ path: '.env.local' });
 
 const FIRM_ID = process.env.RAG_TEST_FIRM_ID ?? 'be11a00c-835f-49d3-8cb4-d9753f2cfcda';
-const ACTOR_ID = '00000000-0000-0000-0000-000000000000';
 const CONFIRM = process.argv.includes('--confirm');
 
 async function main() {

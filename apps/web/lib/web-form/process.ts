@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { maskMyNumber, type WebFormSubmission, webFormSubmissionSchema } from '@zeiro/core';
+import {
+  maskMyNumber,
+  SYSTEM_ACTOR_ID as SYSTEM_ACTOR,
+  type WebFormSubmission,
+  webFormSubmissionSchema,
+} from '@zeiro/core';
 import {
   createInquiry,
   findOrCreateClientByEmail,
@@ -9,8 +14,6 @@ import {
 } from '@zeiro/db';
 import { inngest } from '../inngest/client';
 import { rateLimit } from './rate-limit';
-
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 export type WebFormError =
   | { kind: 'firm_not_found' }

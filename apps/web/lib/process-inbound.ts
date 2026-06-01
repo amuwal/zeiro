@@ -1,4 +1,4 @@
-import { type InquiryHeaders, maskMyNumber } from '@zeiro/core';
+import { type InquiryHeaders, maskMyNumber, SYSTEM_ACTOR_ID as SYSTEM_ACTOR } from '@zeiro/core';
 import {
   createInquiry,
   findClientByEmail,
@@ -12,8 +12,6 @@ import type { ParsedMessage } from '@zeiro/email';
 import { parseInboundAttachments } from './inbound-attachments';
 import { inngest } from './inngest/client';
 import { getRequestId } from './request-context';
-
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 export type ProcessOutcome =
   | { kind: 'unmatched_firm' }

@@ -1,11 +1,11 @@
-import type { InquiryStatus } from './chat-persist';
+import type { ChatInquiryStatus } from '@zeiro/core';
 
 /** Wrap a user chat message with state + chat-mode context so the inquiry
  * agent (whose default prompt forces 1 terminal tool/turn) behaves correctly
  * for free-form dialogue: terminal tools only on explicit intent, never on
  * `sent` inquiries. */
 export function buildChatUserMessage(args: {
-  status: InquiryStatus;
+  status: ChatInquiryStatus;
   hasDraft: boolean;
   userMessage: string;
 }): string {
@@ -20,7 +20,7 @@ export function buildChatUserMessage(args: {
   ].join('\n');
 }
 
-const STATE_GUIDANCE: Record<InquiryStatus, string> = {
+const STATE_GUIDANCE: Record<ChatInquiryStatus, string> = {
   pending:
     '[状態ガイド] まだ下書きはありません。ユーザーが下書き作成を求めた場合は propose-draft を呼んでください。',
   drafted:

@@ -38,6 +38,9 @@ export const inquiryStatusEnum = z.enum([
 ]);
 export type InquiryStatus = z.infer<typeof inquiryStatusEnum>;
 
+export const chatInquiryStatusEnum = inquiryStatusEnum.exclude(['unmatched']);
+export type ChatInquiryStatus = z.infer<typeof chatInquiryStatusEnum>;
+
 export const webFormSubmissionSchema = z.object({
   name: z.string().trim().min(1, '氏名を入力してください').max(200),
   email: z.string().trim().toLowerCase().email('有効なメールアドレスを入力してください').max(255),

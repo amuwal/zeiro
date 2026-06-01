@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID as SYSTEM_ACTOR } from '@zeiro/core';
 import { patchDraftMetadata, recordAudit, setInquiryStatus } from '@zeiro/db';
 import { z } from 'zod';
 
@@ -49,8 +50,6 @@ const RELEVANT = new Set([
   'email.complained',
   'email.failed',
 ]);
-
-const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
 export async function applyEvents(
   rawEvents: unknown[],

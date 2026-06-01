@@ -1,10 +1,9 @@
+import { SYSTEM_ACTOR_ID } from '@zeiro/core';
 import type { AuditRow } from '@zeiro/db';
 import Link from 'next/link';
 import { Icon } from '@/components/ui/icon';
 import { getAuditDisplay } from '@/lib/audit-display';
 import { formatFullJST } from '@/lib/format';
-
-const SYSTEM_ACTOR_ID = '00000000-0000-0000-0000-000000000000';
 
 type Props = {
   rows: AuditRow[];
