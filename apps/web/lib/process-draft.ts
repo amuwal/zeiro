@@ -9,6 +9,7 @@ import {
   walkThread,
 } from '@zeiro/db';
 import { runInquiryPipeline, type ThreadMessage } from './agent-client';
+import { reqLogger } from './request-context';
 
 const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
 
@@ -33,6 +34,22 @@ export async function processDraft(firmId: string, inquiryId: string): Promise<v
   });
 
   await persistResult(firmId, inquiryId, result);
+
+  // Lifecycle event → Sentry Logs (info, requestId/firmId-bound). Safe fields
+  // only — outcome + triage enums + ids, never the inquiry body/subject/name —
+  // so this off-region telemetry stays §38-safe. Lets an operator trace a
+  // request end-to-end without an error having to occur.
+  reqLogger().info(
+    {
+      lifecycle: true,
+      inquiryId,
+      outcome: result.kind,
+      category: result.triage.category,
+      urgency: result.triage.urgency,
+      recommendation: result.aiReview.recommendation,
+    },
+    'inquiry.drafted',
+  );
 }
 
 async function assembleThreadHistory(

@@ -63,11 +63,17 @@ const base: Logger = pino({
       // Key-drop at EVERY level + depth first (pino's path globs only reach one
       // nesting level), THEN the warn+ free-text PII pass.
       const args = scrubArgsAboveWarn(dropSensitiveArgs(inputArgs as unknown[]), level);
-      if (level >= WARN_LEVEL) {
-        const { message, attributes } = toSinkRecord(args);
+      const { message, attributes } = toSinkRecord(args);
+      // Forward to the Sentry sink on warn+ (problems) OR when an info log is
+      // explicitly flagged `lifecycle: true` — a controlled operational event
+      // (inquiry received/drafted/sent) carrying ONLY ids/enums/counts, never
+      // free-text bodies/names, so surfacing it off-region stays §38-safe.
+      // scrubForSink still deep-scrubs as defence-in-depth. Keep info otherwise
+      // thin: route incidental chatter to debug (suppressed in prod).
+      if (level >= WARN_LEVEL || attributes.lifecycle === true) {
         const bindings = childBindings.get(this as object) ?? {};
         emitToSink({
-          level: LEVEL_LABELS[level] ?? 'error',
+          level: LEVEL_LABELS[level] ?? 'info',
           message,
           // Child correlation ids (requestId/firmId/userId) live on the logger,
           // not in `args` — merge them so the sink record is searchable by the
