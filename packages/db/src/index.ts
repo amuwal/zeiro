@@ -31,4 +31,4 @@ export * from './repositories/knowledge';
 export * from './repositories/membership';
 export * from './repositories/tombstone';
 export * from './repositories/user';
-export { getPrisma, pingDatabase } from './server';
+export { getPrisma } from './server';

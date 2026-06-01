@@ -7,7 +7,6 @@ import {
   type TriageResult,
   triageResultSchema,
 } from '@zeiro/core';
-import { pingDatabase } from '@zeiro/db';
 import { ensureRePrefix } from '@zeiro/email';
 import { inquiryAgent } from '../mastra/agents/inquiry.js';
 import { triageAgent } from '../mastra/agents/triage.js';
@@ -67,12 +66,6 @@ export async function runInquiry(input: PipelineInput): Promise<DraftResult> {
       aiReview: defaultAiReview('human_handoff', 'low', 'empty inquiry body'),
     };
   }
-
-  // Wake a suspended Neon compute via the resilient Prisma adapter before the
-  // agent touches Mastra's @mastra/pg store, which would otherwise throw
-  // "Authentication timed out" on the first draft after idle. Best-effort: a
-  // ping failure shouldn't fail the run — the agent surfaces real DB errors.
-  await pingDatabase().catch(() => {});
 
   const triage = await runTriage(input.body);
 
