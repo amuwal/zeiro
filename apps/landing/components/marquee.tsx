@@ -1,29 +1,30 @@
 const ITEMS = [
-  'メール (IMAP)',
-  'Gmail',
-  'Microsoft 365',
+  'メール · Resend',
   'LINE 公式アカウント',
   'Chatwork',
-  'Slack Connect',
   'Webフォーム',
-  'SMS',
-  '電話 文字起こし',
-  '国税庁 通達',
-  'TKC FX',
-  'freee',
-  '弥生',
-  'MFクラウド',
+  '事務所マニュアル',
+  'FAQ',
+  '顧問先情報',
+  '過去回答',
+  'freee · 読取専用',
+  '本文・添付テキストの番号マスク',
+  '人によるレビュー',
+  '監査ログ',
 ];
 
 export function Marquee() {
-  const loop = [...ITEMS, ...ITEMS];
+  const loop = [
+    ...ITEMS.map((label) => ({ id: `first-${label}`, label })),
+    ...ITEMS.map((label) => ({ id: `second-${label}`, label })),
+  ];
   return (
     <div className="marquee">
-      <div className="marquee-label">取り込み元</div>
+      <div className="marquee-label">α版の対象</div>
       <div className="marquee-track">
-        {loop.map((s, i) => (
-          <span className="marquee-item" key={`${s}-${i}`}>
-            {s}
+        {loop.map((item) => (
+          <span className="marquee-item" key={item.id}>
+            {item.label}
             <span className="dot" />
           </span>
         ))}

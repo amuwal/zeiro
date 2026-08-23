@@ -33,7 +33,7 @@ const CITATIONS: Citation[] = [
   },
   {
     id: 3,
-    title: '山田商事 顧問契約 特記事項',
+    title: 'サンプル株式会社 顧問契約 特記事項',
     src: '顧問先マスタ',
     section: 'C-0142',
     score: 0.81,
@@ -51,26 +51,25 @@ export function CitationsSection() {
         <div ref={ref} className="reveal">
           <div className="section-eyebrow">
             <span className="num">03</span>
-            <span>引用なき下書きは、出さない。</span>
+            <span>根拠と一緒に、レビュー。</span>
           </div>
           <h2 className="section-title">
-            ハルシネーションを、
+            生成文を、
             <br />
-            <em>構造的に</em>遮断する。
+            <em>出典まで</em>たどって確認。
           </h2>
           <p className="section-lede">
-            すべての文には、<b>事務所内の出典</b>
-            がぶら下がっています。番号をクリックすると、根拠となったマニュアル §、FAQ
-            Q-番号、過去回答の日付、 類似度スコアまで遡れる。<b>「なぜそう答えたのか」</b>
-            が、常に検証可能です。
+            下書きには、参照した<b>事務所内の情報</b>を表示します。担当者がマニュアル、FAQ、
+            顧問先情報などの元資料と照合できます。引用は正しさの保証ではないため、
+            <b>送信前の人による確認が必須</b>です。
           </p>
         </div>
 
         <div className="cite-stage">
           <div className="cite-paper">
             <div className="cite-paper-head">
-              <span className="ctag">DRAFT</span>
-              <span>To: 山田 正彦様 · 株式会社山田商事</span>
+              <span className="ctag">DEMO</span>
+              <span>架空データ · To: 山田 正彦様 · サンプル株式会社</span>
             </div>
 
             <p>
@@ -80,44 +79,55 @@ export function CitationsSection() {
               ご照会いただきました法人税の申告・納付期限につきまして、
               <b>貴社は3月決算ですので、提出期限は 2026年5月31日（日）</b>、 翌営業日
               6月1日までとなります。
-              <span
+              <button
+                type="button"
+                aria-label="出典1を表示"
                 className={`cite-mark ${active === 1 ? 'active' : ''}`}
                 onMouseEnter={() => setActive(1)}
+                onFocus={() => setActive(1)}
                 onClick={() => setActive(1)}
               >
                 ¹
-              </span>
+              </button>
             </p>
             <p>
               e-Tax電子提出をご希望とのこと、承知いたしました。当事務所では原則すべての法人申告を
               e-Tax にて行っております。 貴社からご準備いただく書類は{' '}
               <b>決算書 / 勘定科目内訳明細書 / 事業概況説明書</b> の3点です。
-              <span
+              <button
+                type="button"
+                aria-label="出典2を表示"
                 className={`cite-mark ${active === 2 ? 'active' : ''}`}
                 onMouseEnter={() => setActive(2)}
+                onFocus={() => setActive(2)}
                 onClick={() => setActive(2)}
               >
                 ²
-              </span>
+              </button>
             </p>
             <p>
               貴社の顧問契約には「申告書ドラフトの事前確認」プロセスが含まれておりますので、5月20日頃に弊所より確認用のドラフトをお送りいたします。
-              <span
+              <button
+                type="button"
+                aria-label="出典3を表示"
                 className={`cite-mark ${active === 3 ? 'active' : ''}`}
                 onMouseEnter={() => setActive(3)}
+                onFocus={() => setActive(3)}
                 onClick={() => setActive(3)}
               >
                 ³
-              </span>
+              </button>
             </p>
           </div>
 
           <div className="cite-cards">
             {CITATIONS.map((c) => (
-              <div
+              <button
+                type="button"
                 key={c.id}
-                className={`cite-card ${active === c.id ? 'active' : ''}`}
+                className={`cite-card text-left font-[inherit] ${active === c.id ? 'active' : ''}`}
                 onMouseEnter={() => setActive(c.id)}
+                onFocus={() => setActive(c.id)}
                 onClick={() => setActive(c.id)}
               >
                 <div className="cite-card-head">
@@ -133,7 +143,7 @@ export function CitationsSection() {
                   <span>類似度 {Math.round(c.score * 100)}%</span>
                 </div>
                 <p className="snippet">{c.snippet}</p>
-              </div>
+              </button>
             ))}
           </div>
         </div>

@@ -25,10 +25,10 @@ export function CtaSection() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           access_key: WEB3FORMS_KEY,
-          subject: `Zeiro デモ予約リクエスト — ${email}`,
+          subject: `Zeiro サンプルデモのリクエスト — ${email}`,
           from_name: 'Zeiro landing',
           email,
-          message: `デモ予約リクエスト\n\nメールアドレス: ${email}\n所要: 30分・無料`,
+          message: `サンプルデモのリクエスト\n\nメールアドレス: ${email}\n所要: 15分・無料\n実データの提出: 不要`,
           botcheck: '',
         }),
       });
@@ -54,7 +54,7 @@ export function CtaSection() {
         ? '送信中…'
         : status === 'error'
           ? '再送信'
-          : 'リクエスト';
+          : 'デモをリクエスト';
 
   return (
     <section className="cta" id="cta">
@@ -64,20 +64,20 @@ export function CtaSection() {
             <div className="cta-inner">
               <div>
                 <h2 className="cta-title">
-                  <em>事務所のAI agent、</em>
+                  <em>サンプルで、</em>
                   <br />
-                  はじめませんか。
+                  α版を見ませんか。
                 </h2>
                 <p className="cta-sub">
-                  まずは 30 分のデモから。事務所マニュアル PDF を 1 つお渡しいただければ、 その場で{' '}
-                  <b>貴所のナレッジで動く Zeiro</b> を起動します。
+                  こちらで用意した架空の問い合わせとナレッジで、15分ほどの短いデモをご案内します。
+                  <b>事務所マニュアルや実際の顧客データは不要</b>です。
                 </p>
               </div>
 
-              <form className="cta-form" onSubmit={submit} noValidate>
+              <form className="cta-form" onSubmit={submit}>
                 <div className="label">
-                  <span>デモ予約</span>
-                  <span>所要 30分 · 無料</span>
+                  <span>サンプルデモ</span>
+                  <span>所要 15分 · 無料</span>
                 </div>
                 <div className="input">
                   <input
@@ -104,9 +104,9 @@ export function CtaSection() {
                   </div>
                 ) : null}
                 <div className="cta-bullets">
-                  <span className="b">秘密保持契約 同時締結</span>
-                  <span className="b">事務所ごと専用環境</span>
-                  <span className="b">国内データセンター</span>
+                  <span className="b">機密資料は不要</span>
+                  <span className="b">架空データで体験</span>
+                  <span className="b">α版フィードバック募集</span>
                 </div>
               </form>
             </div>

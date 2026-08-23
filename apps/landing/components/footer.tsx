@@ -8,7 +8,7 @@ export function Footer() {
           <span className="tag">tax-office agent</span>
         </div>
         <div className="meta">
-          © 2026 Zeiro · 東京都千代田区
+          © 2026 Zeiro · EARLY ALPHA
           <span className="sep">·</span>
           info@zeiro.jp
         </div>

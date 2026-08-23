@@ -10,67 +10,58 @@ export function Hero() {
         <div className="hero-left">
           <div className="hero-eyebrow">
             <span className="badge">α</span>
-            <span>税理士事務所のための</span>
+            <span>EARLY ALPHA · 税理士事務所向け</span>
             <span className="pulse" />
           </div>
 
           <h1>
             <span className="line">
-              <span>顧客対応を、</span>
+              <span>下書きは、</span>
             </span>
             <span className="line">
               <span>
-                <em>自動で</em>。
+                <em>AIと</em>。
               </span>
             </span>
             <span className="line">
               <span>
-                所長は<span className="ink-light">監督に</span>。
+                送信は<span className="ink-light">人が</span>。
               </span>
             </span>
           </h1>
 
           <p className="hero-sub">
-            メール・LINE・Webフォームに届く問い合わせを、
+            メール・LINE・Chatwork・Webフォームに届く問い合わせに、
             <b>事務所のマニュアル・FAQ・顧問先情報・過去回答</b>
-            で自動下書き。
+            を参照した返信案を作成。
             <br />
-            引用付き。信頼度判定付き。低信頼の案件は所長へ自動エスカレーション。
+            引用と信頼度を確認し、最後は必ず担当者が承認して送信します。
           </p>
 
           <div className="hero-cta-row">
             <a className="btn btn-solid btn-lg" href="#cta">
-              事務所を接続する
+              サンプルでデモを見る
               <span className="arrow">
                 <ArrowIcon size={14} />
               </span>
             </a>
             <a className="btn btn-line btn-lg" href={APP_URL}>
-              プロダクトを試す
-              <span className="kbd" style={{ color: 'var(--ink-3)', borderColor: 'var(--line)' }}>
-                D
-              </span>
+              α版を開く
             </a>
           </div>
 
           <div className="hero-microstats">
             <div className="hero-microstat">
-              <div className="v">
-                73<span className="unit">%</span>
-              </div>
-              <div className="l">自動回答率</div>
+              <div className="v">HITL</div>
+              <div className="l">全件レビュー</div>
             </div>
             <div className="hero-microstat">
-              <div className="v">
-                22<span className="unit">min</span>
-              </div>
-              <div className="l">平均初回返答</div>
+              <div className="v">MASK</div>
+              <div className="l">本文・添付テキスト</div>
             </div>
             <div className="hero-microstat">
-              <div className="v">
-                100<span className="unit">%</span>
-              </div>
-              <div className="l">引用付き下書き</div>
+              <div className="v">LOG</div>
+              <div className="l">送信・却下を記録</div>
             </div>
           </div>
         </div>

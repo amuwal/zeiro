@@ -82,7 +82,7 @@ export default function OpenGraphImage() {
             lineHeight: 1.05,
           }}
         >
-          顧客対応を、自動で。
+          下書きは、AIと。
         </div>
         <div
           style={{
@@ -95,8 +95,8 @@ export default function OpenGraphImage() {
             lineHeight: 1.05,
           }}
         >
-          <span>所長は</span>
-          <span style={{ color: '#8a8a8a' }}>監督に</span>
+          <span>送信は</span>
+          <span style={{ color: '#8a8a8a' }}>人が</span>
           <span>。</span>
         </div>
         <div
@@ -124,11 +124,11 @@ export default function OpenGraphImage() {
           paddingTop: 24,
         }}
       >
-        <span>自動回答率 73%</span>
+        <span>EARLY ALPHA</span>
         <span>·</span>
-        <span>平均初回返答 22 min</span>
+        <span>HUMAN REVIEW</span>
         <span>·</span>
-        <span>引用付き 100%</span>
+        <span>SAMPLE DEMO</span>
       </div>
     </div>,
     { ...size },

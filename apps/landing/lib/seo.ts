@@ -5,19 +5,15 @@ export const BRAND = {
   name: 'Zeiro',
   legalName: 'Zeiro',
   alternateNames: ['ゼイロ', 'ZEIRO', 'zeiro', '税理士事務所のAIエージェント'],
-  taglineJa: '税理士事務所のための、顧客対応AI Agent',
+  taglineJa: '人が確認して送る、税理士事務所の顧客対応AI',
   descriptionJa:
-    'メール、LINE、Webフォームに届く問い合わせを、事務所のマニュアル・FAQ・顧問先情報・過去回答で自動下書き。引用付き、信頼度判定付き、所長エスカレーション付き。',
+    'Zeiroは税理士事務所向けの初期α版AIです。メール、LINE、Chatwork、Webフォームの問い合わせに、事務所の情報を参照した返信案を作成。引用数に基づく信頼度を表示し、すべて人が確認して送信します。',
   descriptionEn:
-    'Zeiro is the customer-correspondence AI agent built for Japanese tax-accountant offices (税理士事務所). It unifies email, LINE, and web-form inquiries; drafts replies grounded in the firm’s own manuals, FAQs, client master, and past answers; cites every claim; and escalates low-confidence cases to the senior partner.',
+    'Zeiro is an early-alpha correspondence AI for Japanese tax-accountant offices. It handles email, LINE, Chatwork, and web-form inquiries, drafts replies from firm-provided knowledge, displays source references and confidence, and requires human approval before sending.',
   emailContact: 'info@zeiro.jp',
   locale: 'ja_JP',
   language: 'ja',
-  country: 'JP',
-  addressLocality: '東京都千代田区',
-  addressRegion: 'Tokyo',
-  addressCountry: 'JP',
-  sameAs: ['https://app.zeiro.io'],
+  sameAs: [APP_URL],
 } as const;
 
 type FaqItem = { q: string; a: string };
@@ -25,27 +21,27 @@ type FaqItem = { q: string; a: string };
 export const FAQ_ITEMS: FaqItem[] = [
   {
     q: 'Zeiroはどのような税理士事務所向けのAIエージェントですか？',
-    a: 'Zeiroは、税理士事務所に届くメール・LINE・Webフォーム・チャットワークなどの顧客問い合わせを自動的に受信し、事務所のマニュアル・FAQ・顧問先マスタ・過去回答ログから根拠を引いて返信ドラフトを生成するAIエージェントです。',
+    a: 'Zeiroは初期α版の顧客対応AIです。メール・LINE・Chatwork・Webフォームの問い合わせを整理し、事務所のマニュアル・FAQ・顧問先情報・過去回答を参照して返信案を作成します。',
   },
   {
     q: '引用や根拠はどのように示されますか？',
-    a: 'すべてのドラフトには、事務所マニュアル §番号、FAQ Q-番号、過去回答の日付、類似度スコアが付帯します。「なぜそう答えたのか」を常に検証できます。',
+    a: '返信案には、生成時に参照したマニュアル、FAQ、顧問先情報、過去回答などを表示します。引用は正しさの保証ではないため、担当者が元資料と照合してから送信します。',
   },
   {
-    q: '低信頼の案件はどう扱われますか？',
-    a: '0–1の信頼度スコアが事務所が設定した閾値（既定 0.70）を下回ると、Zeiroは自動送信せず、所長へエスカレーションして承認を仰ぎます。',
+    q: '返信案は自動送信されますか？',
+    a: 'いいえ。α版では信頼度にかかわらず、すべての返信案を人が確認してから送信します。税務判断、緊急性、根拠不足などがある案件は、人への引き継ぎ候補として扱います。',
   },
   {
     q: '対応チャネルは何ですか？',
-    a: 'メール（IMAP / Gmail / Microsoft 365）、LINE公式アカウント、Chatwork、Slack Connect、Webフォーム、SMS、電話の文字起こし、国税庁の通達、TKC・freee・弥生・MFクラウドなどを統合受信できます。',
+    a: '現在のα版で対象にしている問い合わせチャネルは、メール（Resend経由）、LINE公式アカウント、Chatwork、Webフォームです。freee連携は会計データの読取専用で、書き込みは行いません。',
   },
   {
-    q: 'データはどこに保管されますか？',
-    a: '日本国内のデータセンター（jp-tokyo）にのみ保管し、LLMプロバイダとは学習禁止契約を締結しています。守秘義務（税理士法 §38）の遵守を前提に設計しています。',
+    q: 'どのようなデータ保護機能がありますか？',
+    a: '問い合わせ本文と解析した添付テキスト内の12桁番号パターンのマスキング、事務所（テナント）単位のアクセス制御、送信・却下の監査ログを実装しています。件名は現在マスキング対象外です。サービスは共有型マルチテナント構成で、クラウド・AIなどの外部事業者を利用します。実データを扱う前に処理条件をご確認いただきます。',
   },
   {
     q: 'デモはどのように予約できますか？',
-    a: '公式サイトのフォームからメールアドレスをご登録ください。30分のデモは無料で、事務所マニュアルPDFを1つお渡しいただければ、貴所のナレッジで動くZeiroをその場で起動します。',
+    a: '公式サイトのフォームからメールアドレスをご登録ください。架空の問い合わせとナレッジを使った15分ほどの無料デモをご案内します。事務所マニュアルや実際の顧客データは不要です。',
   },
 ];
 
@@ -59,12 +55,6 @@ export type OrganizationLd = {
   email: string;
   description: string;
   inLanguage: string;
-  address: {
-    '@type': 'PostalAddress';
-    addressLocality: string;
-    addressRegion: string;
-    addressCountry: string;
-  };
   contactPoint: {
     '@type': 'ContactPoint';
     contactType: string;
@@ -85,17 +75,11 @@ export function organizationLd(): OrganizationLd {
     email: BRAND.emailContact,
     description: BRAND.descriptionJa,
     inLanguage: BRAND.language,
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: BRAND.addressLocality,
-      addressRegion: BRAND.addressRegion,
-      addressCountry: BRAND.addressCountry,
-    },
     contactPoint: {
       '@type': 'ContactPoint',
-      contactType: 'sales',
+      contactType: 'product inquiries',
       email: BRAND.emailContact,
-      availableLanguage: ['ja', 'en'],
+      availableLanguage: ['ja'],
     },
     sameAs: [...BRAND.sameAs],
   };
@@ -116,14 +100,6 @@ export function softwareApplicationLd() {
     audience: {
       '@type': 'Audience',
       audienceType: '税理士事務所 / Japanese tax-accountant offices',
-    },
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'JPY',
-      url: `${SITE_URL}#cta`,
-      availability: 'https://schema.org/InStock',
-      eligibleRegion: { '@type': 'Country', name: 'Japan' },
     },
     creator: {
       '@type': 'Organization',
@@ -150,18 +126,6 @@ export function websiteLd() {
   };
 }
 
-export function faqLd() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ_ITEMS.map((item) => ({
-      '@type': 'Question',
-      name: item.q,
-      acceptedAnswer: { '@type': 'Answer', text: item.a },
-    })),
-  };
-}
-
 export function structuredData() {
-  return [organizationLd(), softwareApplicationLd(), websiteLd(), faqLd()];
+  return [organizationLd(), softwareApplicationLd(), websiteLd()];
 }

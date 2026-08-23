@@ -1,7 +1,7 @@
 const STREAM_ROWS: Array<{ chan: string; sub: string; t: string }> = [
-  { chan: 'LINE', sub: '税務調査の事前通知が来ました — 鈴木代表', t: '10:21' },
-  { chan: 'FORM', sub: '源泉徴収票の送付先について — 田中様', t: '09:58' },
-  { chan: 'EMAIL', sub: '消費税の中間納付スケジュール — 鈴木建設', t: '08:47' },
+  { chan: 'LINE', sub: '税務調査の事前通知が来ました — サンプル顧問先A', t: '10:21' },
+  { chan: 'FORM', sub: '源泉徴収票の送付先について — サンプル顧問先B', t: '09:58' },
+  { chan: 'EMAIL', sub: '消費税の中間納付スケジュール — サンプル顧問先C', t: '08:47' },
 ];
 
 export function HeroDemo() {
@@ -14,17 +14,17 @@ export function HeroDemo() {
             <i />
             <i />
           </span>
-          <span className="label">INBOX · LIVE</span>
+          <span className="label">INBOX · DEMO</span>
           <span className="step">
             <span className="ring" />
-            agent · processing
+            sample · processing
           </span>
         </div>
 
         <div className="demo-body">
           <div className="demo-incoming">
             <span className="channel">EMAIL</span>
-            <span className="who">山田 正彦 · 株式会社山田商事</span>
+            <span className="who">山田 正彦 · サンプル株式会社</span>
             <span className="time">10:42</span>
             <span className="subject">3月決算法人税の申告期限について確認させてください</span>
             <span className="preview">
@@ -45,9 +45,9 @@ export function HeroDemo() {
 
           <div className="demo-draft">
             <div className="demo-draft-head">
-              <span className="badge">AI · v2</span>
-              <span>下書き</span>
-              <span className="gen-ms">generated · 1.2s</span>
+              <span className="badge">AI · SAMPLE</span>
+              <span>下書き例</span>
+              <span className="gen-ms">illustrative data</span>
             </div>
             <div className="demo-draft-text">
               <span className="l l1">山田 正彦様、いつもお世話になっております。</span>
@@ -65,9 +65,9 @@ export function HeroDemo() {
             </div>
             <div className="demo-draft-foot">
               <span className="ok">
-                <span className="dot" /> 送信準備完了
+                <span className="dot" /> レビュー待ち
               </span>
-              <span className="send">送信 ↵</span>
+              <span className="send">確認して送信 ↵</span>
             </div>
           </div>
 

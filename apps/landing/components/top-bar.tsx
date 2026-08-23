@@ -9,7 +9,7 @@ const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: '#citations', label: '引用' },
   { href: '#confidence', label: '信頼度' },
   { href: '#memory', label: 'メモリ' },
-  { href: '#numbers', label: '実績' },
+  { href: '#numbers', label: '現在地' },
 ];
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.zeiro.io';
@@ -42,7 +42,7 @@ export function TopBar() {
             ログイン
           </a>
           <a className="btn btn-solid" href="#cta">
-            事務所と話す
+            サンプルを見る
             <span className="arrow">
               <ArrowIcon />
             </span>

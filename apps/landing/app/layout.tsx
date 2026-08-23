@@ -46,10 +46,11 @@ const keywords = [
   '税理士事務所 AI',
   '税理士事務所 顧客対応',
   '税理士 顧問先 問い合わせ',
-  '会計事務所 自動返信',
-  'メール 自動返信 税理士',
+  '会計事務所 返信下書き',
+  'メール 返信下書き 税理士',
   'LINE 公式 税理士',
   'AI エージェント 税理士',
+  '税理士 AI 人間レビュー',
   'tax accountant AI agent Japan',
   'Japanese tax office AI',
   '税理士法 守秘義務',
@@ -142,8 +143,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ja" className={fontClass}>
       <body>
-        {structuredData().map((data, i) => (
-          <JsonLd key={i} data={data} />
+        {structuredData().map((data) => (
+          <JsonLd key={data['@type']} data={data} />
         ))}
         {children}
         <Analytics />

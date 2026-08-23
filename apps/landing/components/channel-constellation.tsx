@@ -21,10 +21,9 @@ type Channel = {
 };
 
 const CC_CHANNELS: Channel[] = [
-  { id: 'email', glyph: '@', label: 'Email', meta: 'IMAP', ax: 132, ay: 102, pos: 'tl' },
-  { id: 'line', glyph: 'L', label: 'LINE 公式', meta: 'BOT', ax: 568, ay: 128, pos: 'tr' },
-  { id: 'phone', glyph: 'P', label: '電話', meta: '文字起こし', ax: 168, ay: 280, pos: 'ml' },
-  { id: 'web', glyph: 'F', label: 'Webフォーム', meta: '埋込', ax: 138, ay: 458, pos: 'bl' },
+  { id: 'email', glyph: '@', label: 'Email', meta: 'RESEND', ax: 132, ay: 102, pos: 'tl' },
+  { id: 'line', glyph: 'L', label: 'LINE 公式', meta: '連携', ax: 568, ay: 128, pos: 'tr' },
+  { id: 'web', glyph: 'F', label: 'Webフォーム', meta: '受付', ax: 138, ay: 458, pos: 'bl' },
   { id: 'chat', glyph: 'C', label: 'Chatwork', meta: 'API', ax: 562, ay: 444, pos: 'br' },
 ];
 
@@ -65,7 +64,11 @@ export function ChannelConstellation() {
   const hubTopPct = (CC_HUB.y / CC_VB_H) * 100;
   const hubWidthPct = ((CC_HUB.r * 2) / CC_VB_W) * 100;
 
-  const ripples = [0, CC_STAGGER, CC_STAGGER * 2];
+  const ripples = [
+    { id: 'first', delay: 0 },
+    { id: 'second', delay: CC_STAGGER },
+    { id: 'third', delay: CC_STAGGER * 2 },
+  ];
 
   return (
     <div className="constellation">
@@ -100,8 +103,8 @@ export function ChannelConstellation() {
         <circle cx={CC_HUB.x} cy={CC_HUB.y} r={CC_HUB.r + 28} className="cc-guide" />
         <circle cx={CC_HUB.x} cy={CC_HUB.y} r={CC_HUB.r + 64} className="cc-guide cc-guide-2" />
 
-        {ripples.map((delay, i) => (
-          <circle key={`ripple-${i}`} cx={CC_HUB.x} cy={CC_HUB.y} className="cc-ripple">
+        {ripples.map(({ id, delay }) => (
+          <circle key={id} cx={CC_HUB.x} cy={CC_HUB.y} className="cc-ripple">
             <animate
               attributeName="r"
               from={CC_HUB.r}
@@ -154,7 +157,7 @@ export function ChannelConstellation() {
         style={{ left: `${hubLeftPct}%`, top: `${hubTopPct}%`, width: `${hubWidthPct}%` }}
       >
         <span className="cc-hub-name">Zeiro</span>
-        <span className="cc-hub-tag">UNIFIED INBOX</span>
+        <span className="cc-hub-tag">REVIEW INBOX</span>
       </div>
 
       {wires.map((c) => {

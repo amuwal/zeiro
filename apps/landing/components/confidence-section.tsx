@@ -6,45 +6,54 @@ import { useReveal } from './use-reveal';
 
 type ConfidenceCase = { v: number; nm: string; desc: string; grade: string };
 
-const CASES: ConfidenceCase[] = [
+const CASES = [
   {
-    v: 0.94,
+    v: 0.85,
     nm: '3月決算 申告期限の確認',
-    desc: 'FAQ Q-018 と事務所マニュアル §4.2 に完全一致。',
-    grade: '0.94',
+    desc: '参照元を3件提示。内容と出典を確認してから送信します。',
+    grade: '0.85',
   },
   {
-    v: 0.71,
+    v: 0.7,
     nm: '海外送金 源泉徴収判定',
-    desc: '判定フローは存在するが、日米租税条約の適用可否は個別事情に依存。',
-    grade: '0.71',
+    desc: '参照元は2件。個別事情の確認が必要なため、人への引き継ぎを検討します。',
+    grade: '0.70',
   },
   {
-    v: 0.48,
+    v: 0.3,
     nm: '役員報酬 期中改定の損金算入',
-    desc: '「業績悪化に伴う改定」該当性が個別判断。マニュアルが2024年4月で更新待ち。',
-    grade: '0.48',
+    desc: '参照元なし。憶測で下書きを作らず、人へ引き継ぐ候補です。',
+    grade: '0.30',
   },
-];
+] satisfies readonly [ConfidenceCase, ...ConfidenceCase[]];
 
 const THRESHOLDS: Array<{
   kind: 'auto' | 'review' | 'escalate';
   grade: string;
   label: string;
   sub: string;
+  badge: string;
 }> = [
-  { kind: 'auto', grade: '≥ 0.85', label: '自動送信 — 担当のみ通知', sub: '高確度 · 定型応答' },
+  {
+    kind: 'auto',
+    grade: '0.85',
+    label: '参照元を3件以上提示',
+    sub: '送信前レビューは必須',
+    badge: 'review',
+  },
   {
     kind: 'review',
-    grade: '0.70 – 0.85',
-    label: '下書きを生成 · 担当者の承認後に送信',
-    sub: '標準フロー',
+    grade: '0.55–0.70',
+    label: '参照元を1〜2件提示',
+    sub: '元資料と個別事情を確認',
+    badge: 'review',
   },
   {
     kind: 'escalate',
-    grade: '< 0.70',
-    label: '所長へ即時エスカレーション',
-    sub: '個別判断・新規論点',
+    grade: '0.30',
+    label: '根拠不足 — 人への引き継ぎ候補',
+    sub: '参照元なし',
+    badge: 'escalate',
   },
 ];
 
@@ -55,24 +64,24 @@ export function ConfidenceSection() {
     const t = setInterval(() => setSelected((s) => (s + 1) % CASES.length), 4200);
     return () => clearInterval(t);
   }, []);
-  const cur = CASES[selected]!;
+  const cur = CASES[selected] ?? CASES[0];
   return (
     <section className="section confidence" id="confidence">
       <div className="container">
         <div ref={ref} className="reveal">
           <div className="section-eyebrow">
             <span className="num">04</span>
-            <span>迷ったら、所長へ。</span>
+            <span>根拠が弱ければ、人へ。</span>
           </div>
           <h2 className="section-title">
-            信頼度が閾値を割ったら、
+            信頼度は、
             <br />
-            <em>人間に</em>渡す。
+            <em>引用件数から</em>出すレビュー目安。
           </h2>
           <p className="section-lede">
-            類似ナレッジの一致度、過去類例の数、顧問契約の特記事項。これらを総合し{' '}
-            <b>0–1 の信頼度</b> を算出。 事務所が設定した閾値を下回ったとき、Zeiro は
-            <b>勝手に送信しない</b>。所長に確認を仰ぎます。
+            α版の信頼度は、返信案に付いた<b>引用の件数</b>から算出する確認用の目安です。
+            正しさや送信可否を決めるものではありません。税務判断や根拠不足の案件は、スコアとは別に
+            人への引き継ぎ候補となり、<b>すべての返信案を人が確認</b>します。
           </p>
         </div>
 
@@ -81,7 +90,7 @@ export function ConfidenceSection() {
             <ConfidenceDial value={cur.v} />
             <div className="conf-dial-info">
               <div>
-                <div className="nm">CASE · live</div>
+                <div className="nm">CASE · DEMO DATA</div>
                 <div className="v">{cur.nm}</div>
               </div>
               <div className="s">{cur.desc}</div>
@@ -108,12 +117,12 @@ export function ConfidenceSection() {
                   {t.label}
                   <span className="sub">{t.sub}</span>
                 </div>
-                <div className="badge">{t.kind}</div>
+                <div className="badge">{t.badge}</div>
               </div>
             ))}
             <div className="conf-threshold-foot">
-              <span>閾値は事務所ごとに調整可</span>
-              <span>監査ログ完備</span>
+              <span>α版の算出ルール</span>
+              <span>すべて人が確認</span>
             </div>
           </div>
         </div>
